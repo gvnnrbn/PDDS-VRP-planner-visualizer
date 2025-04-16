@@ -1,3 +1,4 @@
+package domain_environment;
 public class TimeMoment implements Cloneable, Comparable<TimeMoment> {
     public int day;
     public int hour;

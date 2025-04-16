@@ -1,9 +1,10 @@
+package domain_environment;
 public class Warehouse {
-    Position position;
-    int currentGLP;
-    int currentFuel;
-    boolean isMainWarehouse;
-    boolean isBrokenVehicle;
+    public Position position;
+    public int currentGLP;
+    public int currentFuel;
+    public boolean isMainWarehouse;
+    public boolean isBrokenVehicle;
 
     public boolean canLoadGLP(int amount) {
         if (isMainWarehouse) {

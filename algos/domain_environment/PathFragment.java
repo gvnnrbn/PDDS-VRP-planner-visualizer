@@ -1,3 +1,4 @@
+package domain_environment;
 /* 
  * Linear path fragment between two positions.
 */
@@ -10,12 +11,12 @@ public class PathFragment {
         return Math.abs(end.x - start.x) + Math.abs(end.y - start.y); // Manhattan distance in grid
     }
 
-    public int calculateTimeSpent(Environment environment) {
+    public double calculateTimeSpent(Environment environment) {
         // Fixed speed
-        return getDistance() * environment.vehicleSpeed;
+        return getDistance() / environment.vehicleSpeed;
     }
 
-    public int calculateFuelSpent(Vehicle vehicle, Environment environment) {
+    public double calculateFuelSpent(Vehicle vehicle, Environment environment) {
         // Formula for fuel consumption
         return getDistance() * (environment.GLPWeightPerm3 * vehicle.currentGLP + vehicle.weight) / 180;
     }

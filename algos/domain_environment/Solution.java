@@ -1,10 +1,11 @@
+package domain_environment;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Solution implements Cloneable {
-    private class VehicleWithMovements implements Cloneable {
-        int vehicleId;
-        List<Movement> movements;
+    public class VehicleWithMovements implements Cloneable {
+        public int vehicleId;
+        public List<Movement> movements;
 
         @Override
         public VehicleWithMovements clone() {
@@ -15,8 +16,8 @@ public class Solution implements Cloneable {
         }
     }
 
-    private abstract class Movement implements Cloneable {
-        List<PathFragment> pathFragments;
+    public abstract class Movement implements Cloneable {
+        public List<PathFragment> pathFragments;
 
         public int calculateTimeSpentTravelling(Environment environment) {
             int timeSpent = 0;
@@ -29,9 +30,9 @@ public class Solution implements Cloneable {
         public abstract int calculateTotalTimeSpent(Environment environment);
     }
 
-    private class DischargeMovement extends Movement {
-        int GLPToDischarge;
-        int orderId;
+    public class DischargeMovement extends Movement {
+        public int GLPToDischarge;
+        public int orderId;
 
         @Override
         public DischargeMovement clone() {
@@ -43,12 +44,12 @@ public class Solution implements Cloneable {
 
         @Override
         public int calculateTotalTimeSpent(Environment environment) {
-            return calculateTimeSpentTravelling(environment) + environment.dischargeSpeed * GLPToDischarge;
+            return (int) Math.ceil(calculateTimeSpentTravelling(environment) + environment.dischargeSpeed * GLPToDischarge);
         }
     }
 
-    private class LoadMovement extends Movement {
-        int GLPToLoad;
+    public class LoadMovement extends Movement {
+        public int GLPToLoad;
 
         @Override
         public LoadMovement clone() {
@@ -71,17 +72,17 @@ public class Solution implements Cloneable {
 
             int loadTime;
             if (warehouse != null && warehouse.isBrokenVehicle) {
-                loadTime = environment.transferSpeed * GLPToLoad;
+                loadTime = (int) Math.ceil(environment.transferSpeed * GLPToLoad);
             } else {
-                loadTime = environment.chargeSpeed * GLPToLoad;
+                loadTime = (int) Math.ceil(environment.chargeSpeed * GLPToLoad);
             }
 
             return calculateTimeSpentTravelling(environment) + loadTime;
         }
     }
 
-    private class FuelLoadMovement extends Movement {
-        int fuelToLoad;
+    public class FuelLoadMovement extends Movement {
+        public int fuelToLoad;
 
         @Override
         public FuelLoadMovement clone() {
@@ -92,7 +93,7 @@ public class Solution implements Cloneable {
 
         @Override
         public int calculateTotalTimeSpent(Environment environment) {
-            return calculateTimeSpentTravelling(environment) + environment.fuelLoadSpeed * fuelToLoad;
+            return (int) Math.ceil(calculateTimeSpentTravelling(environment) + environment.fuelLoadSpeed * fuelToLoad);
         }
     }
 
@@ -250,7 +251,7 @@ public class Solution implements Cloneable {
                             }
                             
                             TimeMoment arrivalTime = lastMovementEnd.clone();
-                            arrivalTime.minute += returnTime;
+                            arrivalTime.addMinutes(returnTime);
                             
                             if (arrivalTime.compareTo(maintenance.startTime) > 0) {
                                 return false;

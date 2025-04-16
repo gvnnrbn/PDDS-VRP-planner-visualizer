@@ -1,10 +1,11 @@
+package domain_environment;
 import java.util.List;
 
 /*
  * List of vertices that form an open polygon
  */
 public class Blockage {
-    List<Position> positions;
+    public List<Position> positions;
 
     // from -> to is a linear path
     public boolean isBlocked(Position from, Position to) {

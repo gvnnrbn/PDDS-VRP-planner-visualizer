@@ -1,3 +1,4 @@
+package domain_environment;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -66,9 +67,7 @@ public class AStar {
             
             int[][] dirs = {{0,1}, {1,0}, {0,-1}, {-1,0}};
             for (int[] dir : dirs) {
-                Position nextPos = new Position();
-                nextPos.x = current.pos.x + dir[0];
-                nextPos.y = current.pos.y + dir[1];
+                Position nextPos = new Position(current.pos.x + dir[0], current.pos.y + dir[1]);
                 
                 if (nextPos.x < 0 || nextPos.x >= gridLength || 
                     nextPos.y < 0 || nextPos.y >= gridWidth) {
