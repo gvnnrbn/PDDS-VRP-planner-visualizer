@@ -102,36 +102,43 @@ public class Solution implements Cloneable {
         // Main factor, time left in each order
         int timeLeft = 0;
         for (Order order : environment.orders) {
-            TimeMoment completionTime = null;
+            TimeMoment latestCompletionTime = null;
+            
+            // Find all completion times for this order
             for (VehicleWithMovements vehicle : vehiclesWithMovements) {
+                TimeMoment currentTime = null;
+                
                 // Find the vehicle's start time
-                Vehicle correspondingVehicle = null;
                 for (Vehicle v : environment.vehicles) {
                     if (v.id == vehicle.vehicleId) {
-                        correspondingVehicle = v;
+                        currentTime = v.startAvailabilityMoment.clone();
                         break;
                     }
                 }
-                if (correspondingVehicle == null) continue;
-
-                TimeMoment currentTime = correspondingVehicle.startAvailabilityMoment.clone();
+                if (currentTime == null) continue;
                 
+                // Calculate time for each movement until we find the latest discharge
                 for (Movement movement : vehicle.movements) {
                     if (movement instanceof DischargeMovement) {
                         DischargeMovement discharge = (DischargeMovement) movement;
                         if (discharge.orderId == order.id) {
-                            completionTime = currentTime.clone();
-                            completionTime.minute += movement.calculateTimeSpentTravelling(environment);
-                            break;
+                            TimeMoment completionTime = currentTime.clone();
+                            completionTime.addMinutes(movement.calculateTotalTimeSpent(environment));
+                            
+                            if (latestCompletionTime == null || completionTime.compareTo(latestCompletionTime) > 0) {
+                                latestCompletionTime = completionTime;
+                            }
                         }
                     }
-                    currentTime.minute += movement.calculateTotalTimeSpent(environment);
-                }
-                if (completionTime != null) {
-                    break;
+                    currentTime.addMinutes(movement.calculateTotalTimeSpent(environment));
                 }
             }
-            timeLeft += order.deadline.compareTo(completionTime);
+            
+            if (latestCompletionTime != null) {
+                timeLeft += order.deadline.compareTo(latestCompletionTime);
+            } else {
+                timeLeft -= -1000_000; // If the order is not completed, we penalize it
+            }
         }
 
         // Second factor, distance traveled
@@ -169,6 +176,7 @@ public class Solution implements Cloneable {
 
         // Second condition: Orders should be completed before their deadline
         for (Order order : environment.orders) {
+            boolean orderCompleted = false;
             for (VehicleWithMovements vehicle : vehiclesWithMovements) {
                 // Find the vehicle's start time
                 Vehicle correspondingVehicle = null;
@@ -187,14 +195,18 @@ public class Solution implements Cloneable {
                         DischargeMovement discharge = (DischargeMovement) movement;
                         if (discharge.orderId == order.id) {
                             TimeMoment completionTime = currentTime.clone();
-                            completionTime.minute += movement.calculateTimeSpentTravelling(environment);
+                            completionTime.addMinutes(movement.calculateTimeSpentTravelling(environment));
                             if (completionTime.compareTo(order.deadline) > 0) {
                                 return false;
                             }
+                            orderCompleted = true;
                         }
                     }
-                    currentTime.minute += movement.calculateTotalTimeSpent(environment);
+                    currentTime.addMinutes(movement.calculateTotalTimeSpent(environment));
                 }
+            }
+            if (!orderCompleted) {
+                return false;
             }
         }
 
@@ -208,7 +220,7 @@ public class Solution implements Cloneable {
                         // Check if there are any movements during maintenance
                         for (Movement movement : vehicleWithMovements.movements) {
                             TimeMoment movementEndTime = currentTime.clone();
-                            movementEndTime.minute += movement.calculateTimeSpentTravelling(environment);
+                            movementEndTime.addMinutes(movement.calculateTimeSpentTravelling(environment));
                             
                             // If movement overlaps with maintenance period
                             if ((currentTime.compareTo(maintenance.startTime) >= 0 && 
@@ -218,7 +230,7 @@ public class Solution implements Cloneable {
                                 return false;
                             }
                             
-                            currentTime.minute += movement.calculateTotalTimeSpent(environment);
+                            currentTime.addMinutes(movement.calculateTotalTimeSpent(environment));
                         }
                         
                         // Check if vehicle can reach main warehouse before maintenance

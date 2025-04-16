@@ -12,15 +12,19 @@ public class TimeMoment implements Cloneable, Comparable<TimeMoment> {
         return clone;
     }
 
+    public void addMinutes(int minutes) {
+        this.minute += minutes;
+        if (this.minute >= 60) {
+            this.hour += this.minute / 60;
+            this.minute = this.minute % 60;
+        }
+    }
+
     @Override
     public int compareTo(TimeMoment other) {
-        if (this.day != other.day) {
-            return Integer.compare(this.day, other.day);
-        }
-        if (this.hour != other.hour) {
-            return Integer.compare(this.hour, other.hour);
-        }
-        return Integer.compare(this.minute, other.minute);
+        int thisTotal = this.day * 1440 + this.hour * 60 + this.minute;
+        int otherTotal = other.day * 1440 + other.hour * 60 + other.minute;
+        return Integer.compare(thisTotal, otherTotal);
     }
 
     @Override
