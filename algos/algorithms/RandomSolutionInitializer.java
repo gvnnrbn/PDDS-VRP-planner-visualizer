@@ -1,10 +1,11 @@
 package algorithms;
-import domain_environment.Environment;
-import domain_environment.Solution;
-import domain_environment.Vehicle;
-import domain_environment.Solution.VehicleWithMovements;
 import java.util.ArrayList;
 import java.util.List;
+
+import domain.Environment;
+import domain.Solution;
+import domain.Vehicle;
+import domain.Solution.VehicleWithMovements;
 
 public class RandomSolutionInitializer implements SolutionInitializer {
     public Solution initializeSolution(Environment environment) {

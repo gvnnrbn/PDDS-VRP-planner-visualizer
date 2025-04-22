@@ -1,11 +1,11 @@
 package algorithms;
-import domain_environment.Environment;
-import domain_environment.Solution;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TabuSearch implements MetaheuristicAlgorithm {
+import domain.Environment;
+import domain.Solution;
 
+public class TabuSearch implements MetaheuristicAlgorithm {
 
     private SolutionInitializer solutionInitializer;
     

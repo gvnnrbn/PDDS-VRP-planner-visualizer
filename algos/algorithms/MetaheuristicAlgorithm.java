@@ -1,6 +1,6 @@
 package algorithms;
-import domain_environment.Environment;
-import domain_environment.Solution;
+import domain.Environment;
+import domain.Solution;
 
 public interface MetaheuristicAlgorithm {
     public Solution run(Environment environment);

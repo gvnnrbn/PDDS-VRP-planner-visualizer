@@ -1,14 +1,15 @@
 package main;
 
-import domain_environment.Environment;
 import algorithms.TabuSearch;
+import domain.Blockage;
+import domain.Environment;
+import domain.Order;
+import domain.Position;
+import domain.Solution;
+import domain.Vehicle;
+import domain.Warehouse;
 import algorithms.RandomSolutionInitializer;
-import domain_environment.Solution;
-import domain_environment.Vehicle;
-import domain_environment.Position;
-import domain_environment.Order;
-import domain_environment.Warehouse;
-import domain_environment.Blockage;
+
 import java.util.ArrayList;
 
 public class Main {

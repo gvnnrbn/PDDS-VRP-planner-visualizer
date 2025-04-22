@@ -1,6 +1,6 @@
 package algorithms;
-import domain_environment.Environment;
-import domain_environment.Solution;
+import domain.Environment;
+import domain.Solution;
 
 public interface SolutionInitializer {
     public Solution initializeSolution(Environment environment);

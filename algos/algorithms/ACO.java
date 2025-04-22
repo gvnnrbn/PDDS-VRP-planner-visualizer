@@ -1,8 +1,9 @@
 package algorithms;
-import domain_environment.Environment;
-import domain_environment.Solution;
 import java.util.ArrayList;
 import java.util.List;
+
+import domain.Environment;
+import domain.Solution;
 
 public class ACO implements MetaheuristicAlgorithm {
     private SolutionInitializer solutionInitializer;
