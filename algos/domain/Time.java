@@ -13,6 +13,11 @@ public class Time {
         this.min = min;
     }
 
+    @Override
+    public String toString() {
+        return String.format("%02d/%02d %02d:%02d", month, day, hour, min);
+    }
+
     public boolean isBefore(Time other) {
         if (this.month != other.month) return this.month < other.month;
         if (this.day != other.day) return this.day < other.day;

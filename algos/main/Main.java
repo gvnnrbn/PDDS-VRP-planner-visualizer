@@ -1,65 +1,54 @@
 package main;
 
-import algorithms.TabuSearch;
 import domain.Blockage;
 import domain.Environment;
 import domain.Order;
 import domain.Position;
-import domain.Solution;
 import domain.Vehicle;
 import domain.Warehouse;
-import algorithms.RandomSolutionInitializer;
+import domain.Time;
+import domain.Solution;
 
 import java.util.ArrayList;
+import java.util.List;
+
+import tabusearch.TabuSearch;
 
 public class Main {
     public static void main(String[] args) {
         Environment environment = new Environment();
 
         environment.vehicles = new ArrayList<>();
-        Vehicle vehicle = new Vehicle();
-        vehicle.weight = 2.5;
-        vehicle.maxFuel = 100;
-        vehicle.currentFuel = 50;
-        vehicle.maxGLP = 100;
-        vehicle.currentGLP = 50;
-        vehicle.position = new Position(20, 20);
+        Vehicle vehicle = new Vehicle(1, 1000, 100, 100.0, 20, 0, new Position(0, 0));
         environment.vehicles.add(vehicle);
 
         environment.orders = new ArrayList<>();
-        Order order = new Order();
-        order.position = new Position(10, 10);
-        order.GLPRequired = 10;
+        Order order = new Order(1, 10, new Position(10, 10), new Time(0, 0, 0, 0));
         environment.orders.add(order);
 
         environment.warehouses = new ArrayList<>();
-        Warehouse warehouse = new Warehouse();
-        warehouse.position = new Position(20, 20);
+        Warehouse warehouse = new Warehouse(1, new Position(20, 20), 100, 200, true);
         environment.warehouses.add(warehouse);
 
         environment.blockages = new ArrayList<>();
-        Blockage blockage = new Blockage();
-        blockage.positions = new ArrayList<>();
-        blockage.positions.add(new Position(15, 15));
-        blockage.positions.add(new Position(15, 25));
-        blockage.positions.add(new Position(25, 25));
+        List<Position> vertices = new ArrayList<>();
+        vertices.add(new Position(15, 15));
+        vertices.add(new Position(15, 25));
+        vertices.add(new Position(25, 25));
+        Blockage blockage = new Blockage(vertices);
         environment.blockages.add(blockage);
 
-        environment.gridLength = 30;
-        environment.gridWidth = 30;
+        System.out.println("Environment:");
+        System.out.println(environment);
 
-        environment.vehicleSpeed = 1;
-        environment.GLPWeightPerm3 = 0.5;
+        Solution initialSolution = environment.generateInitialSolution();
+        System.out.println("Initial solution with fitness " + initialSolution.fitness(environment) + ":");
+        System.out.println(initialSolution);
 
-        environment.dischargeSpeed = 1;
-        environment.chargeSpeed = 1;
-        environment.transferSpeed = 1;
-        environment.fuelLoadSpeed = 1;
+        TabuSearch tabuSearch = new TabuSearch();
+        Solution solution = tabuSearch.run(environment, initialSolution);
 
-        TabuSearch tabuSearch = new TabuSearch(new RandomSolutionInitializer());
-
-        Solution solution = tabuSearch.run(environment);
-
+        System.out.println("Final solution by Tabu Search with fitness " + solution.fitness(environment) + ":");
         System.out.println(solution);
     }
 }

@@ -4,6 +4,11 @@ public class ProductRefillNode extends Node {
     public Warehouse warehouse;
     public int amountGLP;
 
+    @Override
+    public ProductRefillNode clone() {
+        return new ProductRefillNode(id, warehouse, amountGLP);
+    }
+
     public ProductRefillNode(int id, Warehouse warehouse, int amountGLP) {
         super(id);
         this.warehouse = warehouse;
@@ -17,7 +22,7 @@ public class ProductRefillNode extends Node {
 
     @Override
     public boolean isInfiniteNode() {
-        return false;
+        return warehouse.isMain();
     }
 
     @Override

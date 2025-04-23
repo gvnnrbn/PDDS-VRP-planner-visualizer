@@ -4,6 +4,11 @@ public class OrderDeliverNode extends Node {
     public Order order;
     public int amountGLP;
 
+    @Override
+    public OrderDeliverNode clone() {
+        return new OrderDeliverNode(id, order, amountGLP);
+    }
+
     public OrderDeliverNode(int id, Order order, int amountGLP) {
         super(id);
         this.order = order;

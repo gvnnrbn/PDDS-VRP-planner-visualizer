@@ -3,6 +3,11 @@ package domain;
 public class EmptyNode extends Node {
     public Position position;
 
+    @Override
+    public EmptyNode clone() {
+        return new EmptyNode(id, position);
+    }
+
     public EmptyNode(int id, Position position) {
         super(id);
         this.position = position;

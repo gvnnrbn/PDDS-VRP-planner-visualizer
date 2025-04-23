@@ -3,8 +3,9 @@ package domain;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ArrayList;
 
-public class Solution {
+public class Solution implements Cloneable {
     public Map<Integer, List<Node>> routes; // routes[vehicleId] -> nodes
 
     private boolean hasRunSimulation = false;
@@ -15,22 +16,41 @@ public class Solution {
         routes = new HashMap<>();
     }
 
-    public int fitness(Environment environment, Map<Integer, Map<Integer, Integer>> distances) {
+    @Override
+    public Solution clone() {
+        Solution clone = new Solution();
+
+        // Deep copy of routes map with cloned nodes
+        for (Map.Entry<Integer, List<Node>> entry : routes.entrySet()) {
+            List<Node> clonedNodes = new ArrayList<>();
+            for (Node node : entry.getValue()) {
+                clonedNodes.add(node.clone());
+            }
+            clone.routes.put(entry.getKey(), clonedNodes);
+        }
+        clone.hasRunSimulation = false;
+        clone.isFeasible = true;
+        clone.fitness = 0;
+
+        return clone;
+    }
+
+    public int fitness(Environment environment) {
         if (!hasRunSimulation) {
-            simulate(environment, distances);
+            simulate(environment);
         }
 
         return fitness;
     }
 
-    public boolean isFeasible(Environment environment, Map<Integer, Map<Integer, Integer>> distances) {
+    public boolean isFeasible(Environment environment) {
         if (!hasRunSimulation) {
-            simulate(environment, distances);
+            simulate(environment);
         }
         return isFeasible;
     }
 
-    private void simulate(Environment environment, Map<Integer, Map<Integer, Integer>> distances) {
+    private void simulate(Environment environment) {
         // Clone orders
         Map<Integer, Order> orderMap = new HashMap<>();
         for (Order order : environment.orders) {
@@ -47,6 +67,14 @@ public class Solution {
             List<Node> route = routes.get(vehicle.id());
             Time currentTime = environment.currentTime;
 
+            // Check if first node is their corresponding empty node
+            Node firstNode = route.get(0);
+            if (!(firstNode instanceof EmptyNode) || !(firstNode.getPosition().equals(vehicle.initialPosition()))) {
+                isFeasible = false;
+                hasRunSimulation = true;
+                return;
+            }
+
             for (int i = 0; i < route.size() - 1; i++) {
                 Node originNode = route.get(i);
                 Node destinationNode = route.get(i + 1);
@@ -60,12 +88,12 @@ public class Solution {
                 }
 
                 // Pass time after traveling from originNode to destinationNode
-                int distance = distances.get(originNode.id).get(destinationNode.id);
+                int distance = environment.getDistances().get(originNode.id).get(destinationNode.id);
                 int timeSpent = (int) Math.ceil((double) distance / Environment.speed) * 60; // Convert hours to minutes
                 currentTime = currentTime.addMinutes(timeSpent);
 
                 // Calculate and check fuel cost
-                double fuelCost = Environment.calculateFuelCost(originNode, destinationNode, distances, vehicle);
+                double fuelCost = Environment.calculateFuelCost(originNode, destinationNode, environment.getDistances(), vehicle);
                 if (vehicle.currentFuel() < fuelCost) {
                     isFeasible = false;
                     hasRunSimulation = true;
@@ -119,7 +147,7 @@ public class Solution {
                     }
 
                     // Update the warehouse state
-                    warehouse = new Warehouse(warehouse.id(), warehouse.position(), warehouse.currentGLP() - refillNode.amountGLP, warehouse.maxGLP());
+                    warehouse = new Warehouse(warehouse.id(), warehouse.position(), warehouse.currentGLP() - refillNode.amountGLP, warehouse.maxGLP(), warehouse.isMain());
                     warehouseMap.put(warehouse.id(), warehouse);
 
                     // Refill the vehicle
@@ -132,6 +160,23 @@ public class Solution {
                     vehicle = new Vehicle(vehicle.id(), vehicle.weight(), vehicle.maxFuel(), vehicle.maxFuel(), vehicle.maxGLP(), vehicle.currentGLP(), vehicle.initialPosition());
                 }
             }
+        }
+
+        // Check if all vehicles have arrived at the final node
+        for (Vehicle vehicle : environment.vehicles) {
+            List<Node> route = routes.get(vehicle.id());
+            if (!(route.get(route.size() - 1) instanceof FinalNode)) {
+                isFeasible = false;
+                hasRunSimulation = true;
+                return;
+            }
+        }
+
+        // Check if all orders are delivered
+        if (orderMap.size() > 0) {
+            isFeasible = false;
+            hasRunSimulation = true;
+            return;
         }
 
         hasRunSimulation = true;
