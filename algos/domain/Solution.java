@@ -181,4 +181,46 @@ public class Solution implements Cloneable {
 
         hasRunSimulation = true;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("Solution{\n");
+        sb.append("  routes={\n");
+        for (Map.Entry<Integer, List<Node>> entry : routes.entrySet()) {
+            sb.append("    Vehicle ").append(entry.getKey()).append(": [\n");
+            for (int i = 0; i < entry.getValue().size(); i++) {
+                Node node = entry.getValue().get(i);
+                sb.append("      ").append(node.getClass().getSimpleName())
+                  .append("(id=").append(node.id)
+                  .append(", position=").append(node.getPosition());
+                
+                if (node instanceof OrderDeliverNode) {
+                    OrderDeliverNode orderNode = (OrderDeliverNode) node;
+                    sb.append(", orderId=").append(orderNode.order.id())
+                      .append(", amount=").append(orderNode.amountGLP);
+                } else if (node instanceof ProductRefillNode) {
+                    ProductRefillNode refillNode = (ProductRefillNode) node;
+                    sb.append(", warehouseId=").append(refillNode.warehouse.id())
+                      .append(", amount=").append(refillNode.amountGLP);
+                } else if (node instanceof FuelRefillNode) {
+                    FuelRefillNode fuelNode = (FuelRefillNode) node;
+                    sb.append(", warehouseId=").append(fuelNode.warehouse.id());
+                }
+                
+                sb.append(")");
+                if (i < entry.getValue().size() - 1) {
+                    sb.append(" ->");
+                }
+                sb.append("\n");
+            }
+            sb.append("    ]\n");
+        }
+        sb.append("  },\n");
+        sb.append("  hasRunSimulation=").append(hasRunSimulation).append(",\n");
+        sb.append("  isFeasible=").append(isFeasible).append(",\n");
+        sb.append("  fitness=").append(fitness).append("\n");
+        sb.append("}");
+        return sb.toString();
+    }
+    
 }

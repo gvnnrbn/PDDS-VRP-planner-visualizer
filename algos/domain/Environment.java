@@ -263,10 +263,5 @@ public class Environment {
             this.f = f;
         }
     }
-
-    // TODO: Implement this
-    public Solution generateInitialSolution() {
-        throw new UnsupportedOperationException("Not implemented");
-    }
 }
 

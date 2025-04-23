@@ -1,6 +1,6 @@
 package domain;
 
-public class Time {
+public class Time implements Comparable<Time> {
     private int month;
     private int day;
     private int hour;
@@ -16,6 +16,14 @@ public class Time {
     @Override
     public String toString() {
         return String.format("%02d/%02d %02d:%02d", month, day, hour, min);
+    }
+
+    @Override
+    public int compareTo(Time other) {
+        if (this.month != other.month) return this.month - other.month;
+        if (this.day != other.day) return this.day - other.day;
+        if (this.hour != other.hour) return this.hour - other.hour;
+        return this.min - other.min;
     }
 
     public boolean isBefore(Time other) {

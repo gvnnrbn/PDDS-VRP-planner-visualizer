@@ -1,8 +1,8 @@
 package antcolonyoptimization;
 
 import domain.Environment;
+import domain.FinalNode;
 import domain.Node;
-import domain.EmptyNode;
 import domain.Solution;
 import domain.Vehicle;
 
@@ -44,7 +44,7 @@ public class Ant {
                 Node currNode = route.getLast();
 
                 // If the current node is an empty node and it's not the first node, skip since it's an end node
-                if(currNode instanceof EmptyNode && route.size() != 1) {
+                if(currNode instanceof FinalNode) {
                     continue;
                 }
 

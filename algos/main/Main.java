@@ -8,6 +8,7 @@ import domain.Vehicle;
 import domain.Warehouse;
 import domain.Time;
 import domain.Solution;
+import domain.SolutionInitializer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,11 +21,11 @@ public class Main {
         Environment environment = new Environment();
 
         environment.vehicles = new ArrayList<>();
-        Vehicle vehicle = new Vehicle(1, 1000, 100, 100.0, 20, 0, new Position(0, 0));
+        Vehicle vehicle = new Vehicle(1, 5, 100, 100.0, 20, 0, new Position(0, 0));
         environment.vehicles.add(vehicle);
 
         environment.orders = new ArrayList<>();
-        Order order = new Order(1, 10, new Position(10, 10), new Time(0, 0, 0, 0));
+        Order order = new Order(1, 10, new Position(10, 10), new Time(0, 0, 8, 20));
         environment.orders.add(order);
 
         environment.warehouses = new ArrayList<>();
@@ -42,7 +43,8 @@ public class Main {
         System.out.println("Environment:");
         System.out.println(environment);
 
-        Solution initialSolution = environment.generateInitialSolution();
+        SolutionInitializer solutionInitializer = new SolutionInitializer();
+        Solution initialSolution = solutionInitializer.generateInitialSolution(environment);
         System.out.println("Initial solution with fitness " + initialSolution.fitness(environment) + ":");
         System.out.println(initialSolution);
 
