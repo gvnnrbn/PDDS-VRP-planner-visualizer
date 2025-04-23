@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import tabusearch.TabuSearch;
+import antcolonyoptimization.AntColonyOptimization;
 
 public class Main {
     public static void main(String[] args) {
@@ -50,5 +51,11 @@ public class Main {
 
         System.out.println("Final solution by Tabu Search with fitness " + solution.fitness(environment) + ":");
         System.out.println(solution);
+
+        AntColonyOptimization antColonyOptimization = new AntColonyOptimization();
+        Solution antColonySolution = antColonyOptimization.run(environment, initialSolution);
+
+        System.out.println("Final solution by Ant Colony Optimization with fitness " + antColonySolution.fitness(environment) + ":");
+        System.out.println(antColonySolution);
     }
 }

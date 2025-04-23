@@ -111,7 +111,7 @@ public class Environment {
             nodes.add(new FuelRefillNode(nodeSerial++, warehouse));
         }
 
-        // Add an empty node for the warehouse
+        // Add an empty nodes for the main warehouse as final nodes
         Warehouse mainWarehouse = null;
         for (Warehouse warehouse : warehouses) {
             if (warehouse.isMain()) {
@@ -122,7 +122,9 @@ public class Environment {
         if (mainWarehouse == null) {
             throw new RuntimeException("No main warehouse found");
         }
-        nodes.add(new FinalNode(nodeSerial++, mainWarehouse.position()));
+        for (int i = 0; i < vehicles.size(); i++) {
+            nodes.add(new FinalNode(nodeSerial++, mainWarehouse.position()));
+        }
 
         this.nodes = nodes;
         areNodesGenerated = true;

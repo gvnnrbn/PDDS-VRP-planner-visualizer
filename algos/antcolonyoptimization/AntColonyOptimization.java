@@ -1,10 +1,13 @@
 package antcolonyoptimization;
 
+import domain.EmptyNode;
 import domain.Environment;
+import domain.Vehicle;
 import domain.Solution;
 import domain.Node;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +19,7 @@ public class AntColonyOptimization {
     private final double beta;
     private final double evaporationRate;
     private final double initialPheromone;
+    private final int maxNoImprovement;
     
     private static final int DEFAULT_MAX_ITERATIONS = 1000;
     private static final int DEFAULT_NUM_ANTS = 50;
@@ -23,31 +27,34 @@ public class AntColonyOptimization {
     private static final double DEFAULT_BETA = 2.0;
     private static final double DEFAULT_EVAPORATION_RATE = 0.5;
     private static final double DEFAULT_INITIAL_PHEROMONE = 1.0;
+    private static final int DEFAULT_MAX_NO_IMPROVEMENT = 100;
 
     private Map<Integer, Map<Integer, Double>> pheromones; // pheromones from nodeId to nodeId: pheromones[from][to]
     private List<Ant> ants;
 
     public AntColonyOptimization() {
         this(DEFAULT_MAX_ITERATIONS, DEFAULT_NUM_ANTS, DEFAULT_ALPHA, DEFAULT_BETA, 
-             DEFAULT_EVAPORATION_RATE, DEFAULT_INITIAL_PHEROMONE);
+             DEFAULT_EVAPORATION_RATE, DEFAULT_INITIAL_PHEROMONE, DEFAULT_MAX_NO_IMPROVEMENT);
     }
 
     public AntColonyOptimization(int maxIterations, int numAnts, double alpha, double beta, 
-              double evaporationRate, double initialPheromone) {
+              double evaporationRate, double initialPheromone, int maxNoImprovement) {
         this.maxIterations = maxIterations;
         this.numAnts = numAnts;
         this.alpha = alpha;
         this.beta = beta;
         this.evaporationRate = evaporationRate;
         this.initialPheromone = initialPheromone;
+        this.maxNoImprovement = maxNoImprovement;
     }
 
-    public Solution run(Environment environment) {
-        initializePheromones(environment);
-        Solution bestSolution = null;
-        double bestFitness = Double.NEGATIVE_INFINITY;
+    public Solution run(Environment environment, Solution initialSolution) {
+        initializePheromones(environment, initialSolution);
+        Solution bestSolution = initialSolution;
+        double bestFitness = initialSolution.fitness(environment);
+        int noImprovementCount = 0;
 
-        for (int iteration = 0; iteration < maxIterations; iteration++) {
+        for (int iteration = 0; iteration < maxIterations && noImprovementCount < maxNoImprovement; iteration++) {
             // Create and run ants
             ants = new ArrayList<>();
             for (int i = 0; i < numAnts; i++) {
@@ -57,23 +64,33 @@ public class AntColonyOptimization {
             }
 
             // Update pheromones
-            updatePheromones(environment);
+            updatePheromones(environment, bestFitness);
 
             // Find best solution in this iteration
+            boolean improved = false;
             for (Ant ant : ants) {
                 double fitness = ant.getSolution().fitness(environment);
                 if (fitness > bestFitness) {
                     bestFitness = fitness;
                     bestSolution = ant.getSolution().clone();
+                    improved = true;
                 }
+            }
+            
+            if (improved) {
+                noImprovementCount = 0;
+            } else {
+                noImprovementCount++;
             }
         }
 
         return bestSolution;
     }
 
-    private void initializePheromones(Environment environment) {
+    private void initializePheromones(Environment environment, Solution initialSolution) {
         pheromones = new HashMap<>();
+
+        // Initialize pheromones at initial value
         for (Node node : environment.getNodes()) {
             Map<Integer, Double> currentNodePheromones = new HashMap<>();
             for (Node otherNode : environment.getNodes()) {
@@ -81,9 +98,38 @@ public class AntColonyOptimization {
             }
             pheromones.put(node.id, currentNodePheromones);
         }
+
+        // Deposit pheromones from the initial solution
+        List<Vehicle> vehicles = new ArrayList<>(environment.vehicles);
+        Collections.sort(vehicles, (v1, v2) -> v1.id() - v2.id());
+
+        int totalAssignedNodes = vehicles.stream().mapToInt(v -> initialSolution.routes.get(v.id()).size()).sum();
+        int countedNodes = 0;
+        int currIdx = 0;
+
+        // Skip first index
+        currIdx++;
+        countedNodes+=vehicles.size();
+
+        // Round robin pheromone deposit
+        while (countedNodes < totalAssignedNodes) {
+            for (Vehicle vehicle : vehicles) {
+                List<Node> route = initialSolution.routes.get(vehicle.id());
+                Node currNode = route.get(currIdx);
+                Node prevNode = route.get(currIdx - 1);
+
+                pheromones.get(prevNode.id).put(currNode.id, pheromones.get(prevNode.id).get(currNode.id) + 1);
+                countedNodes++;
+
+                if (currNode instanceof EmptyNode) {
+                    vehicles.remove(vehicle);
+                }
+            }
+            currIdx++;
+        }
     }
 
-    private void updatePheromones(Environment environment) {
+    private void updatePheromones(Environment environment, double initialFitness) {
         // Evaporate pheromones
         for (Node node : environment.getNodes()) {
             for (Node otherNode : environment.getNodes()) {
@@ -91,17 +137,37 @@ public class AntColonyOptimization {
             }
         }
         
-        // Deposit pheromones proportional to solution quality
+        // Deposit pheromones proportional to solution quality in round robin fashion
         for (Ant ant : ants) {
             Solution solution = ant.getSolution();
-            for (int i = 0; i < solution.routes.size(); i++) {
-                List<Node> route = solution.routes.get(i);
-                for (int j = 0; j < route.size() - 1; j++) {
-                    Node node = route.get(j);
-                    Node nextNode = route.get(j + 1);
-                    double currentPheromone = pheromones.get(node.id).get(nextNode.id);
-                    pheromones.get(node.id).put(nextNode.id, currentPheromone + solution.fitness(environment));
+
+            // Round robin pheromone deposit
+            List<Vehicle> vehicles = new ArrayList<>(environment.vehicles);
+            Collections.sort(vehicles, (v1, v2) -> v1.id() - v2.id());
+
+            int totalAssignedNodes = vehicles.stream().mapToInt(v -> solution.routes.get(v.id()).size()).sum();
+            int countedNodes = 0;
+            int currIdx = 0;
+
+            // Skip first index since it's the start node
+            currIdx++;
+            countedNodes+=vehicles.size();
+
+            // Round robin pheromone deposit
+            while (countedNodes < totalAssignedNodes) {
+                for (Vehicle vehicle : vehicles) {
+                    List<Node> route = solution.routes.get(vehicle.id());
+                    Node currNode = route.get(currIdx);
+                    Node prevNode = route.get(currIdx - 1);
+
+                    pheromones.get(prevNode.id).put(currNode.id, pheromones.get(prevNode.id).get(currNode.id) + 1);
+                    countedNodes++;
+
+                    if (currNode instanceof EmptyNode) {
+                        vehicles.remove(vehicle);
+                    }
                 }
+                currIdx++;
             }
         }
     }
