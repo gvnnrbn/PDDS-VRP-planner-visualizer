@@ -39,13 +39,15 @@ public class Ant {
         }
 
         while (assignedFiniteNodes < totalFiniteNodes) {
-            for(Vehicle vehicle : vehicles) {
+            List<Vehicle> activeVehicles = new ArrayList<>();
+
+            for(Vehicle vehicle : activeVehicles) {
                 List<Node> route = solution.routes.get(vehicle.id());
                 Node currNode = route.getLast();
 
                 // If the current node is an empty node and it's not the first node, skip since it's an end node
                 if(currNode instanceof FinalNode) {
-                    continue;
+                    
                 }
 
                 Node nextNode = getNextNode(pheromones, currNode, alpha);

@@ -29,7 +29,7 @@ public class Main {
         environment.orders.add(order);
 
         environment.warehouses = new ArrayList<>();
-        Warehouse warehouse = new Warehouse(1, new Position(20, 20), 100, 200, true);
+        Warehouse warehouse = new Warehouse(1, new Position(20, 20), 0, 0, true);
         environment.warehouses.add(warehouse);
 
         environment.blockages = new ArrayList<>();

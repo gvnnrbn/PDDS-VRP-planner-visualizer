@@ -96,6 +96,13 @@ public class Environment {
 
         for (Warehouse warehouse : warehouses) {
             int remainingGLP = warehouse.currentGLP();
+
+            if (warehouse.isMain()) {
+                // Generate a single infinite ProductRefillNode for the main warehouse
+                nodes.add(new ProductRefillNode(nodeSerial++, warehouse, chunkSize));
+                continue;
+            }
+
             while (remainingGLP > 0) {
                 if (remainingGLP > chunkSize) {
                     nodes.add(new ProductRefillNode(nodeSerial++, warehouse, chunkSize));

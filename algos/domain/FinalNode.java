@@ -25,6 +25,6 @@ public class FinalNode extends Node {
     }
     @Override
     public boolean isInfiniteNode() {
-        return true;
+        return false;
     }
 }
