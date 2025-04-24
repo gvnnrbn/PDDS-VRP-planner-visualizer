@@ -1,7 +1,7 @@
 package antcolonyoptimization;
 
-import domain.EmptyNode;
 import domain.Environment;
+import domain.FinalNode;
 import domain.Vehicle;
 import domain.Solution;
 import domain.Node;
@@ -58,7 +58,7 @@ public class AntColonyOptimization {
             // Create and run ants
             ants = new ArrayList<>();
             for (int i = 0; i < numAnts; i++) {
-                Ant ant = new Ant();
+                Ant ant = new Ant(environment.getNodes());
                 ant.constructSolution(pheromones, alpha, beta, environment);
                 ants.add(ant);
             }
@@ -103,25 +103,19 @@ public class AntColonyOptimization {
         List<Vehicle> vehicles = new ArrayList<>(environment.vehicles);
         Collections.sort(vehicles, (v1, v2) -> v1.id() - v2.id());
 
-        int totalAssignedNodes = vehicles.stream().mapToInt(v -> initialSolution.routes.get(v.id()).size()).sum();
-        int countedNodes = 0;
-        int currIdx = 0;
+        int currIdx = 1;
 
-        // Skip first index
-        currIdx++;
-        countedNodes+=vehicles.size();
-
-        // Round robin pheromone deposit
-        while (countedNodes < totalAssignedNodes) {
-            for (Vehicle vehicle : vehicles) {
+        while (!vehicles.isEmpty()) {
+            // Create a copy of vehicles to iterate over
+            List<Vehicle> vehiclesToProcess = new ArrayList<>(vehicles);
+            for (Vehicle vehicle : vehiclesToProcess) {
                 List<Node> route = initialSolution.routes.get(vehicle.id());
                 Node currNode = route.get(currIdx);
                 Node prevNode = route.get(currIdx - 1);
 
                 pheromones.get(prevNode.id).put(currNode.id, pheromones.get(prevNode.id).get(currNode.id) + 1);
-                countedNodes++;
 
-                if (currNode instanceof EmptyNode) {
+                if (currNode instanceof FinalNode) {
                     vehicles.remove(vehicle);
                 }
             }
@@ -145,25 +139,19 @@ public class AntColonyOptimization {
             List<Vehicle> vehicles = new ArrayList<>(environment.vehicles);
             Collections.sort(vehicles, (v1, v2) -> v1.id() - v2.id());
 
-            int totalAssignedNodes = vehicles.stream().mapToInt(v -> solution.routes.get(v.id()).size()).sum();
-            int countedNodes = 0;
-            int currIdx = 0;
+            int currIdx = 1;
 
-            // Skip first index since it's the start node
-            currIdx++;
-            countedNodes+=vehicles.size();
-
-            // Round robin pheromone deposit
-            while (countedNodes < totalAssignedNodes) {
-                for (Vehicle vehicle : vehicles) {
+            while (!vehicles.isEmpty()) {
+                // Create a copy of vehicles to iterate over
+                List<Vehicle> vehiclesToProcess = new ArrayList<>(vehicles);
+                for (Vehicle vehicle : vehiclesToProcess) {
                     List<Node> route = solution.routes.get(vehicle.id());
                     Node currNode = route.get(currIdx);
                     Node prevNode = route.get(currIdx - 1);
 
                     pheromones.get(prevNode.id).put(currNode.id, pheromones.get(prevNode.id).get(currNode.id) + 1);
-                    countedNodes++;
 
-                    if (currNode instanceof EmptyNode) {
+                    if (currNode instanceof FinalNode) {
                         vehicles.remove(vehicle);
                     }
                 }

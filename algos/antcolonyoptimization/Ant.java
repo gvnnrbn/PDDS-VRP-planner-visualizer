@@ -2,6 +2,7 @@ package antcolonyoptimization;
 
 import domain.Environment;
 import domain.FinalNode;
+import domain.EmptyNode;
 import domain.Node;
 import domain.Solution;
 import domain.Vehicle;
@@ -16,39 +17,48 @@ public class Ant {
     private Solution solution;
     private List<Node> nodes;
 
+    public Ant(List<Node> nodes) {
+        this.nodes = nodes;
+    }
+
     public void constructSolution(Map<Integer, Map<Integer, Double>> pheromones, double alpha, double beta, Environment environment) {
         solution = new Solution();
         solution.routes = new HashMap<>();
 
         // Copy the nodes to avoid modifying the original list
-        nodes = new ArrayList<>(environment.getNodes());
+        List<Node> nodePool = new ArrayList<>(environment.getNodes());
 
         // Sort vehicles for deterministic round robin
         List<Vehicle> vehicles = new ArrayList<>(environment.vehicles);
         Collections.sort(vehicles, (v1, v2) -> v1.id() - v2.id());
 
-        int totalFiniteNodes = countFiniteNodes();
+        int totalFiniteNodes = countFiniteNodes(nodePool);
         int assignedFiniteNodes = 0;
 
-        // Skip first index and construct first Node for each vehicle
+        // Construct first Node for each vehicle
         for(Vehicle vehicle : vehicles) {
             solution.routes.put(vehicle.id(), new ArrayList<>());
-            solution.routes.get(vehicle.id()).add(nodes.get(0));
-            nodes.remove(nodes.get(0));
+
+            EmptyNode startNode = (EmptyNode) nodePool.stream()
+                .filter(node -> node instanceof EmptyNode)
+                .filter(node -> ((EmptyNode) node).getPosition().equals(vehicle.initialPosition()))
+                .findFirst()
+                .get();
+
+            solution.routes.get(vehicle.id()).add(startNode);
+            nodePool.remove(startNode);
+
             assignedFiniteNodes++;
         }
 
-        while (assignedFiniteNodes < totalFiniteNodes) {
-            List<Vehicle> activeVehicles = new ArrayList<>();
+        List<Vehicle> nonEndedVehicles = new ArrayList<>(vehicles);
 
-            for(Vehicle vehicle : activeVehicles) {
+        while (assignedFiniteNodes < totalFiniteNodes && !nonEndedVehicles.isEmpty()) {
+            // Create a copy of the list to safely remove elements
+            List<Vehicle> vehiclesToProcess = new ArrayList<>(nonEndedVehicles);
+            for(Vehicle vehicle : vehiclesToProcess) {
                 List<Node> route = solution.routes.get(vehicle.id());
                 Node currNode = route.getLast();
-
-                // If the current node is an empty node and it's not the first node, skip since it's an end node
-                if(currNode instanceof FinalNode) {
-                    
-                }
 
                 Node nextNode = getNextNode(pheromones, currNode, alpha);
 
@@ -57,11 +67,11 @@ public class Ant {
                 // If the next node is finite, remove it from the nodes list and increment the assignedFiniteNodes counter
                 if (!nextNode.isInfiniteNode()) {
                     assignedFiniteNodes++;
-                    Node correspondingNode = nodes.stream()
-                        .filter(node -> node.id == nextNode.id)
-                        .findFirst()
-                        .orElse(null);
-                    nodes.remove(correspondingNode);
+                    nodePool.remove(nextNode);
+                }
+
+                if (nextNode instanceof FinalNode) {
+                    nonEndedVehicles.remove(vehicle);
                 }
             }
         }
@@ -71,9 +81,9 @@ public class Ant {
         return solution;
     }
 
-    private int countFiniteNodes() {
+    private int countFiniteNodes(List<Node> nodePool) {
         int count = 0;
-        for(Node node : nodes) {
+        for(Node node : nodePool) {
             if(!node.isInfiniteNode()) {
                 count++;
             }

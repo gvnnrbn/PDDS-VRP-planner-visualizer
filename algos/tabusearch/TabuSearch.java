@@ -104,20 +104,25 @@ public class TabuSearch {
     public List<Neighbor> generateNeighborhood(Solution solution) {
         List<Neighbor> neighborhood = new ArrayList<>();
         
-        Neighbor neighbor;
-        if (enabledOperators.contains(MovementType.INTRA_ROUTE_MOVE) && 
-            (neighbor = intraRouteMove(solution)) != null) neighborhood.add(neighbor);
-        if (enabledOperators.contains(MovementType.INTRA_ROUTE_SWAP) && 
-            (neighbor = intraRouteSwap(solution)) != null) neighborhood.add(neighbor);
-        if (enabledOperators.contains(MovementType.INTRA_ROUTE_TWO_OPT) && 
-            (neighbor = intraRouteTwoOpt(solution)) != null) neighborhood.add(neighbor);
-        if (enabledOperators.contains(MovementType.INTER_ROUTE_MOVE) && 
-            (neighbor = interRouteMove(solution)) != null) neighborhood.add(neighbor);
-        if (enabledOperators.contains(MovementType.INTER_ROUTE_SWAP) && 
-            (neighbor = interRouteSwap(solution)) != null) neighborhood.add(neighbor);
-        if (enabledOperators.contains(MovementType.INTER_ROUTE_CROSS_EXCHANGE) && 
-            (neighbor = interRouteCrossExchange(solution)) != null) neighborhood.add(neighbor);
+        // Generate multiple neighbors for each operator
+        int neighborsPerOperator = 3;
         
+        for (int i = 0; i < neighborsPerOperator; i++) {
+            Neighbor neighbor;
+            if (enabledOperators.contains(MovementType.INTRA_ROUTE_MOVE) && 
+                (neighbor = intraRouteMove(solution)) != null) neighborhood.add(neighbor);
+            if (enabledOperators.contains(MovementType.INTRA_ROUTE_SWAP) && 
+                (neighbor = intraRouteSwap(solution)) != null) neighborhood.add(neighbor);
+            if (enabledOperators.contains(MovementType.INTRA_ROUTE_TWO_OPT) && 
+                (neighbor = intraRouteTwoOpt(solution)) != null) neighborhood.add(neighbor);
+            if (enabledOperators.contains(MovementType.INTER_ROUTE_MOVE) && 
+                (neighbor = interRouteMove(solution)) != null) neighborhood.add(neighbor);
+            if (enabledOperators.contains(MovementType.INTER_ROUTE_SWAP) && 
+                (neighbor = interRouteSwap(solution)) != null) neighborhood.add(neighbor);
+            if (enabledOperators.contains(MovementType.INTER_ROUTE_CROSS_EXCHANGE) && 
+                (neighbor = interRouteCrossExchange(solution)) != null) neighborhood.add(neighbor);
+        }
+
         return neighborhood;
     }
 

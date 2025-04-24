@@ -66,13 +66,32 @@ public class SolutionInitializer {
             }
         }
 
-        // Add one infinite node of each one for each vehicle's route for completion's sake
+        // Add one fuel refill node of each one for each vehicle's route for completion's sake
         for (Node node : nodesPool) {
-            if (node.isInfiniteNode()) {
+            if (node instanceof FuelRefillNode) {
                 for (Vehicle vehicle : environment.vehicles) {
                     solution.routes.get(vehicle.id()).add(node);
                 }
             }
+        }
+
+        // Add enough refill nodes to handle the whole load
+        int totalGLPNeeded = 0;
+        for(Order order : environment.orders) {
+            totalGLPNeeded += order.amountGLP();
+        }
+
+        int productRefillNodesNeeded = (int) Math.ceil((double) totalGLPNeeded / Environment.chunkSize);
+
+        Node mainWarehouseInfiniteProductRefill = environment.getNodes().stream()
+            .filter(node -> node instanceof ProductRefillNode)
+            .filter(Node::isInfiniteNode)
+            .filter(node -> ((ProductRefillNode) node).warehouse.isMain())
+            .findFirst()
+            .get(); // gets the infinite product refill node
+
+        for(int i = 0; i < productRefillNodesNeeded; i++) {
+            solution.routes.get(environment.vehicles.get(random.nextInt(environment.vehicles.size())).id()).add(mainWarehouseInfiniteProductRefill);
         }
 
         Warehouse mainWarehouse = environment.warehouses.stream()
