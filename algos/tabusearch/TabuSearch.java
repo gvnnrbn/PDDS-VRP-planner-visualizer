@@ -49,7 +49,7 @@ public class TabuSearch {
         int iteration = 0;
 
         while (iteration < maxIterations && noImprovementCount < maxNoImprovement) {
-            List<Neighbor> neighborhood = generateNeighborhood(currentSolution);
+            List<Neighbor> neighborhood = generateNeighborhood(currentSolution, environment);
             List<Neighbor> candidates = new ArrayList<>();
             
             for (Neighbor neighbor : neighborhood) {
@@ -57,8 +57,9 @@ public class TabuSearch {
                 int neighborFitness = neighbor.solution.fitness(environment);
                 int bestFitness = bestSolution.fitness(environment);
                 
-                // Aspiration criterion: allow tabu moves if they improve the best solution
-                if (!isTabu || neighborFitness > bestFitness) {
+                // Only consider feasible solutions
+                if (neighbor.solution.isFeasible(environment) && 
+                    (!isTabu || neighborFitness > bestFitness)) {
                     candidates.add(neighbor);
                 }
             }
@@ -101,7 +102,7 @@ public class TabuSearch {
         return bestCandidate;
     }
 
-    public List<Neighbor> generateNeighborhood(Solution solution) {
+    public List<Neighbor> generateNeighborhood(Solution solution, Environment environment) {
         List<Neighbor> neighborhood = new ArrayList<>();
         
         // Generate multiple neighbors for each operator
@@ -110,17 +111,23 @@ public class TabuSearch {
         for (int i = 0; i < neighborsPerOperator; i++) {
             Neighbor neighbor;
             if (enabledOperators.contains(MovementType.INTRA_ROUTE_MOVE) && 
-                (neighbor = intraRouteMove(solution)) != null) neighborhood.add(neighbor);
+                (neighbor = intraRouteMove(solution)) != null && 
+                neighbor.solution.isFeasible(environment)) neighborhood.add(neighbor);
             if (enabledOperators.contains(MovementType.INTRA_ROUTE_SWAP) && 
-                (neighbor = intraRouteSwap(solution)) != null) neighborhood.add(neighbor);
+                (neighbor = intraRouteSwap(solution)) != null && 
+                neighbor.solution.isFeasible(environment)) neighborhood.add(neighbor);
             if (enabledOperators.contains(MovementType.INTRA_ROUTE_TWO_OPT) && 
-                (neighbor = intraRouteTwoOpt(solution)) != null) neighborhood.add(neighbor);
+                (neighbor = intraRouteTwoOpt(solution)) != null && 
+                neighbor.solution.isFeasible(environment)) neighborhood.add(neighbor);
             if (enabledOperators.contains(MovementType.INTER_ROUTE_MOVE) && 
-                (neighbor = interRouteMove(solution)) != null) neighborhood.add(neighbor);
+                (neighbor = interRouteMove(solution)) != null && 
+                neighbor.solution.isFeasible(environment)) neighborhood.add(neighbor);
             if (enabledOperators.contains(MovementType.INTER_ROUTE_SWAP) && 
-                (neighbor = interRouteSwap(solution)) != null) neighborhood.add(neighbor);
+                (neighbor = interRouteSwap(solution)) != null && 
+                neighbor.solution.isFeasible(environment)) neighborhood.add(neighbor);
             if (enabledOperators.contains(MovementType.INTER_ROUTE_CROSS_EXCHANGE) && 
-                (neighbor = interRouteCrossExchange(solution)) != null) neighborhood.add(neighbor);
+                (neighbor = interRouteCrossExchange(solution)) != null && 
+                neighbor.solution.isFeasible(environment)) neighborhood.add(neighbor);
         }
 
         return neighborhood;

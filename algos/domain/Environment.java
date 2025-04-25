@@ -11,13 +11,15 @@ import java.util.HashSet;
 
 public class Environment {
     public static int chunkSize = 5; // Max number of m3 of GLP that can be transported or refilled in one chunk
-    public static int speed = 10; // km/h
+    public static int speed = 50; // km/h
     public static int timeAfterDelivery = 15; // minutes
+    public static int timeAfterRefill = 10; // minutes
 
     public static int minutesLeftMultiplier = 1; // multiplier for the fitness function
 
-    public static int gridLength = 30;
-    public static int gridWidth = 30;
+    // 1 grid unit = 1 km
+    public static int gridLength = 70; 
+    public static int gridWidth = 50;
 
     public Time currentTime;
 
@@ -45,15 +47,16 @@ public class Environment {
         return distances;
     }
 
-    public Environment(List<Vehicle> vehicles, List<Order> orders, List<Warehouse> warehouses, Time currentTime) {
+    public Environment(List<Vehicle> vehicles, List<Order> orders, List<Warehouse> warehouses, List<Blockage> blockages, Time currentTime) {
         this.vehicles = vehicles;
         this.orders = orders;
         this.warehouses = warehouses;
+        this.blockages = blockages;
         this.currentTime = currentTime;
     }
 
     public Environment() {
-        this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new Time(0, 0, 0,0));
+        this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new Time(0, 0, 0,0));
     }
 
     @Override
@@ -67,6 +70,9 @@ public class Environment {
         }
         for (Warehouse warehouse : warehouses) {
             sb.append("  ").append(warehouse).append("\n");
+        }
+        for (Blockage blockage : blockages) {
+            sb.append("  ").append(blockage).append("\n");
         }
         sb.append("}");
         return sb.toString();
@@ -137,6 +143,8 @@ public class Environment {
         areNodesGenerated = true;
     }
 
+    // Dist Max = 25 * 180 / 15 = 300 Km. 
+    // Fuel (in galons) = Distance (in km) * [weight (in kg) + 0.5 * GLP (in m3)] / 180
     public static double calculateFuelCost(Node from, Node to, Map<Integer, Map<Integer, Integer>> distances, Vehicle vehicle) {
         int distance = distances.get(from.id).get(to.id);
         double fuelCost = distance * (vehicle.weight() + vehicle.currentGLP() * 0.5) / 180;
@@ -151,16 +159,17 @@ public class Environment {
 
             // Calculate distances from local node to all other nodes
             for (Node otherNode : nodes) {
-                if (node.getPosition().equals(otherNode.getPosition())) {
-                    // Same position
-                    distancesFromLocalNode.put(otherNode.id, 0);
-                } else if (isManhattanAvailable(node.getPosition(), otherNode.getPosition())) {
-                    // Manhattan distance
-                    distancesFromLocalNode.put(otherNode.id, calculateManhattanDistance(node.getPosition(), otherNode.getPosition()));
-                } else {
-                    // Use A* to find the shortest path
-                    distancesFromLocalNode.put(otherNode.id, calculateAStarDistance(node.getPosition(), otherNode.getPosition()));
-                } 
+                distancesFromLocalNode.put(otherNode.id, calculateManhattanDistance(node.getPosition(), otherNode.getPosition()));
+                // if (node.getPosition().equals(otherNode.getPosition())) {
+                //     // Same position
+                //     distancesFromLocalNode.put(otherNode.id, 0);
+                // } else if (isManhattanAvailable(node.getPosition(), otherNode.getPosition())) {
+                //     // Manhattan distance
+                //     distancesFromLocalNode.put(otherNode.id, calculateManhattanDistance(node.getPosition(), otherNode.getPosition()));
+                // } else {
+                //     // Use A* to find the shortest path
+                //     distancesFromLocalNode.put(otherNode.id, calculateAStarDistance(node.getPosition(), otherNode.getPosition()));
+                // } 
             }
 
             distances.put(node.id, distancesFromLocalNode);

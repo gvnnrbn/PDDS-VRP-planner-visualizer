@@ -1,5 +1,6 @@
 package domain;
 
+// TODO: month handling is incorrect, it doesn't matter, just use days
 public class Time implements Comparable<Time> {
     private int month;
     private int day;
