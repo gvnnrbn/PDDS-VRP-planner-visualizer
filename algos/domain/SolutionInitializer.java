@@ -17,17 +17,10 @@ public class SolutionInitializer {
 
         List<Node> nodesPool = new ArrayList<>(environment.getNodes());
 
-        // Filter all empty nodes and final nodes
+        // Filter all empty nodes and final nodes, pool should be only of assignable nodes
         nodesPool = nodesPool.stream()
             .filter(node -> !(node instanceof EmptyNode) && !(node instanceof FinalNode))
             .collect(Collectors.toCollection(ArrayList::new));
-
-        int finiteNodesCount = 0;
-        for (Node node : nodesPool) {
-            if (!(node.isInfiniteNode())) {
-                finiteNodesCount++;
-            }
-        }
 
         // Set starting position node for each vehicle
         for (Vehicle vehicle : environment.vehicles) {
@@ -41,57 +34,16 @@ public class SolutionInitializer {
             solution.routes.get(vehicle.id()).add(initialPositionNode);
         }
 
-        // Acceptance rate for infinite nodes when infinite nodes are more than finite ones
-        double infiniteNodeAcceptanceRate = 0.2;
-
-        while (finiteNodesCount > 0) {
+        // Randomly assign nodes to vehicles
+        while (nodesPool.size() > 0) {
             // Select random vehicle
             Vehicle vehicle = environment.vehicles.get(random.nextInt(environment.vehicles.size()));
 
             // Select random node from nodesPool
             Node node = nodesPool.get(random.nextInt(nodesPool.size()));
 
-            if (!node.isInfiniteNode()) {
-                // When is finite node, accept it always
-                solution.routes.get(vehicle.id()).add(node);
-                nodesPool.remove(node);
-                finiteNodesCount--;
-            } 
-            
-            if (node.isInfiniteNode()) {
-                // When is infinite node, accept it with probability infiniteNodeAcceptanceRate
-                if (random.nextDouble() < infiniteNodeAcceptanceRate) {
-                    solution.routes.get(vehicle.id()).add(node);
-                }
-            }
-        }
-
-        // Add one fuel refill node of each one for each vehicle's route for completion's sake
-        for (Node node : nodesPool) {
-            if (node instanceof FuelRefillNode) {
-                for (Vehicle vehicle : environment.vehicles) {
-                    solution.routes.get(vehicle.id()).add(node);
-                }
-            }
-        }
-
-        // Add enough refill nodes to handle the whole load
-        int totalGLPNeeded = 0;
-        for(Order order : environment.orders) {
-            totalGLPNeeded += order.amountGLP();
-        }
-
-        int productRefillNodesNeeded = (int) Math.ceil((double) totalGLPNeeded / Environment.chunkSize);
-
-        Node mainWarehouseInfiniteProductRefill = environment.getNodes().stream()
-            .filter(node -> node instanceof ProductRefillNode)
-            .filter(Node::isInfiniteNode)
-            .filter(node -> ((ProductRefillNode) node).warehouse.isMain())
-            .findFirst()
-            .get(); // gets the infinite product refill node
-
-        for(int i = 0; i < productRefillNodesNeeded; i++) {
-            solution.routes.get(environment.vehicles.get(random.nextInt(environment.vehicles.size())).id()).add(mainWarehouseInfiniteProductRefill);
+            solution.routes.get(vehicle.id()).add(node);
+            nodesPool.remove(node);
         }
 
         Warehouse mainWarehouse = environment.warehouses.stream()

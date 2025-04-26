@@ -21,13 +21,13 @@ public class AntColonyOptimization {
     private final double initialPheromone;
     private final int maxNoImprovement;
     
-    private static final int DEFAULT_MAX_ITERATIONS = 1000;
+    private static final int DEFAULT_MAX_ITERATIONS = 1_000_000;
     private static final int DEFAULT_NUM_ANTS = 50;
     private static final double DEFAULT_ALPHA = 1.0;
     private static final double DEFAULT_BETA = 2.0;
     private static final double DEFAULT_EVAPORATION_RATE = 0.5;
     private static final double DEFAULT_INITIAL_PHEROMONE = 1.0;
-    private static final int DEFAULT_MAX_NO_IMPROVEMENT = 100;
+    private static final int DEFAULT_MAX_NO_IMPROVEMENT = 1_000;
 
     private Map<Integer, Map<Integer, Double>> pheromones; // pheromones from nodeId to nodeId: pheromones[from][to]
     private List<Ant> ants;

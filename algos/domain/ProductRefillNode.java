@@ -21,11 +21,6 @@ public class ProductRefillNode extends Node {
     }
 
     @Override
-    public boolean isInfiniteNode() {
-        return warehouse.isMain();
-    }
-
-    @Override
     public Position getPosition() {
         return warehouse.position();
     }

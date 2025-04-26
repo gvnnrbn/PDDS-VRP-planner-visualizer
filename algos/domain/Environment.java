@@ -16,10 +16,18 @@ public class Environment {
     public static int timeAfterRefill = 10; // minutes
 
     public static int minutesLeftMultiplier = 1; // multiplier for the fitness function
+    public static int lateDeliveryPenalty = 1; // penalty for the fitness function
 
     // 1 grid unit = 1 km
     public static int gridLength = 70; 
     public static int gridWidth = 50;
+
+    public static final int incorrectStartPositionPenalty = 1000;
+    public static final int insufficientFuelPenalty = 1000;
+    public static final int insufficientGLPPenalty = 1000;
+    public static final int insufficientWarehouseGLPPenalty = 1000;
+    public static final int missingFinalNodePenalty = 1000;
+    public static final int undeliveredOrderPenalty = 1000;
 
     public Time currentTime;
 
@@ -30,7 +38,7 @@ public class Environment {
 
     private List<Node> nodes;
     private boolean areNodesGenerated = false;
-    private Map<Integer, Map<Integer, Integer>> distances;
+    private Map<Position, Map<Position, Integer>> distances;
     private boolean areDistancesGenerated = false;
 
     public List<Node> getNodes() {
@@ -40,7 +48,7 @@ public class Environment {
         return nodes;
     }
 
-    public Map<Integer, Map<Integer, Integer>> getDistances() {
+    public Map<Position, Map<Position, Integer>> getDistances() {
         if (!areDistancesGenerated) {
             generateDistances();
         }
@@ -80,6 +88,8 @@ public class Environment {
     
 
     public void generateNodes() {
+        List<Warehouse> warehousesCopy = new ArrayList<>(warehouses);
+
         List<Node> nodes = new ArrayList<>();
         int nodeSerial = 0;
 
@@ -100,28 +110,50 @@ public class Environment {
             }
         }
 
-        for (Warehouse warehouse : warehouses) {
-            int remainingGLP = warehouse.currentGLP();
-
-            if (warehouse.isMain()) {
-                // Generate a single infinite ProductRefillNode for the main warehouse
-                nodes.add(new ProductRefillNode(nodeSerial++, warehouse, chunkSize));
-                continue;
-            }
-
-            while (remainingGLP > 0) {
-                if (remainingGLP > chunkSize) {
-                    nodes.add(new ProductRefillNode(nodeSerial++, warehouse, chunkSize));
-                    remainingGLP -= chunkSize;
-                } else {
-                    nodes.add(new ProductRefillNode(nodeSerial++, warehouse, remainingGLP));
-                    remainingGLP = 0;
-                }
-            }
+        // Calculate the total amount of GLP that needs to be transported
+        int totalGLP = 0;
+        for (Order order : orders) {
+            totalGLP += order.amountGLP();
         }
 
-        for (Warehouse warehouse : warehouses) {
-            nodes.add(new FuelRefillNode(nodeSerial++, warehouse));
+        // Calculate the total amount of GLP currently in the vehicles
+        int totalGLPInVehicles = 0;
+        for (Vehicle vehicle : vehicles) {
+            totalGLPInVehicles += vehicle.currentGLP();
+        }
+
+        int totalGLPToRefill = totalGLP - totalGLPInVehicles;
+        int totalAssignableGLP = (int) (totalGLPToRefill * 1.2);
+
+        // Round robin to assign GLP from the warehouses
+        int currentWarehouseIndex = 0;
+        
+        while (totalAssignableGLP > 0) {
+            Warehouse currentWarehouse = warehousesCopy.get(currentWarehouseIndex);
+
+            if (currentWarehouse.currentGLP() > 0 || currentWarehouse.isMain()) {
+                int GLPToAssignToNextNode = (currentWarehouse.currentGLP() >= Environment.chunkSize || currentWarehouse.isMain())
+                    ? Environment.chunkSize
+                    : currentWarehouse.currentGLP();
+                
+                nodes.add(new ProductRefillNode(nodeSerial++, currentWarehouse, GLPToAssignToNextNode));
+                totalAssignableGLP -= GLPToAssignToNextNode;
+
+                // Update the current GLP of the warehouse
+                warehousesCopy.set(currentWarehouseIndex, new Warehouse(
+                    currentWarehouse.id(),
+                    currentWarehouse.position(),
+                    currentWarehouse.currentGLP() - GLPToAssignToNextNode,
+                    currentWarehouse.maxGLP(),
+                    currentWarehouse.isMain()
+                ));
+            }
+
+            // Iteration
+            currentWarehouseIndex++;
+            if (currentWarehouseIndex >= warehouses.size()) {
+                currentWarehouseIndex = 0;
+            }
         }
 
         // Add an empty nodes for the main warehouse as final nodes
@@ -145,34 +177,43 @@ public class Environment {
 
     // Dist Max = 25 * 180 / 15 = 300 Km. 
     // Fuel (in galons) = Distance (in km) * [weight (in kg) + 0.5 * GLP (in m3)] / 180
-    public static double calculateFuelCost(Node from, Node to, Map<Integer, Map<Integer, Integer>> distances, Vehicle vehicle) {
-        int distance = distances.get(from.id).get(to.id);
+    public static double calculateFuelCost(Node from, Node to, Map<Position, Map<Position, Integer>> distances, Vehicle vehicle) {
+        int distance = distances.get(from.getPosition()).get(to.getPosition());
         double fuelCost = distance * (vehicle.weight() + vehicle.currentGLP() * 0.5) / 180;
         return fuelCost;
     }
 
-    public void generateDistances() {
-        Map<Integer, Map<Integer, Integer>> distances = new HashMap<>();
+    public void generateDistances(){
+        Map<Position, Map<Position, Integer>> distances = new HashMap<>();
+        List<Position> positions = new ArrayList<>();
+        Set<Position> uniquePositions = new HashSet<>();
+        for (Node node : getNodes()) {
+            uniquePositions.add(node.getPosition());
+        }
+        positions.addAll(uniquePositions);
 
-        for (Node node : nodes) {
-            Map<Integer, Integer> distancesFromLocalNode = new HashMap<>();
+        // Initialize the distance map for all positions
+        for (Position position : positions) {
+            distances.put(position, new HashMap<>());
+            // Set diagonal to 0
+            distances.get(position).put(position, 0);
+        }
 
-            // Calculate distances from local node to all other nodes
-            for (Node otherNode : nodes) {
-                distancesFromLocalNode.put(otherNode.id, calculateManhattanDistance(node.getPosition(), otherNode.getPosition()));
-                // if (node.getPosition().equals(otherNode.getPosition())) {
-                //     // Same position
-                //     distancesFromLocalNode.put(otherNode.id, 0);
-                // } else if (isManhattanAvailable(node.getPosition(), otherNode.getPosition())) {
-                //     // Manhattan distance
-                //     distancesFromLocalNode.put(otherNode.id, calculateManhattanDistance(node.getPosition(), otherNode.getPosition()));
-                // } else {
-                //     // Use A* to find the shortest path
-                //     distancesFromLocalNode.put(otherNode.id, calculateAStarDistance(node.getPosition(), otherNode.getPosition()));
-                // } 
+        // Only calculate distances for the upper triangle
+        for (int i = 0; i < positions.size(); i++) {
+            Position position = positions.get(i);
+            for (int j = i + 1; j < positions.size(); j++) {
+                Position otherPosition = positions.get(j);
+                int distance;
+                if (isManhattanAvailable(position, otherPosition)) {
+                    distance = calculateManhattanDistance(position, otherPosition);
+                } else {
+                    distance = calculateAStarDistance(position, otherPosition);
+                }
+                // Set distance in both directions
+                distances.get(position).put(otherPosition, distance);
+                distances.get(otherPosition).put(position, distance);
             }
-
-            distances.put(node.id, distancesFromLocalNode);
         }
 
         this.distances = distances;

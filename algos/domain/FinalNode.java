@@ -23,8 +23,4 @@ public class FinalNode extends Node {
     public String toString() {
         return "FinalNode";
     }
-    @Override
-    public boolean isInfiniteNode() {
-        return false;
-    }
 }

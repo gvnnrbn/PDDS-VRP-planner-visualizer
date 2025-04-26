@@ -19,11 +19,6 @@ public class EmptyNode extends Node {
     }
 
     @Override
-    public boolean isInfiniteNode() {
-        return false;
-    }
-
-    @Override
     public Position getPosition() {
         return position;
     }

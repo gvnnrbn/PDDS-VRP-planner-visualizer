@@ -32,9 +32,6 @@ public class Ant {
         List<Vehicle> vehicles = new ArrayList<>(environment.vehicles);
         Collections.sort(vehicles, (v1, v2) -> v1.id() - v2.id());
 
-        int totalFiniteNodes = countFiniteNodes(nodePool);
-        int assignedFiniteNodes = 0;
-
         // Construct first Node for each vehicle
         for(Vehicle vehicle : vehicles) {
             solution.routes.put(vehicle.id(), new ArrayList<>());
@@ -47,13 +44,11 @@ public class Ant {
 
             solution.routes.get(vehicle.id()).add(startNode);
             nodePool.remove(startNode);
-
-            assignedFiniteNodes++;
         }
 
         List<Vehicle> nonEndedVehicles = new ArrayList<>(vehicles);
 
-        while (assignedFiniteNodes < totalFiniteNodes && !nonEndedVehicles.isEmpty()) {
+        while (!nonEndedVehicles.isEmpty()) {
             // Create a copy of the list to safely remove elements
             List<Vehicle> vehiclesToProcess = new ArrayList<>(nonEndedVehicles);
             for(Vehicle vehicle : vehiclesToProcess) {
@@ -64,11 +59,7 @@ public class Ant {
 
                 route.add(nextNode);
 
-                // If the next node is finite, remove it from the nodes list and increment the assignedFiniteNodes counter
-                if (!nextNode.isInfiniteNode()) {
-                    assignedFiniteNodes++;
-                    nodePool.remove(nextNode);
-                }
+                nodePool.remove(nextNode);
 
                 if (nextNode instanceof FinalNode) {
                     nonEndedVehicles.remove(vehicle);
@@ -79,16 +70,6 @@ public class Ant {
 
     public Solution getSolution() {
         return solution;
-    }
-
-    private int countFiniteNodes(List<Node> nodePool) {
-        int count = 0;
-        for(Node node : nodePool) {
-            if(!node.isInfiniteNode()) {
-                count++;
-            }
-        }
-        return count;
     }
 
     private Node getNextNode(Map<Integer, Map<Integer, Double>> pheromones, Node currNode, double alpha) {

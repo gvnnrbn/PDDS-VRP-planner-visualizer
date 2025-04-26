@@ -8,7 +8,5 @@ public abstract class Node implements Cloneable {
 
     public abstract Node clone();
 
-    public abstract boolean isInfiniteNode();
-
     public abstract Position getPosition();
 } 

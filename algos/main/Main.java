@@ -2,6 +2,7 @@ package main;
 
 import domain.Blockage;
 import domain.Environment;
+import domain.Node;
 import domain.Order;
 import domain.Position;
 import domain.Vehicle;
@@ -14,6 +15,8 @@ import utils.EnvironmentParser;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import tabusearch.TabuSearch;
 import antcolonyoptimization.AntColonyOptimization;
@@ -45,23 +48,23 @@ public class Main {
         // environment.blockages.add(blockage);
 
         System.out.println("Environment:");
-        System.out.println(environment);
+        // System.out.println(environment);
 
         SolutionInitializer solutionInitializer = new SolutionInitializer();
         Solution initialSolution = solutionInitializer.generateInitialSolution(environment);
         System.out.println("Initial solution with fitness " + initialSolution.fitness(environment) + ":");
-        System.out.println(initialSolution);
+        // System.out.println(initialSolution);
 
         TabuSearch tabuSearch = new TabuSearch();
         Solution tabuSolution = tabuSearch.run(environment, initialSolution);
 
         System.out.println("Final solution by Tabu Search with fitness " + tabuSolution.fitness(environment) + " and feasible: " + tabuSolution.isFeasible(environment));
-        System.out.println(tabuSolution);
+        // System.out.println(tabuSolution);
 
         AntColonyOptimization antColonyOptimization = new AntColonyOptimization();
         Solution antColonySolution = antColonyOptimization.run(environment, initialSolution);
 
         System.out.println("Final solution by Ant Colony Optimization with fitness " + antColonySolution.fitness(environment) + " and feasible: " + antColonySolution.isFeasible(environment));
-        System.out.println(antColonySolution);
+        // System.out.println(antColonySolution);
     }
 }

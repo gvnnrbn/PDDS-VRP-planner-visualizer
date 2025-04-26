@@ -71,4 +71,8 @@ public class Time implements Comparable<Time> {
         
         return monthsDiff + daysDiff + hoursDiff + minsDiff;
     }
+
+    public int minutesSince(Time other) {
+        return -other.minutesUntil(this);
+    }
 }
