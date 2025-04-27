@@ -12,7 +12,7 @@ public class Solution implements Cloneable {
     private boolean hasRunSimulation = false;
     private boolean isFeasible = true; // Depends on the simulation
     private int fitness = 0;
-
+    
     public Solution() {
         routes = new HashMap<>();
     }
@@ -67,7 +67,7 @@ public class Solution implements Cloneable {
         for (Vehicle vehicle : environment.vehicles) {
             List<Node> route = routes.get(vehicle.id());
             Time currentTime = environment.currentTime;
-
+            /*
             // Check if first node is their corresponding empty node
             Node firstNode = route.get(0);
             if (!(firstNode instanceof EmptyNode) || !(firstNode.getPosition().equals(vehicle.initialPosition()))) {
@@ -76,6 +76,7 @@ public class Solution implements Cloneable {
                 hasRunSimulation = true;
                 return;
             }
+            */
 
             for (int i = 0; i < route.size() - 1; i++) {
                 Node originNode = route.get(i);

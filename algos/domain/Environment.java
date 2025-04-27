@@ -95,10 +95,12 @@ public class Environment {
         List<Node> nodes = new ArrayList<>();
         int nodeSerial = 0;
 
+        // Add initial position nodes for vehicles 
         for (Vehicle vehicle : vehicles) {
             nodes.add(new EmptyNode(nodeSerial++, vehicle.initialPosition()));
         }
 
+        // Add order nodes
         for (Order order : orders) {
             int remainingGLP = order.amountGLP();
             while (remainingGLP > 0) {
@@ -111,6 +113,8 @@ public class Environment {
                 }
             }
         }
+
+        
 
         // Calculate the total amount of GLP that needs to be transported
         int totalGLP = 0;

@@ -55,16 +55,16 @@ public class Main {
         System.out.println("Initial solution with fitness " + initialSolution.fitness(environment) + ":");
         // System.out.println(initialSolution);
 
-        TabuSearch tabuSearch = new TabuSearch();
-        Solution tabuSolution = tabuSearch.run(environment, initialSolution);
+        //TabuSearch tabuSearch = new TabuSearch();
+        //Solution tabuSolution = tabuSearch.run(environment, initialSolution);
 
-        System.out.println("Final solution by Tabu Search with fitness " + tabuSolution.fitness(environment) + " and feasible: " + tabuSolution.isFeasible(environment));
+        //System.out.println("Final solution by Tabu Search with fitness " + tabuSolution.fitness(environment) + " and feasible: " + tabuSolution.isFeasible(environment));
         // System.out.println(tabuSolution);
 
-        // AntColonyOptimization antColonyOptimization = new AntColonyOptimization();
-        // Solution antColonySolution = antColonyOptimization.run(environment, initialSolution);
+        AntColonyOptimization antColonyOptimization = new AntColonyOptimization();
+        Solution antColonySolution = antColonyOptimization.run(environment, initialSolution);
 
-        // System.out.println("Final solution by Ant Colony Optimization with fitness " + antColonySolution.fitness(environment) + " and feasible: " + antColonySolution.isFeasible(environment));
-        // System.out.println(antColonySolution);
+        System.out.println("Final solution by Ant Colony Optimization with fitness " + antColonySolution.fitness(environment) + " and feasible: " + antColonySolution.isFeasible(environment));
+        System.out.println(antColonySolution);
     }
 }
