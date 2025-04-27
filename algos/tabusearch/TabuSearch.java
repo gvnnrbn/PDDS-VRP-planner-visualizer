@@ -11,6 +11,8 @@ import java.util.Random;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.EnumSet;
+import java.util.HashMap;
+
 import tabusearch.Movement.MovementType;
 
 public class TabuSearch {
@@ -21,9 +23,9 @@ public class TabuSearch {
     private final int maxNoImprovement;
     private final Set<MovementType> enabledOperators;
     
-    private static final int DEFAULT_MAX_ITERATIONS = 1_000_000;
-    private static final int DEFAULT_TABU_LIST_SIZE = 50;
-    private static final int DEFAULT_MAX_NO_IMPROVEMENT = 1_000;
+    private static final int DEFAULT_MAX_ITERATIONS = 10000;
+    private static final int DEFAULT_TABU_LIST_SIZE = 100;
+    private static final int DEFAULT_MAX_NO_IMPROVEMENT = 1000;
     private static final Set<MovementType> DEFAULT_ENABLED_OPERATORS = EnumSet.allOf(MovementType.class);
 
     public TabuSearch() {
@@ -113,38 +115,58 @@ public class TabuSearch {
 
     public List<Neighbor> generateNeighborhood(Solution solution, Environment environment) {
         List<Neighbor> neighborhood = new ArrayList<>();
-        
-        // Generate multiple neighbors for each operator
-        int neighborsPerOperator = 10;  // Increased from 3 to explore more possibilities
+
+        // Store and remove starting empty node and final node for later restoration
+        Solution trimmedSolution = solution.clone();
+
+        Map<Integer, Node> startNodes = new HashMap<>();
+        Map<Integer, Node> finalNodes = new HashMap<>();
+        for (Map.Entry<Integer, List<Node>> entry : trimmedSolution.routes.entrySet()) {
+            startNodes.put(entry.getKey(), entry.getValue().get(0).clone());
+            finalNodes.put(entry.getKey(), entry.getValue().get(entry.getValue().size() - 1).clone());
+            entry.getValue().remove(0);
+            entry.getValue().remove(entry.getValue().size() - 1);
+        }
+
+        int neighborsPerOperator = 10;
         
         for (int i = 0; i < neighborsPerOperator; i++) {
             // Try all operators in random order
             List<MovementType> operators = new ArrayList<>(enabledOperators);
-            Collections.shuffle(operators);
             
             for (MovementType operator : operators) {
                 Neighbor neighbor = null;
                 switch (operator) {
                     case INTRA_ROUTE_MOVE:
-                        neighbor = intraRouteMove(solution);
+                        neighbor = intraRouteMove(trimmedSolution);
                         break;
                     case INTRA_ROUTE_SWAP:
-                        neighbor = intraRouteSwap(solution);
+                        neighbor = intraRouteSwap(trimmedSolution);
                         break;
                     case INTRA_ROUTE_TWO_OPT:
-                        neighbor = intraRouteTwoOpt(solution);
+                        neighbor = intraRouteTwoOpt(trimmedSolution);
                         break;
                     case INTER_ROUTE_MOVE:
-                        neighbor = interRouteMove(solution);
+                        neighbor = interRouteMove(trimmedSolution);
                         break;
                     case INTER_ROUTE_SWAP:
-                        neighbor = interRouteSwap(solution);
+                        neighbor = interRouteSwap(trimmedSolution);
                         break;
                     case INTER_ROUTE_CROSS_EXCHANGE:
-                        neighbor = interRouteCrossExchange(solution);
+                        neighbor = interRouteCrossExchange(trimmedSolution);
                         break;
                 }
-                
+
+                // Restore starting empty node and final node on each neighbor
+                if (neighbor != null) {
+                    for (Map.Entry<Integer, Node> entry : startNodes.entrySet()) {
+                        neighbor.solution.routes.get(entry.getKey()).add(0, entry.getValue());
+                    }
+                    for (Map.Entry<Integer, Node> entry : finalNodes.entrySet()) {
+                        neighbor.solution.routes.get(entry.getKey()).add(entry.getValue());
+                    }
+                }
+
                 if (neighbor != null && neighbor.solution.isFeasible(environment)) {
                     neighborhood.add(neighbor);
                 }

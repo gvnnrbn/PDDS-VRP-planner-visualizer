@@ -47,7 +47,7 @@ public class Main {
         // Blockage blockage = new Blockage(vertices);
         // environment.blockages.add(blockage);
 
-        System.out.println("Environment:");
+        // System.out.println("Environment:");
         // System.out.println(environment);
 
         SolutionInitializer solutionInitializer = new SolutionInitializer();
@@ -61,10 +61,10 @@ public class Main {
         System.out.println("Final solution by Tabu Search with fitness " + tabuSolution.fitness(environment) + " and feasible: " + tabuSolution.isFeasible(environment));
         // System.out.println(tabuSolution);
 
-        AntColonyOptimization antColonyOptimization = new AntColonyOptimization();
-        Solution antColonySolution = antColonyOptimization.run(environment, initialSolution);
+        // AntColonyOptimization antColonyOptimization = new AntColonyOptimization();
+        // Solution antColonySolution = antColonyOptimization.run(environment, initialSolution);
 
-        System.out.println("Final solution by Ant Colony Optimization with fitness " + antColonySolution.fitness(environment) + " and feasible: " + antColonySolution.isFeasible(environment));
+        // System.out.println("Final solution by Ant Colony Optimization with fitness " + antColonySolution.fitness(environment) + " and feasible: " + antColonySolution.isFeasible(environment));
         // System.out.println(antColonySolution);
     }
 }

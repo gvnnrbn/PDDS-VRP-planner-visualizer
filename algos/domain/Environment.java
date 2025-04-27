@@ -29,6 +29,8 @@ public class Environment {
     public static final int missingFinalNodePenalty = 1000;
     public static final int undeliveredOrderPenalty = 1000;
 
+    public static final int feasibilityBonus = 20000;
+
     public Time currentTime;
 
     public List<Vehicle> vehicles;
@@ -156,7 +158,7 @@ public class Environment {
             }
         }
 
-        // Add an empty nodes for the main warehouse as final nodes
+        // Add final nodes
         Warehouse mainWarehouse = null;
         for (Warehouse warehouse : warehouses) {
             if (warehouse.isMain()) {

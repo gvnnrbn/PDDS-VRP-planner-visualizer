@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 
+// TODO: Normalize reward values with order size
 public class Solution implements Cloneable {
     public Map<Integer, List<Node>> routes; // routes[vehicleId] -> nodes
 
@@ -127,12 +128,13 @@ public class Solution implements Cloneable {
                     }
 
                     // Deliver the order amount
-                    if (order.amountGLP() == GLPToDeliver) {
+                    if (orderMap.get(order.id()).amountGLP() == GLPToDeliver) {
                         orderMap.remove(order.id());
                         int minutesLeft = currentTime.minutesUntil(order.deadline());
                         fitness += minutesLeft * Environment.minutesLeftMultiplier;
                     } else {
-                        orderMap.put(order.id(), new Order(order.id(), order.amountGLP() - GLPToDeliver, order.position(), order.deadline()));
+                        Order updatedOrder = new Order(order.id(), orderMap.get(order.id()).amountGLP() - GLPToDeliver, order.position(), order.deadline());
+                        orderMap.put(order.id(), updatedOrder);
                     }
 
                     // Update vehicle state
@@ -182,6 +184,7 @@ public class Solution implements Cloneable {
         }
 
         hasRunSimulation = true;
+        fitness += Environment.feasibilityBonus;
     }
 
     @Override
