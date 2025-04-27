@@ -8,6 +8,20 @@ public class Movement {
         INTER_ROUTE_MOVE,
         INTER_ROUTE_SWAP,
         INTER_ROUTE_CROSS_EXCHANGE,
+        VEHICLE_SWAP,
+        INTRA_ROUTE_REVERSE,
+        INTER_ROUTE_REVERSE,
+        ROUTE_SPLIT,
+        ROUTE_MERGE,
+        MULTI_NODE_MOVE,
+        MULTI_ROUTE_SWAP,
+        ROUTE_REVERSE,
+        ROUTE_SHUFFLE,
+        MULTI_ROUTE_MERGE,
+        ROUTE_SPLIT_MULTI,
+        NODE_RELOCATION,
+        ROUTE_EXCHANGE,
+        ROUTE_ROTATION
     }
 
     public MovementType movementType;
@@ -26,6 +40,7 @@ public class Movement {
             case INTRA_ROUTE_MOVE:
             case INTRA_ROUTE_SWAP:
             case INTRA_ROUTE_TWO_OPT:
+            case INTRA_ROUTE_REVERSE:
                 reverse.vehicle1 = this.vehicle1;
                 reverse.nodeIdxFrom = this.nodeIdxTo;
                 reverse.nodeIdxTo = this.nodeIdxFrom;
@@ -33,10 +48,17 @@ public class Movement {
             case INTER_ROUTE_MOVE:
             case INTER_ROUTE_SWAP:
             case INTER_ROUTE_CROSS_EXCHANGE:
+            case INTER_ROUTE_REVERSE:
+            case ROUTE_SPLIT:
+            case ROUTE_MERGE:
                 reverse.vehicle1 = this.vehicle2;
                 reverse.vehicle2 = this.vehicle1;
                 reverse.nodeIdxFrom = this.nodeIdxTo;
                 reverse.nodeIdxTo = this.nodeIdxFrom;
+                break;
+            case VEHICLE_SWAP:
+                reverse.vehicle1 = this.vehicle2;
+                reverse.vehicle2 = this.vehicle1;
                 break;
             default:
                 return null;
@@ -53,6 +75,7 @@ public class Movement {
             case INTRA_ROUTE_MOVE:
             case INTRA_ROUTE_SWAP:
             case INTRA_ROUTE_TWO_OPT:
+            case INTRA_ROUTE_REVERSE:
                 return this.vehicle1 == movement.vehicle1 && 
                        this.nodeIdxFrom == movement.nodeIdxTo && 
                        this.nodeIdxTo == movement.nodeIdxFrom;
@@ -60,10 +83,17 @@ public class Movement {
             case INTER_ROUTE_MOVE:
             case INTER_ROUTE_SWAP:
             case INTER_ROUTE_CROSS_EXCHANGE:
+            case INTER_ROUTE_REVERSE:
+            case ROUTE_SPLIT:
+            case ROUTE_MERGE:
                 return this.vehicle1 == movement.vehicle2 && 
                        this.vehicle2 == movement.vehicle1 && 
                        this.nodeIdxFrom == movement.nodeIdxTo && 
                        this.nodeIdxTo == movement.nodeIdxFrom;
+            
+            case VEHICLE_SWAP:
+                return this.vehicle1 == movement.vehicle2 && 
+                       this.vehicle2 == movement.vehicle1;
             
             default:
                 return false;

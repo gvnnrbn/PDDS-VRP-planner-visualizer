@@ -34,6 +34,7 @@ public class EnvironmentParser {
 
     public List<Order> parseOrders(String filePath) {
         List<Order> orders = new ArrayList<>();
+        int orderId = 1; // Starting ID for orders
         
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             String line;
@@ -58,7 +59,6 @@ public class EnvironmentParser {
                 
                 int x = Integer.parseInt(orderParts[0]);
                 int y = Integer.parseInt(orderParts[1]);
-                String orderCode = orderParts[2].substring(2); // Remove "c-" prefix
                 String amountStr = orderParts[3].replace("m3", "");
                 int amountGLP = Integer.parseInt(amountStr);
                 String deadlineStr = orderParts[4].replace("h", "");
@@ -79,7 +79,7 @@ public class EnvironmentParser {
                 Time deadline = new Time(deadlineMonth, deadlineDay, deadlineHour, minute);
                 
                 // Create order with new record structure
-                Order order = new Order(Integer.parseInt(orderCode), amountGLP, position, deadline);
+                Order order = new Order(orderId++, amountGLP, position, deadline);
                 orders.add(order);
             }
         } catch (IOException e) {

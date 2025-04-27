@@ -5,13 +5,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 
-// TODO: Normalize reward values with order size
 public class Solution implements Cloneable {
     public Map<Integer, List<Node>> routes; // routes[vehicleId] -> nodes
 
     private boolean hasRunSimulation = false;
     private boolean isFeasible = true; // Depends on the simulation
-    private int fitness = 0;
+    private double fitness = 0;
 
     public Solution() {
         routes = new HashMap<>();
@@ -32,11 +31,10 @@ public class Solution implements Cloneable {
         clone.hasRunSimulation = false;
         clone.isFeasible = true;
         clone.fitness = 0;
-
         return clone;
     }
 
-    public int fitness(Environment environment) {
+    public double fitness(Environment environment) {
         if (!hasRunSimulation) {
             simulate(environment);
         }
@@ -64,6 +62,15 @@ public class Solution implements Cloneable {
             warehouseMap.put(warehouse.id(), warehouse);
         }
 
+        // Calculate max possible time points
+        long maxPossibleTimePoints = 0;
+        long currentTimePoints = 0;
+        for (Order order : orderMap.values()) {
+            maxPossibleTimePoints += environment.currentTime.minutesUntil(order.deadline());
+        }
+
+        int completedOrders = 0;
+
         for (Vehicle vehicle : environment.vehicles) {
             List<Node> route = routes.get(vehicle.id());
             Time currentTime = environment.currentTime;
@@ -71,10 +78,9 @@ public class Solution implements Cloneable {
             // Check if first node is their corresponding empty node
             Node firstNode = route.get(0);
             if (!(firstNode instanceof EmptyNode) || !(firstNode.getPosition().equals(vehicle.initialPosition()))) {
-                fitness -= Environment.incorrectStartPositionPenalty;
                 isFeasible = false;
-                hasRunSimulation = true;
-                return;
+                fitness -= Environment.constraintViolationPenalty;
+                continue;
             }
 
             for (int i = 0; i < route.size() - 1; i++) {
@@ -97,10 +103,9 @@ public class Solution implements Cloneable {
                 // Calculate and check fuel cost
                 double fuelCost = Environment.calculateFuelCost(originNode, destinationNode, environment.getDistances(), vehicle);
                 if (vehicle.currentFuel() < fuelCost) {
-                    fitness -= Environment.insufficientFuelPenalty;
                     isFeasible = false;
-                    hasRunSimulation = true;
-                    return;
+                    fitness -= Environment.constraintViolationPenalty;
+                    break;
                 }
 
                 // When the vehicle arrives at an OrderDeliverNode
@@ -112,26 +117,24 @@ public class Solution implements Cloneable {
 
                     // Check if the order can be delivered at the current time
                     if (currentTime.isAfter(order.deadline())) {
-                        int minutesLate = currentTime.minutesSince(order.deadline());
-                        fitness -= minutesLate * Environment.lateDeliveryPenalty;
+                        currentTimePoints -= currentTime.minutesSince(order.deadline());
                         isFeasible = false;
-                        hasRunSimulation = true;
-                        return;
+                        fitness -= Environment.constraintViolationPenalty;
+                        break;
                     }
 
                     // Check if the vehicle has enough GLP to deliver the order
                     if (vehicle.currentGLP() < GLPToDeliver) {
-                        fitness -= Environment.insufficientGLPPenalty;
                         isFeasible = false;
-                        hasRunSimulation = true;
-                        return;
+                        fitness -= Environment.constraintViolationPenalty;
+                        break;
                     }
 
                     // Deliver the order amount
                     if (orderMap.get(order.id()).amountGLP() == GLPToDeliver) {
                         orderMap.remove(order.id());
                         int minutesLeft = currentTime.minutesUntil(order.deadline());
-                        fitness += minutesLeft * Environment.minutesLeftMultiplier;
+                        currentTimePoints += minutesLeft;
                     } else {
                         Order updatedOrder = new Order(order.id(), orderMap.get(order.id()).amountGLP() - GLPToDeliver, order.position(), order.deadline());
                         orderMap.put(order.id(), updatedOrder);
@@ -148,10 +151,9 @@ public class Solution implements Cloneable {
 
                     // Check if the warehouse has enough product to refill the vehicle
                     if (warehouse.currentGLP() < refillNode.amountGLP) {
-                        fitness -= Environment.insufficientWarehouseGLPPenalty;
                         isFeasible = false;
-                        hasRunSimulation = true;
-                        return;
+                        fitness -= Environment.constraintViolationPenalty;
+                        break;
                     }
 
                     // Update the warehouse state
@@ -168,23 +170,23 @@ public class Solution implements Cloneable {
         for (Vehicle vehicle : environment.vehicles) {
             List<Node> route = routes.get(vehicle.id());
             if (!(route.get(route.size() - 1) instanceof FinalNode)) {
-                fitness -= Environment.missingFinalNodePenalty;
                 isFeasible = false;
-                hasRunSimulation = true;
-                return;
+                fitness -= Environment.constraintViolationPenalty;
             }
         }
 
         // Check if all orders are delivered
         if (orderMap.size() > 0) {
-            fitness -= orderMap.size() * Environment.undeliveredOrderPenalty;
             isFeasible = false;
-            hasRunSimulation = true;
-            return;
+            fitness -= Environment.constraintViolationPenalty;
         }
 
+        // Bonus for completed orders
+        fitness += (completedOrders * 1.0 / environment.orders.size()) * Environment.maxFitnessForCompletedOrders;
+
+        // Add fitness based on time points
+        fitness += (currentTimePoints * 1.0 / maxPossibleTimePoints) * Environment.maxFitnessForMaximumTimePoints;
         hasRunSimulation = true;
-        fitness += Environment.feasibilityBonus;
     }
 
     @Override

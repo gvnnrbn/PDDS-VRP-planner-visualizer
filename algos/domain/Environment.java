@@ -10,7 +10,7 @@ import java.util.Set;
 import java.util.HashSet;
 
 public class Environment {
-    public static int chunkSize = 5; // Max number of m3 of GLP that can be transported or refilled in one chunk
+    public static int chunkSize = 10; // Max number of m3 of GLP that can be transported or refilled in one chunk
     public static int speed = 50; // km/h
     public static int timeAfterDelivery = 15; // minutes
     public static int timeAfterRefill = 10; // minutes
@@ -18,18 +18,15 @@ public class Environment {
     public static int minutesLeftMultiplier = 1; // multiplier for the fitness function
     public static int lateDeliveryPenalty = 1; // penalty for the fitness function
 
+    public static int maxFitnessForCompletedOrders = 10000;
+    public static int maxFitnessForMaximumTimePoints = 20000;
+
     // 1 grid unit = 1 km
     public static int gridLength = 70; 
     public static int gridWidth = 50;
 
-    public static final int incorrectStartPositionPenalty = 1000;
-    public static final int insufficientFuelPenalty = 1000;
-    public static final int insufficientGLPPenalty = 1000;
-    public static final int insufficientWarehouseGLPPenalty = 1000;
-    public static final int missingFinalNodePenalty = 1000;
-    public static final int undeliveredOrderPenalty = 1000;
-
-    public static final int feasibilityBonus = 20000;
+    public static final int maxFitness = 10_000;
+    public static final int constraintViolationPenalty = 100;
 
     public Time currentTime;
 
