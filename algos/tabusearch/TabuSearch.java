@@ -237,9 +237,6 @@ public class TabuSearch {
             }
         }
 
-        if (neighborhood.size() != 0) {
-            System.out.println("Generated " + neighborhood.size() + " neighbors");
-        }
         return neighborhood;
     }
 

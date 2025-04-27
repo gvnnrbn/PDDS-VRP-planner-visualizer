@@ -155,6 +155,13 @@ public class Environment {
             }
         }
 
+        // Add sacling refill main warehouse nodes considering the number of vehicles
+        int scalingFactor = 2;
+        for (int i = 0; i < vehicles.size() * scalingFactor; i++) {
+            nodes.add(new ProductRefillNode(nodeSerial++, warehouses.get(0), Environment.chunkSize));
+        }
+
+
         // Add final nodes
         Warehouse mainWarehouse = null;
         for (Warehouse warehouse : warehouses) {
@@ -318,6 +325,52 @@ public class Environment {
             this.position = position;
             this.f = f;
         }
+    }
+
+    public void reportGeneratedNodes() {
+        if (!areNodesGenerated) {
+            System.out.println("Nodes have not been generated yet.");
+            return;
+        }
+
+        System.out.println("\n=== Node Generation Report ===");
+        System.out.println("Total nodes generated: " + nodes.size());
+        
+        int emptyNodes = 0;
+        int orderNodes = 0;
+        int refillNodes = 0;
+        int finalNodes = 0;
+        
+        for (Node node : nodes) {
+            if (node instanceof EmptyNode) emptyNodes++;
+            else if (node instanceof OrderDeliverNode) orderNodes++;
+            else if (node instanceof ProductRefillNode) refillNodes++;
+            else if (node instanceof FinalNode) finalNodes++;
+        }
+        
+        System.out.println("Node types breakdown:");
+        System.out.println("- Empty nodes (vehicle start positions): " + emptyNodes);
+        System.out.println("- Order delivery nodes: " + orderNodes);
+        System.out.println("- Product refill nodes: " + refillNodes);
+        System.out.println("- Final nodes: " + finalNodes);
+        
+        // Print total GLP to be delivered
+        int totalGLPToDeliver = 0;
+        for (Node node : nodes) {
+            if (node instanceof OrderDeliverNode) {
+                totalGLPToDeliver += ((OrderDeliverNode) node).amountGLP;
+            }
+        }
+        System.out.println("\nTotal GLP to be delivered: " + totalGLPToDeliver + " m³");
+        
+        // Print total GLP to be refilled
+        int totalGLPToRefill = 0;
+        for (Node node : nodes) {
+            if (node instanceof ProductRefillNode) {
+                totalGLPToRefill += ((ProductRefillNode) node).amountGLP;
+            }
+        }
+        System.out.println("Total GLP to be refilled: " + totalGLPToRefill + " m³");
     }
 }
 

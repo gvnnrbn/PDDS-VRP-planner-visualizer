@@ -28,7 +28,10 @@ public class Main {
             }
         }
 
+        environment.reportGeneratedNodes();
+
         System.out.println("Best initial solution with fitness " + bestInitialSolution.fitness(environment) + ":");
+        System.out.println(bestInitialSolution.toString());
 
         TabuSearch tabuSearch = new TabuSearch();
         Solution bestSolution = tabuSearch.run(environment, bestInitialSolution);
@@ -36,5 +39,6 @@ public class Main {
         double fitness = bestSolution.fitness(environment);
         
         System.out.printf("Best solution fitness: %.2f and is feasible: %s%n", fitness, bestSolution.isFeasible(environment));
+        System.out.println(bestSolution.toString());
     }
 }
