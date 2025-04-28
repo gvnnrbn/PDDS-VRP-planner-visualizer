@@ -1,6 +1,7 @@
 package domain;
 
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
@@ -27,10 +28,10 @@ public class Solution implements Cloneable {
     private int deliveredOrdersOnTime = 0;
     private int totalOrders = 0;
 
-    private static int weightTimePoints = 1;
-    private static int weightImaginaryFuelConsumed = 1;
-    private static int weightImaginaryGLPConsumed = 1;
-    private static int weightOrdersNotDelivered = 1;
+    private static int weightTimePoints = 2;
+    private static int weightImaginaryFuelConsumed = 10;
+    private static int weightImaginaryGLPConsumed = 10;
+    private static int weightOrdersNotDelivered = 2;
     private static int weightOrdersDeliveredOnTime = 1;
 
     public Solution() {
@@ -86,9 +87,8 @@ public class Solution implements Cloneable {
         }
 
         // Calculate max possible time points (sum deadline_i - currentTime)
-        for (Order order : orderMap.values()) {
-            int chunks = (int) Math.ceil((double) order.amountGLP() / Environment.chunkSize);
-            totalPossibleTimePoints += chunks * (environment.currentTime.minutesUntil(order.deadline()) + Environment.timeAfterDelivery);
+        for (OrderDeliverNode deliverNode : environment.getNodes().stream().filter(node -> node instanceof OrderDeliverNode).map(node -> (OrderDeliverNode) node).collect(Collectors.toList())) {
+            totalPossibleTimePoints += environment.currentTime.minutesUntil(deliverNode.order.deadline());
         }
 
         for (Vehicle vehicle : environment.vehicles) {
@@ -122,10 +122,10 @@ public class Solution implements Cloneable {
                 // Calculate and check fuel cost
                 double fuelCost = Environment.calculateFuelCost(originNode, destinationNode, environment.getDistances(), vehicle);
                 if (vehicle.currentFuel() < fuelCost) {
-                    // Let the vehicle travel without fuel but with penalty
-                    isFeasible = false;
+                    // Terminate the route
                     imaginaryFuelConsumed += fuelCost;
                     errors.add("Vehicle " + vehicle.id() + " has not enough fuel to travel from " + originNode.getPosition() + " to " + destinationNode.getPosition() + ".");
+                    break;
                 } else {
                     // Consume fuel
                     vehicle = new Vehicle(vehicle.id(), vehicle.weight(), vehicle.maxFuel(), vehicle.currentFuel() - fuelCost, vehicle.maxGLP(), vehicle.currentGLP(), vehicle.initialPosition());
@@ -141,9 +141,10 @@ public class Solution implements Cloneable {
 
                     // Check if the vehicle has enough GLP to deliver the order
                     if (vehicle.currentGLP() < GLPToDeliver) {
-                        isFeasible = false;
+                        // Terminate the route
                         imaginaryGLPConsumed += GLPToDeliver;
                         errors.add("Vehicle " + vehicle.id() + " has not enough GLP to deliver order " + order.id() + ".");
+                        break;
                     } else {
                         // Consume GLP
                         vehicle = new Vehicle(vehicle.id(), vehicle.weight(), vehicle.maxFuel(), vehicle.currentFuel(), vehicle.maxGLP(), vehicle.currentGLP() - GLPToDeliver, vehicle.initialPosition());
@@ -154,7 +155,6 @@ public class Solution implements Cloneable {
                         totalTimePoints += currentTime.minutesUntil(order.deadline());
                     } else {
                         totalTimePoints -= currentTime.minutesSince(order.deadline());
-                        isFeasible = false;
                         errors.add("Vehicle " + vehicle.id() + " has delivered order " + order.id() + " after the deadline.");
                     }
 
@@ -164,7 +164,6 @@ public class Solution implements Cloneable {
                         if (currentTime.isBefore(order.deadline())) {
                             deliveredOrdersOnTime++;
                         } else {
-                            isFeasible = false;
                             errors.add("Vehicle " + vehicle.id() + " has delivered order " + order.id() + " after the deadline.");
                         }
                         orderMap.remove(order.id());
@@ -189,7 +188,6 @@ public class Solution implements Cloneable {
         for (Vehicle vehicle : environment.vehicles) {
             List<Node> route = routes.get(vehicle.id());
             if (!(route.get(route.size() - 1) instanceof FinalNode)) {
-                isFeasible = false;
                 errors.add("Vehicle " + vehicle.id() + " has not arrived at the final node.");
             }
         }
@@ -207,6 +205,8 @@ public class Solution implements Cloneable {
 			Solution.weightImaginaryGLPConsumed * imaginaryGLPConsumedProportion -
 			Solution.weightOrdersNotDelivered * ordersNotDeliveredProportion -
 			Solution.weightOrdersDeliveredOnTime * ordersNotDeliveredOnTimeProportion;
+
+        isFeasible = deliveredOrdersOnTime == totalOrders;
 
         hasRunSimulation = true;
     }
@@ -265,4 +265,40 @@ public class Solution implements Cloneable {
         return sb.toString();
     }
     
+    public String getReport() {
+        StringBuilder report = new StringBuilder();
+        
+        if (!hasRunSimulation) {
+            return "No simulation has been run yet.";
+        }
+
+        report.append("Feasibility: ").append(isFeasible ? "Feasible" : "Not Feasible").append("\n");
+        report.append("Fitness: ").append(String.format("%.4f", fitness)).append("\n\n");
+        
+        report.append("Fitness Components:\n");
+        report.append(String.format("  Time Points: %d/%d (%.4f)\n", 
+            totalTimePoints, totalPossibleTimePoints, 
+            totalTimePoints * 1.0 / totalPossibleTimePoints));
+        report.append(String.format("  Imaginary Fuel Consumed: %.4f/%.4f (%.4f)\n", 
+            imaginaryFuelConsumed, totalFuelCost, 
+            imaginaryFuelConsumed * 1.0 / totalFuelCost));
+        report.append(String.format("  Imaginary GLP Consumed: %d/%d (%.4f)\n", 
+            imaginaryGLPConsumed, totalGLPCost, 
+            imaginaryGLPConsumed * 1.0 / totalGLPCost));
+        report.append(String.format("  Orders Not Delivered: %d/%d (%.4f)\n", 
+            totalOrders - deliveredOrders, totalOrders, 
+            (totalOrders - deliveredOrders) * 1.0 / totalOrders));
+        report.append(String.format("  Orders Not Delivered On Time: %d/%d (%.4f)\n", 
+            totalOrders - deliveredOrdersOnTime, totalOrders, 
+            (totalOrders - deliveredOrdersOnTime) * 1.0 / totalOrders));
+
+        if (!errors.isEmpty()) {
+            report.append("\nErrors:\n");
+            report.append(errors.stream().collect(Collectors.joining("\n")));
+        } else {
+            report.append("\nNo errors found.");
+        }
+
+        return report.toString();
+    }
 }

@@ -75,6 +75,10 @@ public class TabuSearch {
         double bestFitness = currentFitness;
 
         while (iteration < maxIterations && noImprovementCount < maxNoImprovement) {
+            if (iteration % 1000 == 0) {
+                System.out.println("Iteration: " + iteration + " - Fitness: " + currentFitness);
+            }
+
             List<Neighbor> neighborhood = generateNeighborhood(currentSolution, environment);
             List<Neighbor> candidates = new ArrayList<>();
             

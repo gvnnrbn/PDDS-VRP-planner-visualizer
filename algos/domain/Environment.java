@@ -10,7 +10,8 @@ import java.util.Set;
 import java.util.HashSet;
 
 public class Environment {
-    public static int chunkSize = 10; // Max number of m3 of GLP that can be transported or refilled in one chunk
+    public static int deliverChunkSize = 10; // Max number of m3 of GLP that can be transported or refilled in one chunk
+    public static int refillChunkSize = 5; // Max number of m3 of GLP that can be refilled in one chunk
     public static int speed = 50; // km/h
     public static int timeAfterDelivery = 15; // minutes
     public static int timeAfterRefill = 10; // minutes
@@ -99,9 +100,9 @@ public class Environment {
         for (Order order : orders) {
             int remainingGLP = order.amountGLP();
             while (remainingGLP > 0) {
-                if (remainingGLP > chunkSize) {
-                    nodes.add(new OrderDeliverNode(nodeSerial++, order, chunkSize));
-                    remainingGLP -= chunkSize;
+                if (remainingGLP > deliverChunkSize) {
+                    nodes.add(new OrderDeliverNode(nodeSerial++, order, deliverChunkSize));
+                    remainingGLP -= deliverChunkSize;
                 } else {
                     nodes.add(new OrderDeliverNode(nodeSerial++, order, remainingGLP));
                     remainingGLP = 0;
@@ -122,45 +123,28 @@ public class Environment {
         }
 
         int totalGLPToRefill = totalGLP - totalGLPInVehicles;
-        int totalAssignableGLP = (int) (totalGLPToRefill * 1.2);
+        int totalAssignableGLP = (int) (totalGLPToRefill * 1.5);
 
         // Round robin to assign GLP from the warehouses
         int currentWarehouseIndex = 0;
         
         while (totalAssignableGLP > 0) {
             Warehouse currentWarehouse = warehousesCopy.get(currentWarehouseIndex);
-
-            if (currentWarehouse.currentGLP() > 0 || currentWarehouse.isMain()) {
-                int GLPToAssignToNextNode = (currentWarehouse.currentGLP() >= Environment.chunkSize || currentWarehouse.isMain())
-                    ? Environment.chunkSize
-                    : currentWarehouse.currentGLP();
+            int warehouseGLP = currentWarehouse.currentGLP();
+            
+            if (warehouseGLP > 0) {
+                int assignableGLP = Math.min(warehouseGLP, refillChunkSize);
+                assignableGLP = Math.min(assignableGLP, totalAssignableGLP);
                 
-                nodes.add(new ProductRefillNode(nodeSerial++, currentWarehouse, GLPToAssignToNextNode));
-                totalAssignableGLP -= GLPToAssignToNextNode;
-
-                // Update the current GLP of the warehouse
-                warehousesCopy.set(currentWarehouseIndex, new Warehouse(
-                    currentWarehouse.id(),
-                    currentWarehouse.position(),
-                    currentWarehouse.currentGLP() - GLPToAssignToNextNode,
-                    currentWarehouse.maxGLP(),
-                    currentWarehouse.isMain()
-                ));
+                // Create refill nodes in smaller chunks to allow for more frequent refueling
+                int refillChunkSize = Math.min(assignableGLP, Environment.refillChunkSize);
+                nodes.add(new ProductRefillNode(nodeSerial++, currentWarehouse, refillChunkSize));
+                warehouseGLP -= refillChunkSize;
+                totalAssignableGLP -= refillChunkSize;
             }
-
-            // Iteration
-            currentWarehouseIndex++;
-            if (currentWarehouseIndex >= warehouses.size()) {
-                currentWarehouseIndex = 0;
-            }
+            
+            currentWarehouseIndex = (currentWarehouseIndex + 1) % warehousesCopy.size();
         }
-
-        // Add sacling refill main warehouse nodes considering the number of vehicles
-        int scalingFactor = 2;
-        for (int i = 0; i < vehicles.size() * scalingFactor; i++) {
-            nodes.add(new ProductRefillNode(nodeSerial++, warehouses.get(0), Environment.chunkSize));
-        }
-
 
         // Add final nodes
         Warehouse mainWarehouse = null;
