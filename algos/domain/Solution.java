@@ -272,7 +272,7 @@ public class Solution implements Cloneable {
             return "No simulation has been run yet.";
         }
 
-        report.append("Feasibility: ").append(isFeasible ? "Feasible" : "Not Feasible").append("\n");
+        report.append("Feasibility: ").append(isFeasible ? "Is Feasible" : "Is Not Feasible").append("\n");
         report.append("Fitness: ").append(String.format("%.4f", fitness)).append("\n\n");
         
         report.append("Fitness Components:\n");

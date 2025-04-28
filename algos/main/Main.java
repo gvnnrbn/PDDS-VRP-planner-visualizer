@@ -8,6 +8,7 @@ import domain.SolutionInitializer;
 import utils.EnvironmentParser;
 
 import localsearch.HillClimbing;
+import localsearch.TabuSearch;
 
 public class Main {
     public static void main(String[] args) {
@@ -20,8 +21,15 @@ public class Main {
         Solution initialSolution = solutionInitializer.generateInitialSolution(environment);
 
         HillClimbing hillClimbing = new HillClimbing();
-        Solution bestSolution = hillClimbing.run(environment, initialSolution);
+        Solution bestHillClimbingSolution = hillClimbing.run(environment, initialSolution);
 
-        System.out.println(bestSolution.toString());
+        TabuSearch tabuSearch = new TabuSearch();
+        Solution bestTabuSearchSolution = tabuSearch.run(environment, initialSolution);
+
+        System.out.println("For a sample of " + environment.orders.size() + " orders and " + environment.vehicles.size() + " vehicles:");
+        System.out.println("=== Hill Climbing Solution ===");
+        System.out.println(bestHillClimbingSolution.getReport());
+        System.out.println("\n=== Tabu Search Solution ===");
+        System.out.println(bestTabuSearchSolution.getReport());
     }
 }
