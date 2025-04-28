@@ -1,4 +1,4 @@
-package main;
+package localsearch;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -10,70 +10,19 @@ import java.util.Random;
 import domain.Environment;
 import domain.Node;
 import domain.Solution;
-import domain.SolutionInitializer;
-import domain.Time;
-import tabusearch.Movement.MovementType;
-import utils.EnvironmentParser;
 
-public class NaiveGreedy {
-    public static void main(String[] args) {
-        EnvironmentParser parser = new EnvironmentParser(new Time(0, 1, 0, 0));
-        Environment environment = parser.parseEnvironment(
-            "main/vehicles.csv", 
-            "main/orders.csv", 
-            "main/blockages.csv", 
-            "main/warehouses.csv"
-        );
+import localsearch.Movement.MovementType;
 
-        environment.orders = environment.orders.subList(0, 300);
+public class NeighborhoodGenerator {
 
-        System.out.println("Environment Report:");
-        System.out.println("- Number of vehicles: " + environment.vehicles.size());
-        System.out.println("- Number of orders: " + environment.orders.size());
-        System.out.println("- Number of blockages: " + environment.blockages.size());
-        System.out.println("- Number of warehouses: " + environment.warehouses.size());
+    private static final Random random = new Random();
 
-        SolutionInitializer initializer = new SolutionInitializer();
-        Solution solution = initializer.generateInitialSolution(environment);
+    // Auxiliary parameters
+    private static final int attemptsPerOperation = 10;
+    private static final int neighborsPerOperator = 10;
 
-        Solution currBestSolution = solution;
-
-        int max_iter = 10_000;
-        int max_time = 55 * 1000;
-        long startTime = System.currentTimeMillis();
-        int iterations = 0;
-        while (iterations < max_iter && (System.currentTimeMillis() - startTime) < max_time) {
-            List<Solution> adjacentSolutions = generateAdjacentSolutions(currBestSolution, environment);
-
-            if (iterations % 100 == 0) {
-                long timePassed = System.currentTimeMillis() - startTime;
-                System.out.println("Iteration " + iterations + ": Best solution found: " + currBestSolution.fitness(environment) + 
-                    " (is feasible: " + currBestSolution.isFeasible(environment) + ") Time passed: " + timePassed + "ms");
-            }
-
-            Solution bestAdjacentSolution = Collections.max(adjacentSolutions, (solution1, solution2) -> Double.compare(solution1.fitness(environment), solution2.fitness(environment)));
-            if (bestAdjacentSolution.fitness(environment) > currBestSolution.fitness(environment)) {
-                currBestSolution = bestAdjacentSolution;
-            }
-
-            // System.out.println("------------------------------------------");
-
-            iterations++;
-        }
-
-        System.out.println("------------------------------------------");
-        System.out.println("For a problem of " + environment.orders.size() + " orders, the best solution found is: " + currBestSolution.fitness(environment) + " (is feasible: " + currBestSolution.isFeasible(environment) + ")");
-        System.out.println("Best solution found: " + currBestSolution.fitness(environment) + " (is feasible: " + currBestSolution.isFeasible(environment) + ")");
-        System.out.println("Time taken: " + (System.currentTimeMillis() - startTime) + " ms");
-        System.out.println("Report: \n" + currBestSolution.getReport());
-    }
-
-    private static int attemptsPerOperation = 10;
-    private static int neighborsPerOperator = 10;
-    private static Random random = new Random();
-
-    private static List<Solution> generateAdjacentSolutions(Solution solution, Environment environment) {
-        List<Solution> adjacentSolutions = new ArrayList<>();
+    public static List<Neighbor> generateNeighborhood(Solution solution, Environment environment) {
+        List<Neighbor> neighbors = new ArrayList<>();
         Solution trimmedSolution = solution.clone();
 
         Map<Integer, Node> startNodes = new HashMap<>();
@@ -88,7 +37,7 @@ public class NaiveGreedy {
         for (MovementType operator : MovementType.values()) {
             for (int i = 0; i < neighborsPerOperator; i++) {
                 int attempts = 0;
-                Solution neighbor = null;
+                Neighbor neighbor = null;
                 while (attempts < attemptsPerOperation && neighbor == null) {
                     switch (operator) {
                         case INTRA_ROUTE_MOVE:
@@ -124,12 +73,6 @@ public class NaiveGreedy {
                         case ROUTE_MERGE:
                             neighbor = routeMerge(trimmedSolution);
                             break;
-                        case MULTI_NODE_MOVE:
-                            neighbor = multiNodeMove(trimmedSolution);
-                            break;
-                        case MULTI_ROUTE_SWAP:
-                            neighbor = multiRouteSwap(trimmedSolution);
-                            break;
                         case ROUTE_REVERSE:
                             neighbor = routeReverse(trimmedSolution);
                             break;
@@ -157,21 +100,21 @@ public class NaiveGreedy {
 
                 if (neighbor != null) {
                     for (Map.Entry<Integer, Node> entry : startNodes.entrySet()) {
-                        neighbor.routes.get(entry.getKey()).add(0, entry.getValue());
+                        neighbor.solution.routes.get(entry.getKey()).add(0, entry.getValue());
                     }
                     for (Map.Entry<Integer, Node> entry : finalNodes.entrySet()) {
-                        neighbor.routes.get(entry.getKey()).add(entry.getValue());
+                        neighbor.solution.routes.get(entry.getKey()).add(entry.getValue());
                     }
 
-                    adjacentSolutions.add(neighbor);
+                    neighbors.add(neighbor);
                 }
             }
         }
         
-        return adjacentSolutions;
+        return neighbors;
     }
 
-    private static Solution intraRouteMove(Solution solution) {
+    private static Neighbor intraRouteMove(Solution solution) {
         Solution newSolution = solution.clone();
         int vehicleId = getRandomVehicleWithRoute(newSolution);
         if (vehicleId == -1) return null;
@@ -188,10 +131,15 @@ public class NaiveGreedy {
             route.add(indexTo, nodeToMove);
         }
 
-        return newSolution;
+        Movement movement = new Movement(MovementType.INTRA_ROUTE_MOVE);
+        movement.vehicle1 = vehicleId;
+        movement.nodeIdxFrom = indexFrom;
+        movement.nodeIdxTo = indexTo;
+
+        return new Neighbor(newSolution, movement);
     }
 
-    private static Solution intraRouteSwap(Solution solution) {
+    private static Neighbor intraRouteSwap(Solution solution) {
         Solution newSolution = solution.clone();
         int vehicleId = getRandomVehicleWithRoute(newSolution);
         if (vehicleId == -1) return null;
@@ -207,10 +155,16 @@ public class NaiveGreedy {
         }
 
         Collections.swap(route, index1, index2);
-        return newSolution;
+
+        Movement movement = new Movement(MovementType.INTRA_ROUTE_SWAP);
+        movement.vehicle1 = vehicleId;
+        movement.nodeIdxFrom = index1;
+        movement.nodeIdxTo = index2;
+
+        return new Neighbor(newSolution, movement);
     }
 
-    private static Solution intraRouteTwoOpt(Solution solution) {
+    private static Neighbor intraRouteTwoOpt(Solution solution) {
         Solution newSolution = solution.clone();
         int vehicleId = getRandomVehicleWithRoute(newSolution);
         if (vehicleId == -1) return null;
@@ -224,10 +178,16 @@ public class NaiveGreedy {
 
         List<Node> segmentToReverse = route.subList(i + 1, j + 1);
         Collections.reverse(segmentToReverse);
-        return newSolution;
+
+        Movement movement = new Movement(MovementType.INTRA_ROUTE_TWO_OPT);
+        movement.vehicle1 = vehicleId;
+        movement.nodeIdxFrom = i + 1;
+        movement.nodeIdxTo = j + 1;
+
+        return new Neighbor(newSolution, movement);
     }
 
-    private static Solution interRouteMove(Solution solution) {
+    private static Neighbor interRouteMove(Solution solution) {
         Solution newSolution = solution.clone();
         int[] vehicleIds = getTwoDistinctRandomVehiclesWithRoutes(newSolution);
         if (vehicleIds == null) return null;
@@ -245,10 +205,17 @@ public class NaiveGreedy {
 
         Node nodeToMove = routeFrom.remove(indexFrom);
         routeTo.add(indexTo, nodeToMove);
-        return newSolution;
+
+        Movement movement = new Movement(MovementType.INTER_ROUTE_MOVE);
+        movement.vehicle1 = vehicleIdFrom;
+        movement.vehicle2 = vehicleIdTo;
+        movement.nodeIdxFrom = indexFrom;
+        movement.nodeIdxTo = indexTo;
+
+        return new Neighbor(newSolution, movement);
     }
 
-    private static Solution interRouteSwap(Solution solution) {
+    private static Neighbor interRouteSwap(Solution solution) {
         Solution newSolution = solution.clone();
         int[] vehicleIds = getTwoDistinctRandomVehiclesWithRoutes(newSolution);
         if (vehicleIds == null) return null;
@@ -269,10 +236,17 @@ public class NaiveGreedy {
 
         route1.set(index1, node2);
         route2.set(index2, node1);
-        return newSolution;
+
+        Movement movement = new Movement(MovementType.INTER_ROUTE_SWAP);
+        movement.vehicle1 = vehicleId1;
+        movement.vehicle2 = vehicleId2;
+        movement.nodeIdxFrom = index1;
+        movement.nodeIdxTo = index2;
+
+        return new Neighbor(newSolution, movement);
     }
 
-    private static Solution interRouteCrossExchange(Solution solution) {
+    private static Neighbor interRouteCrossExchange(Solution solution) {
         Solution newSolution = solution.clone();
         int[] vehicleIds = getTwoDistinctRandomVehiclesWithRoutes(newSolution);
         if (vehicleIds == null) return null;
@@ -299,10 +273,16 @@ public class NaiveGreedy {
 
         newSolution.routes.put(vehicleId1, newRoute1);
         newSolution.routes.put(vehicleId2, newRoute2);
-        return newSolution;
+
+        Movement movement = new Movement(MovementType.INTER_ROUTE_CROSS_EXCHANGE);
+        movement.vehicle1 = vehicleId1;
+        movement.vehicle2 = vehicleId2;
+        movement.nodeIdxFrom = i;
+        movement.nodeIdxTo = j;
+        return new Neighbor(newSolution, movement);
     }
 
-    private static Solution vehicleSwap(Solution solution) {
+    private static Neighbor vehicleSwap(Solution solution) {
         Solution newSolution = solution.clone();
         int[] vehicleIds = getTwoDistinctRandomVehiclesWithRoutes(newSolution);
         if (vehicleIds == null) return null;
@@ -315,10 +295,15 @@ public class NaiveGreedy {
 
         newSolution.routes.put(vehicleId1, route2);
         newSolution.routes.put(vehicleId2, route1);
-        return newSolution;
+
+        Movement movement = new Movement(MovementType.VEHICLE_SWAP);
+        movement.vehicle1 = vehicleId1;
+        movement.vehicle2 = vehicleId2;
+
+        return new Neighbor(newSolution, movement);
     }
 
-    private static Solution intraRouteReverse(Solution solution) {
+    private static Neighbor intraRouteReverse(Solution solution) {
         Solution newSolution = solution.clone();
         int vehicleId = getRandomVehicleWithRoute(newSolution);
         if (vehicleId == -1) return null;
@@ -327,10 +312,14 @@ public class NaiveGreedy {
         if (route.size() < 3) return null;
 
         Collections.reverse(route);
-        return newSolution;
+
+        Movement movement = new Movement(MovementType.INTRA_ROUTE_REVERSE);
+        movement.vehicle1 = vehicleId;
+
+        return new Neighbor(newSolution, movement);
     }
 
-    private static Solution interRouteReverse(Solution solution) {
+    private static Neighbor interRouteReverse(Solution solution) {
         Solution newSolution = solution.clone();
         int[] vehicleIds = getTwoDistinctRandomVehiclesWithRoutes(newSolution);
         if (vehicleIds == null) return null;
@@ -342,10 +331,15 @@ public class NaiveGreedy {
 
         Collections.reverse(route1);
         Collections.reverse(route2);
-        return newSolution;
+
+        Movement movement = new Movement(MovementType.INTER_ROUTE_REVERSE);
+        movement.vehicle1 = vehicleIds[0];
+        movement.vehicle2 = vehicleIds[1];
+
+        return new Neighbor(newSolution, movement);
     }
 
-    private static Solution routeSplit(Solution solution) {
+    private static Neighbor routeSplit(Solution solution) {
         Solution newSolution = solution.clone();
         int vehicleId = getRandomVehicleWithRoute(newSolution);
         if (vehicleId == -1) return null;
@@ -368,10 +362,13 @@ public class NaiveGreedy {
         route.subList(splitPoint, route.size()).clear();
         newSolution.routes.put(emptyVehicleId, secondPart);
 
-        return newSolution;
+        Movement movement = new Movement(MovementType.ROUTE_SPLIT);
+        movement.vehicle1 = vehicleId;
+
+        return new Neighbor(newSolution, movement);
     }
 
-    private static Solution routeMerge(Solution solution) {
+    private static Neighbor routeMerge(Solution solution) {
         Solution newSolution = solution.clone();
         int[] vehicleIds = getTwoDistinctRandomVehiclesWithRoutes(newSolution);
         if (vehicleIds == null) return null;
@@ -383,18 +380,15 @@ public class NaiveGreedy {
 
         route1.addAll(route2);
         newSolution.routes.put(vehicleIds[1], new ArrayList<>());
-        return newSolution;
+
+        Movement movement = new Movement(MovementType.ROUTE_MERGE);
+        movement.vehicle1 = vehicleIds[0];
+        movement.vehicle2 = vehicleIds[1];
+
+        return new Neighbor(newSolution, movement);
     }
 
-    private static Solution multiNodeMove(Solution solution) {
-        return null;
-    }
-
-    private static Solution multiRouteSwap(Solution solution) {
-        return null;
-    }
-
-    private static Solution routeReverse(Solution solution) {
+    private static Neighbor routeReverse(Solution solution) {
         Solution newSolution = solution.clone();
         int vehicleId = getRandomVehicleWithRoute(newSolution);
         if (vehicleId == -1) return null;
@@ -403,10 +397,14 @@ public class NaiveGreedy {
         if (route.size() < 2) return null;
 
         Collections.reverse(route);
-        return newSolution;
+
+        Movement movement = new Movement(MovementType.ROUTE_REVERSE);
+        movement.vehicle1 = vehicleId;
+
+        return new Neighbor(newSolution, movement);
     }
 
-    private static Solution routeShuffle(Solution solution) {
+    private static Neighbor routeShuffle(Solution solution) {
         Solution newSolution = solution.clone();
         int vehicleId = getRandomVehicleWithRoute(newSolution);
         if (vehicleId == -1) return null;
@@ -418,10 +416,14 @@ public class NaiveGreedy {
         Collections.shuffle(nodesToShuffle);
         route.subList(1, route.size() - 1).clear();
         route.addAll(1, nodesToShuffle);
-        return newSolution;
+
+        Movement movement = new Movement(MovementType.ROUTE_SHUFFLE);
+        movement.vehicle1 = vehicleId;
+
+        return new Neighbor(newSolution, movement);
     }
 
-    private static Solution multiRouteMerge(Solution solution) {
+    private static Neighbor multiRouteMerge(Solution solution) {
         Solution newSolution = solution.clone();
         int[] vehicleIds = getTwoDistinctRandomVehiclesWithRoutes(newSolution);
         if (vehicleIds == null) return null;
@@ -442,10 +444,15 @@ public class NaiveGreedy {
 
         newSolution.routes.put(vehicleIds[0], newRoute);
         newSolution.routes.put(vehicleIds[1], new ArrayList<>());
-        return newSolution;
+
+        Movement movement = new Movement(MovementType.MULTI_ROUTE_MERGE);
+        movement.vehicle1 = vehicleIds[0];
+        movement.vehicle2 = vehicleIds[1];
+
+        return new Neighbor(newSolution, movement);
     }
 
-    private static Solution routeSplitMulti(Solution solution) {
+    private static Neighbor routeSplitMulti(Solution solution) {
         Solution newSolution = solution.clone();
         int vehicleId = getRandomVehicleWithRoute(newSolution);
         if (vehicleId == -1) return null;
@@ -473,10 +480,13 @@ public class NaiveGreedy {
         newSolution.routes.put(emptyVehicleIds.get(0), secondPart);
         newSolution.routes.put(emptyVehicleIds.get(1), thirdPart);
 
-        return newSolution;
+        Movement movement = new Movement(MovementType.ROUTE_SPLIT_MULTI);
+        movement.vehicle1 = vehicleId;
+
+        return new Neighbor(newSolution, movement);
     }
 
-    private static Solution nodeRelocation(Solution solution) {
+    private static Neighbor nodeRelocation(Solution solution) {
         Solution newSolution = solution.clone();
         int vehicleId = getRandomVehicleWithRoute(newSolution);
         if (vehicleId == -1) return null;
@@ -491,10 +501,14 @@ public class NaiveGreedy {
         List<Node> segment = new ArrayList<>(route.subList(startIndex, startIndex + segmentSize));
         route.subList(startIndex, startIndex + segmentSize).clear();
         route.addAll(targetIndex, segment);
-        return newSolution;
+
+        Movement movement = new Movement(MovementType.NODE_RELOCATION);
+        movement.vehicle1 = vehicleId;
+
+        return new Neighbor(newSolution, movement);
     }
 
-    private static Solution routeExchange(Solution solution) {
+    private static Neighbor routeExchange(Solution solution) {
         Solution newSolution = solution.clone();
         int[] vehicleIds = getTwoDistinctRandomVehiclesWithRoutes(newSolution);
         if (vehicleIds == null) return null;
@@ -511,10 +525,15 @@ public class NaiveGreedy {
 
         route1.set(index1, node2);
         route2.set(index2, node1);
-        return newSolution;
+
+        Movement movement = new Movement(MovementType.ROUTE_EXCHANGE);
+        movement.vehicle1 = vehicleIds[0];
+        movement.vehicle2 = vehicleIds[1];
+
+        return new Neighbor(newSolution, movement);
     }
 
-    private static Solution routeRotation(Solution solution) {
+    private static Neighbor routeRotation(Solution solution) {
         Solution newSolution = solution.clone();
         int vehicleId = getRandomVehicleWithRoute(newSolution);
         if (vehicleId == -1) return null;
@@ -529,7 +548,11 @@ public class NaiveGreedy {
         List<Node> segment = new ArrayList<>(route.subList(startIndex, startIndex + segmentSize));
         route.subList(startIndex, startIndex + segmentSize).clear();
         route.addAll(targetIndex, segment);
-        return newSolution;
+
+        Movement movement = new Movement(MovementType.ROUTE_ROTATION);
+        movement.vehicle1 = vehicleId;
+
+        return new Neighbor(newSolution, movement);
     }
 
     private static int getRandomVehicleWithRoute(Solution solution) {
