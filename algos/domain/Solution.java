@@ -26,7 +26,12 @@ public class Solution implements Cloneable {
 
     private int deliveredOrders = 0;
     private int deliveredOrdersOnTime = 0;
+    private int totalSpareTime = 0;
     private int totalOrders = 0;
+
+    // Metrics
+    private double ordersDeliveredBeforeDeadlinePercentage;
+    private double averageSpareTime;
 
     private static int weightTimePoints = 2;
     private static int weightImaginaryFuelConsumed = 10;
@@ -69,6 +74,20 @@ public class Solution implements Cloneable {
             simulate(environment);
         }
         return isFeasible;
+    }
+
+    public double getAverageSpareTime(Environment environment) {
+        if (!hasRunSimulation) {
+            simulate(environment);
+        }
+        return averageSpareTime;
+    }
+
+    public double getOrdersDeliveredBeforeDeadlinePercentage(Environment environment) {
+        if (!hasRunSimulation) {
+            simulate(environment);
+        }
+        return ordersDeliveredBeforeDeadlinePercentage;
     }
 
     private void simulate(Environment environment) {
@@ -163,6 +182,7 @@ public class Solution implements Cloneable {
                         // Remove the order from the orderMap
                         if (currentTime.isBefore(order.deadline())) {
                             deliveredOrdersOnTime++;
+                            totalSpareTime += currentTime.minutesUntil(order.deadline());
                         } else {
                             errors.add("Vehicle " + vehicle.id() + " has delivered order " + order.id() + " after the deadline.");
                         }
@@ -207,6 +227,9 @@ public class Solution implements Cloneable {
 			Solution.weightOrdersDeliveredOnTime * ordersNotDeliveredOnTimeProportion;
 
         isFeasible = deliveredOrdersOnTime == totalOrders;
+
+        ordersDeliveredBeforeDeadlinePercentage = deliveredOrdersOnTime * 1.0 / totalOrders;
+        averageSpareTime = totalSpareTime * 1.0 / totalOrders;
 
         hasRunSimulation = true;
     }
@@ -253,6 +276,10 @@ public class Solution implements Cloneable {
               .append("    ordersNotDelivered=").append(totalOrders - deliveredOrders).append("/").append(totalOrders).append(" (").append(String.format("%.4f", (totalOrders - deliveredOrders) * 1.0 / totalOrders)).append("),\n")
               .append("    ordersNotDeliveredOnTime=").append(totalOrders - deliveredOrdersOnTime).append("/").append(totalOrders).append(" (").append(String.format("%.4f", (totalOrders - deliveredOrdersOnTime) * 1.0 / totalOrders)).append("),\n")
               .append("  },\n")
+              .append("  metrics={\n")
+              .append("    ordersDeliveredBeforeDeadlinePercentage=").append(String.format("%.4f", ordersDeliveredBeforeDeadlinePercentage)).append(",\n")
+              .append("    averageSpareTime=").append(String.format("%.4f", averageSpareTime)).append(",\n")
+              .append("  },\n")
               .append("  errors=[\n");
             for (String error : errors) {
                 sb.append("    ").append(error).append(",\n");
@@ -291,6 +318,12 @@ public class Solution implements Cloneable {
         report.append(String.format("  Orders Not Delivered On Time: %d/%d (%.4f)\n", 
             totalOrders - deliveredOrdersOnTime, totalOrders, 
             (totalOrders - deliveredOrdersOnTime) * 1.0 / totalOrders));
+
+        report.append("\nMetrics:\n");
+        report.append(String.format("  Orders Delivered Before Deadline: %.4f%%\n", 
+            ordersDeliveredBeforeDeadlinePercentage * 100));
+        report.append(String.format("  Average Spare Time: %.4f minutes\n", 
+            averageSpareTime));
 
         if (!errors.isEmpty()) {
             report.append("\nErrors:\n");
