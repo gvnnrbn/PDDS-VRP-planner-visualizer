@@ -28,10 +28,10 @@ public class Main {
         SolutionInitializer solutionInitializer = new SolutionInitializer();
         Solution initialSolution = solutionInitializer.generateInitialSolution(environment);
         for(int i = 0; i < 10; i++) {
-            TabuSearch tabuSearch = new TabuSearch();
-            Solution bestTabuSearchSolution = tabuSearch.run(environment, initialSolution);
+            HillClimbing algorithm = new HillClimbing();
+            Solution bestTabuSearchSolution = algorithm.run(environment, initialSolution);
             // System.out.println(bestTabuSearchSolution.getReport());
-            bestTabuSearchSolution.exportToCSV( "main/tabuSearchResults.csv");
+            bestTabuSearchSolution.exportToCSV( "main/hillClimbingResults.csv");
         }
 
         environment = environmentParser.parseEnvironment("main/vehicles.csv", "main/orders.csv", "main/blockages.csv", "main/warehouses.csv");
@@ -39,10 +39,10 @@ public class Main {
         solutionInitializer = new SolutionInitializer();
         initialSolution = solutionInitializer.generateInitialSolution(environment);
         for(int i = 0; i < 10; i++) {
-            TabuSearch tabuSearch = new TabuSearch();
-            Solution bestTabuSearchSolution = tabuSearch.run(environment, initialSolution);
+            HillClimbing algorithm = new HillClimbing();
+            Solution bestTabuSearchSolution = algorithm.run(environment, initialSolution);
             // System.out.println(bestTabuSearchSolution.getReport());
-            bestTabuSearchSolution.exportToCSV( "main/tabuSearchResults.csv");
+            bestTabuSearchSolution.exportToCSV( "main/hillClimbingResults.csv");
         }
 
         environment = environmentParser.parseEnvironment("main/vehicles.csv", "main/orders.csv", "main/blockages.csv", "main/warehouses.csv");
@@ -50,10 +50,10 @@ public class Main {
         solutionInitializer = new SolutionInitializer();
         initialSolution = solutionInitializer.generateInitialSolution(environment);
         for(int i = 0; i < 10; i++) {
-            TabuSearch tabuSearch = new TabuSearch();
-            Solution bestTabuSearchSolution = tabuSearch.run(environment, initialSolution);
+            HillClimbing algorithm = new HillClimbing();
+            Solution bestTabuSearchSolution = algorithm.run(environment, initialSolution);
             // System.out.println(bestTabuSearchSolution.getReport());
-            bestTabuSearchSolution.exportToCSV( "main/tabuSearchResults.csv");
+            bestTabuSearchSolution.exportToCSV( "main/hillClimbingResults.csv");
         }
 
         environment = environmentParser.parseEnvironment("main/vehicles.csv", "main/orders.csv", "main/blockages.csv", "main/warehouses.csv");
@@ -61,10 +61,10 @@ public class Main {
         solutionInitializer = new SolutionInitializer();
         initialSolution = solutionInitializer.generateInitialSolution(environment);
         for(int i = 0; i < 10; i++) {
-            TabuSearch tabuSearch = new TabuSearch();
-            Solution bestTabuSearchSolution = tabuSearch.run(environment, initialSolution);
+            HillClimbing algorithm = new HillClimbing();
+            Solution bestTabuSearchSolution = algorithm.run(environment, initialSolution);
             // System.out.println(bestTabuSearchSolution.getReport());
-            bestTabuSearchSolution.exportToCSV( "main/tabuSearchResults.csv");
+            bestTabuSearchSolution.exportToCSV( "main/hillClimbingResults.csv");
         }
 
         environment = environmentParser.parseEnvironment("main/vehicles.csv", "main/orders.csv", "main/blockages.csv", "main/warehouses.csv");
@@ -72,10 +72,10 @@ public class Main {
         solutionInitializer = new SolutionInitializer();
         initialSolution = solutionInitializer.generateInitialSolution(environment);
         for(int i = 0; i < 10; i++) {
-            TabuSearch tabuSearch = new TabuSearch();
-            Solution bestTabuSearchSolution = tabuSearch.run(environment, initialSolution);
+            HillClimbing algorithm = new HillClimbing();
+            Solution bestTabuSearchSolution = algorithm.run(environment, initialSolution);
             // System.out.println(bestTabuSearchSolution.getReport());
-            bestTabuSearchSolution.exportToCSV( "main/tabuSearchResults.csv");
+            bestTabuSearchSolution.exportToCSV( "main/hillClimbingResults.csv");
         }
         // System.out.println("For a sample of " + environment.orders.size() + " orders and " + environment.vehicles.size() + " vehicles:");
         // System.out.println("=== Hill Climbing Solution ===");
