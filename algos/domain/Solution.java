@@ -5,6 +5,8 @@ import java.util.stream.Collectors;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class Solution implements Cloneable {
     public Map<Integer, List<Node>> routes; // routes[vehicleId] -> nodes
@@ -333,5 +335,21 @@ public class Solution implements Cloneable {
         }
 
         return report.toString();
+    }
+    public void exportToCSV(String filename) {
+        if (!hasRunSimulation) {
+            throw new IllegalStateException("Simulation has not been run yet.");
+        }
+
+        try (FileWriter writer = new FileWriter(filename, true)) {
+            String line = String.format("%d,%d,%.4f,%.4f\n",
+                totalOrders,
+                deliveredOrdersOnTime,
+                ordersDeliveredBeforeDeadlinePercentage * 100,
+                averageSpareTime);
+            writer.write(line);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
