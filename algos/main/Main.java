@@ -34,6 +34,7 @@ public class Main {
             bestTabuSearchSolution.exportToCSV( "main/tabuSearchResults.csv");
         }
 
+        environment = environmentParser.parseEnvironment("main/vehicles.csv", "main/orders.csv", "main/blockages.csv", "main/warehouses.csv");
         environment.orders = originalorders.subList(0, 100);
         solutionInitializer = new SolutionInitializer();
         initialSolution = solutionInitializer.generateInitialSolution(environment);
@@ -44,6 +45,7 @@ public class Main {
             bestTabuSearchSolution.exportToCSV( "main/tabuSearchResults.csv");
         }
 
+        environment = environmentParser.parseEnvironment("main/vehicles.csv", "main/orders.csv", "main/blockages.csv", "main/warehouses.csv");
         environment.orders = originalorders.subList(0, 200);
         solutionInitializer = new SolutionInitializer();
         initialSolution = solutionInitializer.generateInitialSolution(environment);
@@ -54,6 +56,7 @@ public class Main {
             bestTabuSearchSolution.exportToCSV( "main/tabuSearchResults.csv");
         }
 
+        environment = environmentParser.parseEnvironment("main/vehicles.csv", "main/orders.csv", "main/blockages.csv", "main/warehouses.csv");
         environment.orders = originalorders.subList(0, 400);
         solutionInitializer = new SolutionInitializer();
         initialSolution = solutionInitializer.generateInitialSolution(environment);
@@ -64,6 +67,7 @@ public class Main {
             bestTabuSearchSolution.exportToCSV( "main/tabuSearchResults.csv");
         }
 
+        environment = environmentParser.parseEnvironment("main/vehicles.csv", "main/orders.csv", "main/blockages.csv", "main/warehouses.csv");
         environment.orders = originalorders.subList(0, 800);
         solutionInitializer = new SolutionInitializer();
         initialSolution = solutionInitializer.generateInitialSolution(environment);
