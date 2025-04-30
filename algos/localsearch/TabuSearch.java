@@ -1,12 +1,11 @@
 package localsearch;
 
+import domain.Environment;
+import domain.Solution;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import domain.Environment;
-import domain.Solution;
 
 public class TabuSearch {
     // Hyperparameters
@@ -28,7 +27,7 @@ public class TabuSearch {
     }
 
     public TabuSearch() {
-        this(10_000, 55 * 1000, 1000, 100, 0.1, false);
+        this(10_000, 55 * 1000, 1000, 100, 0.1, true);
     }
 
     public Solution run(Environment environment, Solution initialSolution) {

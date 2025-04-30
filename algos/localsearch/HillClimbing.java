@@ -1,11 +1,10 @@
 package localsearch;
 
+import domain.Environment;
+import domain.Solution;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-
-import domain.Environment;
-import domain.Solution;
 
 public class HillClimbing {
     // Hyperparameters
@@ -20,7 +19,7 @@ public class HillClimbing {
 
     // Default constructor with default values
     public HillClimbing() {
-        this(10_000, 55 * 1000, 1000, 0.1, false);
+        this(10_000, 55 * 1000, 1000, 0.1, true);
     }
 
     // Parameterized constructor
