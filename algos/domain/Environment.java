@@ -23,7 +23,7 @@ public class Environment {
     public static int maxFitnessForMaximumTimePoints = 20000;
 
     // 1 grid unit = 1 km
-    public static int gridLength = 70; 
+    public static int gridLength = 70;
     public static int gridWidth = 50;
 
     public static final int maxFitness = 10_000;
@@ -55,7 +55,8 @@ public class Environment {
         return distances;
     }
 
-    public Environment(List<Vehicle> vehicles, List<Order> orders, List<Warehouse> warehouses, List<Blockage> blockages, Time currentTime) {
+    public Environment(List<Vehicle> vehicles, List<Order> orders, List<Warehouse> warehouses, List<Blockage> blockages,
+            Time currentTime) {
         this.vehicles = vehicles;
         this.orders = orders;
         this.warehouses = warehouses;
@@ -64,7 +65,7 @@ public class Environment {
     }
 
     public Environment() {
-        this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new Time(0, 0, 0,0));
+        this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new Time(0, 0, 0, 0));
     }
 
     @Override
@@ -85,7 +86,6 @@ public class Environment {
         sb.append("}");
         return sb.toString();
     }
-    
 
     public void generateNodes() {
         List<Warehouse> warehousesCopy = new ArrayList<>(warehouses);
@@ -127,22 +127,22 @@ public class Environment {
 
         // Round robin to assign GLP from the warehouses
         int currentWarehouseIndex = 0;
-        
+
         while (totalAssignableGLP > 0) {
             Warehouse currentWarehouse = warehousesCopy.get(currentWarehouseIndex);
             int warehouseGLP = currentWarehouse.currentGLP();
-            
+
             if (warehouseGLP > 0) {
                 int assignableGLP = Math.min(warehouseGLP, refillChunkSize);
                 assignableGLP = Math.min(assignableGLP, totalAssignableGLP);
-                
+
                 // Create refill nodes in smaller chunks to allow for more frequent refueling
                 int refillChunkSize = Math.min(assignableGLP, Environment.refillChunkSize);
                 nodes.add(new ProductRefillNode(nodeSerial++, currentWarehouse, refillChunkSize));
                 warehouseGLP -= refillChunkSize;
                 totalAssignableGLP -= refillChunkSize;
             }
-            
+
             currentWarehouseIndex = (currentWarehouseIndex + 1) % warehousesCopy.size();
         }
 
@@ -165,15 +165,17 @@ public class Environment {
         areNodesGenerated = true;
     }
 
-    // Dist Max = 25 * 180 / 15 = 300 Km. 
-    // Fuel (in galons) = Distance (in km) * [weight (in kg) + 0.5 * GLP (in m3)] / 180
-    public static double calculateFuelCost(Node from, Node to, Map<Position, Map<Position, Integer>> distances, Vehicle vehicle) {
+    // Dist Max = 25 * 180 / 15 = 300 Km.
+    // Fuel (in galons) = Distance (in km) * [weight (in kg) + 0.5 * GLP (in m3)] /
+    // 180
+    public static double calculateFuelCost(Node from, Node to, Map<Position, Map<Position, Integer>> distances,
+            Vehicle vehicle) {
         int distance = distances.get(from.getPosition()).get(to.getPosition());
         double fuelCost = distance * (vehicle.weight() + vehicle.currentGLP() * 0.5) / 180;
         return fuelCost;
     }
 
-    public void generateDistances(){
+    public void generateDistances() {
         Map<Position, Map<Position, Integer>> distances = new HashMap<>();
         List<Position> positions = new ArrayList<>();
         Set<Position> uniquePositions = new HashSet<>();
@@ -231,7 +233,7 @@ public class Environment {
         return false;
     }
 
-    private int calculateManhattanDistance(Position from, Position to) {
+    public static int calculateManhattanDistance(Position from, Position to) {
         return Math.abs(from.x() - to.x()) + Math.abs(from.y() - to.y());
     }
 
@@ -251,7 +253,7 @@ public class Environment {
 
         while (!openSet.isEmpty()) {
             AstarNode current = openSet.poll();
-            
+
             if (current.position.equals(to)) {
                 return gScore.get(to);
             }
@@ -282,12 +284,12 @@ public class Environment {
 
     private List<Position> getAstarNeighbors(Position current) {
         List<Position> neighbors = new ArrayList<>();
-        int[][] directions = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}}; // up, right, down, left
+        int[][] directions = { { 0, 1 }, { 1, 0 }, { 0, -1 }, { -1, 0 } }; // up, right, down, left
 
         for (int[] dir : directions) {
             int newX = current.x() + dir[0];
             int newY = current.y() + dir[1];
-            
+
             // Check if the new position is within grid boundaries
             if (newX >= 0 && newX < gridLength && newY >= 0 && newY < gridWidth) {
                 Position neighbor = new Position(newX, newY);
@@ -319,25 +321,29 @@ public class Environment {
 
         System.out.println("\n=== Node Generation Report ===");
         System.out.println("Total nodes generated: " + nodes.size());
-        
+
         int emptyNodes = 0;
         int orderNodes = 0;
         int refillNodes = 0;
         int finalNodes = 0;
-        
+
         for (Node node : nodes) {
-            if (node instanceof EmptyNode) emptyNodes++;
-            else if (node instanceof OrderDeliverNode) orderNodes++;
-            else if (node instanceof ProductRefillNode) refillNodes++;
-            else if (node instanceof FinalNode) finalNodes++;
+            if (node instanceof EmptyNode)
+                emptyNodes++;
+            else if (node instanceof OrderDeliverNode)
+                orderNodes++;
+            else if (node instanceof ProductRefillNode)
+                refillNodes++;
+            else if (node instanceof FinalNode)
+                finalNodes++;
         }
-        
+
         System.out.println("Node types breakdown:");
         System.out.println("- Empty nodes (vehicle start positions): " + emptyNodes);
         System.out.println("- Order delivery nodes: " + orderNodes);
         System.out.println("- Product refill nodes: " + refillNodes);
         System.out.println("- Final nodes: " + finalNodes);
-        
+
         // Print total GLP to be delivered
         int totalGLPToDeliver = 0;
         for (Node node : nodes) {
@@ -346,7 +352,7 @@ public class Environment {
             }
         }
         System.out.println("\nTotal GLP to be delivered: " + totalGLPToDeliver + " m³");
-        
+
         // Print total GLP to be refilled
         int totalGLPToRefill = 0;
         for (Node node : nodes) {
@@ -357,4 +363,3 @@ public class Environment {
         System.out.println("Total GLP to be refilled: " + totalGLPToRefill + " m³");
     }
 }
-

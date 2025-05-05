@@ -17,8 +17,8 @@ public class TabuSearch {
     private final double aspirationCriteria;
     private final boolean isDebug;
 
-    public TabuSearch(int maxIterations, int maxTimeMs, int maxNoImprovement, 
-                     int tabuListSize, double aspirationCriteria, boolean isDebug) {
+    public TabuSearch(int maxIterations, int maxTimeMs, int maxNoImprovement,
+            int tabuListSize, double aspirationCriteria, boolean isDebug) {
         this.maxIterations = maxIterations;
         this.maxTimeMs = maxTimeMs;
         this.maxNoImprovement = maxNoImprovement;
@@ -28,7 +28,7 @@ public class TabuSearch {
     }
 
     public TabuSearch() {
-        this(10_000, 55 * 1000, 1000, 100, 0.1, false);
+        this(200, 10 * 1000, 100, 50, 0.1, true);
     }
 
     public Solution run(Environment environment, Solution initialSolution) {
@@ -43,23 +43,23 @@ public class TabuSearch {
         int noImprovementCount = 0;
         long startTime = System.currentTimeMillis();
 
-        while (iterations < maxIterations && 
-               System.currentTimeMillis() - startTime < maxTimeMs && 
-               noImprovementCount < maxNoImprovement) {
-            
+        while (iterations < maxIterations &&
+                System.currentTimeMillis() - startTime < maxTimeMs &&
+                noImprovementCount < maxNoImprovement) {
+
             List<Neighbor> neighborhood = NeighborhoodGenerator.generateNeighborhood(currSolution, environment);
             Neighbor bestNeighbor = null;
             double bestNeighborFitness = Double.NEGATIVE_INFINITY;
 
             for (Neighbor neighbor : neighborhood) {
                 double neighborFitness = neighbor.solution.fitness(environment);
-                
+
                 // Check if movement is in tabu list
                 boolean isTabu = tabuList.contains(neighbor.movement);
-                
+
                 // Aspiration criteria: accept tabu move if it improves the best solution
                 boolean satisfiesAspiration = neighborFitness > bestFitness * (1 + aspirationCriteria);
-                
+
                 if ((!isTabu || satisfiesAspiration) && neighborFitness > bestNeighborFitness) {
                     bestNeighbor = neighbor;
                     bestNeighborFitness = neighborFitness;
@@ -92,11 +92,11 @@ public class TabuSearch {
 
             if (isDebug && iterations % 100 == 0) {
                 long timePassed = System.currentTimeMillis() - startTime;
-                System.out.println("Iteration " + iterations + 
-                    ": Current fitness: " + currFitness + 
-                    ", Best fitness: " + bestFitness + 
-                    ", Tabu list size: " + tabuList.size() + 
-                    ", Time passed: " + timePassed + "ms");
+                System.out.println("Iteration " + iterations +
+                        ": Current fitness: " + currFitness +
+                        ", Best fitness: " + bestFitness +
+                        ", Tabu list size: " + tabuList.size() +
+                        ", Time passed: " + timePassed + "ms");
             }
 
             iterations++;
