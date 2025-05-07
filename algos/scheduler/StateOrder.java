@@ -6,6 +6,10 @@ import domain.Time;
 public class StateOrder {
     int id;
     Time arrivalTime;
-    Order order;
+    int positionX;
+    int positionY;
+    int amountGLP;
+    String clientId;
+    Time deadline;
     
 }
