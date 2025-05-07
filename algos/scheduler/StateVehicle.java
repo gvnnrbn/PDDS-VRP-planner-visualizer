@@ -31,7 +31,7 @@ public class StateVehicle {
         this.maintenance = maintenance;
     }
 
-    public List<StateVehicle> parseVehicles(String filePath) {
+    public static List<StateVehicle> parseVehicles(String filePath) {
         List<StateVehicle> vehicles = new ArrayList<>();
         
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {

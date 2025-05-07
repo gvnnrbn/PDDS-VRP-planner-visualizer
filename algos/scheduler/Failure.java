@@ -45,7 +45,7 @@ public class Failure {
         }
     }
 
-    public List<Failure> parseFailures(String filePath) {
+    public static List<Failure> parseFailures(String filePath) {
         List<Failure> failures = new ArrayList<>();
         
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {

@@ -21,7 +21,7 @@ public class Maintenance {
         this.date = date;
     }
 
-    public List<Maintenance> parseMaintenances(String filePath) {
+    public static List<Maintenance> parseMaintenances(String filePath) {
         List<Maintenance> maintenances = new ArrayList<>();
         
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {

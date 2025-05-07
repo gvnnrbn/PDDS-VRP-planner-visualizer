@@ -8,8 +8,12 @@ import domain.SolutionInitializer;
 import domain.Time;
 import domain.Vehicle;
 import domain.Warehouse;
+
+import java.lang.Thread.State;
 import java.util.List;
 import localsearch.TabuSearch;
+import scheduler.Maintenance;
+import scheduler.StateVehicle;
 import utils.EnvironmentBuilder;
 import utils.EnvironmentParser;
 import utils.SimulationEngine;
@@ -28,10 +32,11 @@ public class Main {
         EnvironmentParser parser = new EnvironmentParser(startTime);
 
         // cambiar a otras clases
-        /*List<Vehicle> vehicles = parser.parseVehicles("main/vehicles.csv");
-        List<Order> orders = parser.parseOrders("main/orders.csv");
-        List<Warehouse> warehouses = parser.parseWarehouses("main/warehouses.csv");
-        */
+        List<StateVehicle> vehicles = StateVehicle.parseVehicles("main/vehicles.csv");
+        List<Maintenance> maintenances = Maintenance.parseMaintenances("main/maintenances.csv");
+        List<StateOrder> orders = parser.parseOrders("main/orders.csv");
+        List<StateWarehouse> warehouses = parser.parseWarehouses("main/warehouses.csv");
+        List<StateBlockage> blockages = parser.parseBlockages("main/blockages.csv");
         
         // agregar bloqueos, mantenimientos y lista de averias (validar si empty para los escenarios que no consideren averias)
         // todo debe entrar filtrado inicialmente en t=0
