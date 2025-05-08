@@ -19,6 +19,12 @@ public class SimulationEngine {
         Map<Integer, Warehouse> warehouseMap = state.warehouses.stream()
                 .collect(Collectors.toMap(Warehouse::id, w -> w));
 
+
+        /*
+         * loop (i = 0; i <minutesToSImulate; i+=1) // probar primero con 1 min
+                for (vehiculo in Vehiculos)
+         * 
+         */
         for (Vehicle vehicle : state.vehicles) {
             List<Node> route = plan.routes.get(vehicle.id());
             if (route == null || route.size() < 2) {

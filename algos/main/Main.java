@@ -13,6 +13,8 @@ import java.lang.Thread.State;
 import java.util.List;
 import localsearch.TabuSearch;
 import scheduler.Maintenance;
+import scheduler.StateBlockage;
+import scheduler.StateOrder;
 import scheduler.StateVehicle;
 import utils.EnvironmentBuilder;
 import utils.EnvironmentParser;
@@ -34,9 +36,9 @@ public class Main {
         // cambiar a otras clases
         List<StateVehicle> vehicles = StateVehicle.parseVehicles("main/vehicles.csv");
         List<Maintenance> maintenances = Maintenance.parseMaintenances("main/maintenances.csv");
-        List<StateOrder> orders = parser.parseOrders("main/orders.csv");
+        List<StateOrder> orders = StateOrder.parseOrders("main/orders.csv");
         List<StateWarehouse> warehouses = parser.parseWarehouses("main/warehouses.csv");
-        List<StateBlockage> blockages = parser.parseBlockages("main/blockages.csv");
+        List<StateBlockage> blockages = StateBlockage.parseBlockages("main/blockages.csv");
         
         // agregar bloqueos, mantenimientos y lista de averias (validar si empty para los escenarios que no consideren averias)
         // todo debe entrar filtrado inicialmente en t=0
@@ -45,6 +47,8 @@ public class Main {
         // === 3. BUCLE DE PLANIFICACIÓN ===
         int iteration = 0;
         while (!simulationState.pendingOrders.isEmpty()) {
+            
+
             System.out.println("\n--- PLANIFICACION #" + (++iteration) + " ---");
             System.out.println("Tiempo actual: " + simulationState.currentTime);
 
