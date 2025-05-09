@@ -47,7 +47,7 @@ public class StateOrder {
                 int hour = Integer.parseInt(timeParts[1]);
                 int minute = Integer.parseInt(timeParts[2]);
     
-                Time creationTime = new Time(1, day, hour, minute);  // Suponemos mes = 1
+                Time creationTime = new Time(0,0, day, hour, minute);  // Suponemos mes = 1
     
                 // Parsear datos del pedido
                 String[] orderParts = parts[1].split(",");
