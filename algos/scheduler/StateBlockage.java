@@ -1,7 +1,7 @@
 package scheduler;
 
-import domain.Time;
 import domain.Position;
+import utils.Time;
 
 import java.io.BufferedReader;
 import java.io.FileReader;

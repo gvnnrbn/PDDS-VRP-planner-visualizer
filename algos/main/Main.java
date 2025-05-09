@@ -2,10 +2,8 @@ package main;
 
 import domain.Environment;
 import domain.Order;
-import domain.SimulationState;
 import domain.Solution;
 import domain.SolutionInitializer;
-import domain.Time;
 import domain.Vehicle;
 import domain.Warehouse;
 
@@ -14,6 +12,7 @@ import java.util.List;
 import localsearch.TabuSearch;
 import scheduler.Failure;
 import scheduler.Maintenance;
+import scheduler.SimulationState;
 import scheduler.StateBlockage;
 import scheduler.StateOrder;
 import scheduler.StateVehicle;
@@ -21,6 +20,7 @@ import scheduler.StateWarehouse;
 import utils.EnvironmentBuilder;
 import utils.EnvironmentParser;
 import utils.SimulationEngine;
+import utils.Time;
 
 public class Main {
     public static void main(String[] args) {

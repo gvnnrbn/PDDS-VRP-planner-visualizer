@@ -1,8 +1,13 @@
-package domain;
+package scheduler;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import domain.Order;
+import domain.Vehicle;
+import domain.Warehouse;
+import utils.Time;
 
 public class SimulationState {
     public Time currentTime;

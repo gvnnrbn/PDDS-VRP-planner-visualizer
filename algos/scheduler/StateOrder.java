@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import domain.Time;
+import utils.Time;
 
 public class StateOrder {
     int id;

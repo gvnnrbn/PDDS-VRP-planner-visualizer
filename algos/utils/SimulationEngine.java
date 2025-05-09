@@ -1,6 +1,8 @@
 package utils;
 
 import domain.*;
+import scheduler.SimulationState;
+
 import java.util.*;
 import java.util.stream.Collectors;
 

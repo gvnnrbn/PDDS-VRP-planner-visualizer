@@ -1,4 +1,4 @@
-package domain;
+package utils;
 
 // TODO: month handling is incorrect, it doesn't matter, just use days
 public class Time implements Comparable<Time> {
