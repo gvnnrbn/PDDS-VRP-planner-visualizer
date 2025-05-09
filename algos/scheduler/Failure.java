@@ -29,16 +29,16 @@ public class Failure {
             case 2:
                 this.minutesIdle = 120;
                 switch (shift) {
-                    case 1 -> this.timeTillRepaired = new Time(0, 0, 16, 0);
-                    case 2 -> this.timeTillRepaired = new Time(0, 1, 0, 0);
-                    case 3 -> this.timeTillRepaired = new Time(0, 1, 8, 0);
+                    case 1 -> this.timeTillRepaired = new Time(0,0, 0, 16, 0);
+                    case 2 -> this.timeTillRepaired = new Time(0,0, 1, 0, 0);
+                    case 3 -> this.timeTillRepaired = new Time(0,0, 1, 8, 0);
                     
-                    default -> this.timeTillRepaired = new Time(0, 0, 0, 0);
+                    default -> this.timeTillRepaired = new Time(0,0, 0, 0, 0);
                 }
                 break;
             case 3:
                 this.minutesIdle = 240;
-                this.timeTillRepaired = new Time(0, 2, 0, 0);
+                this.timeTillRepaired = new Time(0,0, 2, 0, 0);
                 break;
             default:
                 break;

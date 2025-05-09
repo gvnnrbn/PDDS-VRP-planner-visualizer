@@ -41,7 +41,7 @@ public class StateBlockage {
                 int day = Integer.parseInt(timeParts[0]);
                 int hour = Integer.parseInt(timeParts[1]);
                 int minute = Integer.parseInt(timeParts[2]);                
-                Time startTime = new Time(month, day, hour, minute);
+                Time startTime = new Time(0,0, day, hour, minute);
 
                 String[] parts2 = line.split(":");
                 if (parts2.length != 2) continue;
@@ -54,7 +54,7 @@ public class StateBlockage {
                 hour = Integer.parseInt(timeParts2[1]);
                 minute = Integer.parseInt(timeParts2[2]);
                 
-                Time endTime = new Time(month, day, hour, minute);
+                Time endTime = new Time(0,0, day, hour, minute);
 
                 // Parse vertices
                 String[] coordinates = parts[1].split(",");

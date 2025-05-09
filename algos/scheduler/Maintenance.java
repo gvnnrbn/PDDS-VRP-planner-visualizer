@@ -34,7 +34,7 @@ public class Maintenance {
                 int date = Integer.parseInt(parts[0].trim());
                 String vehicleId = parts[1].trim();
 
-                Maintenance maintenance = new Maintenance(id++, vehicleId, date/10000, new Time(date%10000/100, date%100, 0, 0));
+                Maintenance maintenance = new Maintenance(id++, vehicleId, date/10000, new Time(0,date%10000/100, date%100, 0, 0));
                 maintenances.add(maintenance);
             }
         } catch (IOException e) {

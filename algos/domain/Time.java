@@ -2,12 +2,14 @@ package domain;
 
 // TODO: month handling is incorrect, it doesn't matter, just use days
 public class Time implements Comparable<Time> {
+    private int year;
     private int month;
     private int day;
     private int hour;
     private int min;
 
-    public Time(int month, int day, int hour, int min) {
+    public Time(int year,int month, int day, int hour, int min) {
+        this.year = year;
         this.month = month;
         this.day = day;
         this.hour = hour;
@@ -16,11 +18,12 @@ public class Time implements Comparable<Time> {
 
     @Override
     public String toString() {
-        return String.format("%02d/%02d %02d:%02d", month, day, hour, min);
+        return String.format("%04d/%02d/%02d %02d:%02d", year, month, day, hour, min);
     }
 
     @Override
     public int compareTo(Time other) {
+        if (this.year != other.year) return this.year - other.year;
         if (this.month != other.month) return this.month - other.month;
         if (this.day != other.day) return this.day - other.day;
         if (this.hour != other.hour) return this.hour - other.hour;
@@ -28,6 +31,7 @@ public class Time implements Comparable<Time> {
     }
 
     public boolean isBefore(Time other) {
+        if (this.year != other.year) return this.year < other.year;
         if (this.month != other.month) return this.month < other.month;
         if (this.day != other.day) return this.day < other.day;
         if (this.hour != other.hour) return this.hour < other.hour;
@@ -49,14 +53,18 @@ public class Time implements Comparable<Time> {
         
         int newDay = this.day + extraDays;
         int newMonth = this.month;
-        
-        // Simple month handling (assuming 30 days per month)
+        int newYear = this.year;
+        // Adjust for months and years (assuming 30 days per month)
         while (newDay > 30) {
             newDay -= 30;
             newMonth++;
+            if (newMonth > 12) {
+                newMonth = 1;
+                newYear++;
+            }
         }
         
-        return new Time(newMonth, newDay, newHour, newMin);
+        return new Time(newYear, newMonth, newDay, newHour, newMin);
     }
 
     public Time subtractMinutes(int minutes) {
@@ -64,12 +72,13 @@ public class Time implements Comparable<Time> {
     }
 
     public int minutesUntil(Time other) {
+        int yearsDiff = (other.year - this.year) * 12 * 30 * 24 * 60;
         int monthsDiff = (other.month - this.month) * 30 * 24 * 60;
         int daysDiff = (other.day - this.day) * 24 * 60;
         int hoursDiff = (other.hour - this.hour) * 60;
         int minsDiff = other.min - this.min;
         
-        return monthsDiff + daysDiff + hoursDiff + minsDiff;
+        return yearsDiff + monthsDiff + daysDiff + hoursDiff + minsDiff;
     }
 
     public int minutesSince(Time other) {
