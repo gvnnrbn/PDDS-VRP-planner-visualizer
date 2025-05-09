@@ -12,10 +12,12 @@ import domain.Warehouse;
 import java.lang.Thread.State;
 import java.util.List;
 import localsearch.TabuSearch;
+import scheduler.Failure;
 import scheduler.Maintenance;
 import scheduler.StateBlockage;
 import scheduler.StateOrder;
 import scheduler.StateVehicle;
+import scheduler.StateWarehouse;
 import utils.EnvironmentBuilder;
 import utils.EnvironmentParser;
 import utils.SimulationEngine;
@@ -33,12 +35,13 @@ public class Main {
         Time startTime = new Time(1, 1, 0, 0); // 01/01 00:00
         EnvironmentParser parser = new EnvironmentParser(startTime);
 
-        // cambiar a otras clases
+        // Parsing state elements
         List<StateVehicle> vehicles = StateVehicle.parseVehicles("main/vehicles.csv");
         List<Maintenance> maintenances = Maintenance.parseMaintenances("main/maintenances.csv");
         List<StateOrder> orders = StateOrder.parseOrders("main/orders.csv");
-        List<StateWarehouse> warehouses = parser.parseWarehouses("main/warehouses.csv");
+        List<StateWarehouse> warehouses = StateWarehouse.parseWarehouses("main/warehouses.csv");
         List<StateBlockage> blockages = StateBlockage.parseBlockages("main/blockages.csv");
+        List<Failure> failures = Failure.parseFailures("main/failures.csv");
         
         // agregar bloqueos, mantenimientos y lista de averias (validar si empty para los escenarios que no consideren averias)
         // todo debe entrar filtrado inicialmente en t=0
