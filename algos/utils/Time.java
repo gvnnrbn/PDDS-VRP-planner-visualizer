@@ -38,6 +38,15 @@ public class Time implements Comparable<Time> {
         return this.min < other.min;
     }
 
+    public boolean isBeforeOrAt(Time other) {
+        if (this.year != other.year) return this.year < other.year;
+        if (this.month != other.month) return this.month < other.month;
+        if (this.day != other.day) return this.day < other.day;
+        if (this.hour != other.hour) return this.hour < other.hour;
+        return this.min <= other.min;
+    }
+    
+
     public boolean isAfter(Time other) {
         return other.isBefore(this);
     }
@@ -83,5 +92,9 @@ public class Time implements Comparable<Time> {
 
     public int minutesSince(Time other) {
         return -other.minutesUntil(this);
+    }
+
+    public int getHour() {
+        return this.hour;
     }
 }

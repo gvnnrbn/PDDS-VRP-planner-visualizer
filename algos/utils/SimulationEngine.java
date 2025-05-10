@@ -1,13 +1,13 @@
 package utils;
 
 import domain.*;
-import scheduler.SimulationState;
+import scheduler.ScheduleState;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class SimulationEngine {
-    public static void apply(Solution plan, SimulationState state, int minutesToSimulate) {
+    public static void apply(Solution plan, ScheduleState state, int minutesToSimulate) {
         Time startTime = state.currentTime;
         Time endTime = startTime.addMinutes(minutesToSimulate);
 

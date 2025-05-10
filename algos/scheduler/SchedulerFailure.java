@@ -11,16 +11,16 @@ import utils.Time;
 public class SchedulerFailure {
     int id;
     int type;
-    int shift; // 1=00:00-08:00, 2=08:00-16:00, 3=16:00-24:00
+    int shiftOccurredOn; // 1=00:00-08:00, 2=08:00-16:00, 3=16:00-24:00
     String vehicleId;
     Time timeTillRepaired;
     int minutesIdle;
 
-    SchedulerFailure(int id, int type, int shift, String vehicleId) {
+    SchedulerFailure(int id, int type, int shiftOccurredOn, String vehicleId) {
         this.id = id;
         this.vehicleId = vehicleId;
         this.type = type;
-        this.shift = shift;
+        this.shiftOccurredOn = shiftOccurredOn;
         // set idle time (time as warehouse) and time till available for scheduling 
         switch (type) {
             case 1:
@@ -28,7 +28,7 @@ public class SchedulerFailure {
                 break;
             case 2:
                 this.minutesIdle = 120;
-                switch (shift) {
+                switch (shiftOccurredOn) {
                     case 1 -> this.timeTillRepaired = new Time(0,0, 0, 16, 0);
                     case 2 -> this.timeTillRepaired = new Time(0,0, 1, 0, 0);
                     case 3 -> this.timeTillRepaired = new Time(0,0, 1, 8, 0);
@@ -55,11 +55,11 @@ public class SchedulerFailure {
                 String[] parts = line.split("_");
                 if (parts.length != 3) continue;
                 
-                int shift = Integer.parseInt(parts[0].trim());
+                int shiftOccurredOn = Integer.parseInt(parts[0].trim());
                 String vehicleId = parts[1].trim();
                 int type = Integer.parseInt(parts[2].trim());
 
-                SchedulerFailure failure = new SchedulerFailure(id++, type, shift, vehicleId);
+                SchedulerFailure failure = new SchedulerFailure(id++, type, shiftOccurredOn, vehicleId);
                 failures.add(failure);
             }
         } catch (IOException e) {

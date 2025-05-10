@@ -1,7 +1,7 @@
 package utils;
 
 import domain.*;
-import scheduler.SimulationState;
+import scheduler.ScheduleState;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 
 public class EnvironmentBuilder {
 
-    public static Environment build(SimulationState state, int scMinutes) {
+    public static Environment build(ScheduleState state, int scMinutes) {
         // Calcular el rango de tiempo de planificación
         Time currentTime = state.currentTime;
         Time maxDeadline = currentTime.addMinutes(scMinutes);
