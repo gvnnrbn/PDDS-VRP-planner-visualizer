@@ -25,7 +25,8 @@ import utils.Time;
 public class Main {
     public static void main(String[] args) {
         // NEW, CHECK PARAMETERS
-        int updateStateTimeUnit = 1; 
+        int minutesToSimulate = 75;
+        int timeUnit = 1; 
 
         // === 1. PARAMETROS DEL PLANIFICADOR ===
         int Ta = 1; // Tiempo que tarda el algoritmo (minutos)
@@ -80,7 +81,7 @@ public class Main {
             
             // 3.5. Simular la ejecución del plan y actualizar el estado
             // inside apply() calculate if failure happens
-            SimulationEngine.apply(bestSolution, simulationState, Sc, updateStateTimeUnit,mainWarehouse);
+            SimulationEngine.apply(bestSolution, simulationState, minutesToSimulate, timeUnit,mainWarehouse);
             // simulationState.printState(iteration);
         }
 

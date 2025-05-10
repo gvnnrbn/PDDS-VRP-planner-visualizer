@@ -12,29 +12,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class SimulationEngine {
-    public static void apply(Solution plan, ScheduleState state, int minutesToSimulate, int timeUnit, SchedulerWarehouse mainWarehouse) {
-        // Time startTime = state.currentTime;
-        // Time endTime = startTime.addMinutes(minutesToSimulate);
-
-        // Copy all mutable state objetcs
-        // List<SchedulerOrder> updatedSchedulerOrders = new ArrayList<>(state.orders);
-        // List<SchedulerVehicle> updatedSchedulerVehicles = new ArrayList<>();
-
-        // Map<Integer, SchedulerOrder> orderMap = updatedSchedulerOrders.stream()
-        //         .collect(Collectors.toMap(SchedulerOrder::id, o -> o));
-
-        // Map<Integer, Warehouse> warehouseMap = state.warehouses.stream()
-        //         .collect(Collectors.toMap(Warehouse::id, w -> w));
-
-
-        /*
-         * loop (i = 0; i <minutesToSImulate; i+=1) // probar primero con 1 min
-                for (vehiculo in Vehiculos)
-         * 
-         */
-        
+    public static void apply(Solution plan, ScheduleState state, int minutesToSimulate, int timeUnit, SchedulerWarehouse mainWarehouse) {      
         
         boolean vehicleNotAvailable = false;
+
         for (int t = 0; t < minutesToSimulate; t += timeUnit) {
             for (SchedulerVehicle vehicle : state.vehicles) {
                 // check failure stage if occured
@@ -65,8 +46,46 @@ public class SimulationEngine {
                 for (int i = 0; i < route.size() - 1; i++) {
                     Node from = route.get(i);
                     Node to = route.get(i + 1);
-                    int nodesDIstance = Environment.calculateManhattanDistance(route.get.getPosition(), to.getPosition());
-    
+                    int nodesDistance = Environment.calculateManhattanDistance(route.get.getPosition(), to.getPosition());
+                    /* ADAPTAR
+                     * public void generateDistances() {
+                            Map<Position, Map<Position, Integer>> distances = new HashMap<>();
+                            List<Position> positions = new ArrayList<>();
+                            Set<Position> uniquePositions = new HashSet<>();
+                            for (Node node : getNodes()) {
+                                uniquePositions.add(node.getPosition());
+                            }
+                            positions.addAll(uniquePositions);
+
+                            // Initialize the distance map for all positions
+                            for (Position position : positions) {
+                                distances.put(position, new HashMap<>());
+                                // Set diagonal to 0
+                                distances.get(position).put(position, 0);
+                            }
+
+                            // Only calculate distances for the upper triangle
+                            for (int i = 0; i < positions.size(); i++) {
+                                Position position = positions.get(i);
+                                for (int j = i + 1; j < positions.size(); j++) {
+                                    Position otherPosition = positions.get(j);
+                                    int distance;
+                                    if (isManhattanAvailable(position, otherPosition)) {
+                                        distance = calculateManhattanDistance(position, otherPosition);
+                                    } else {
+                                        distance = calculateAStarDistance(position, otherPosition);
+                                    }
+                                    // Set distance in both directions
+                                    distances.get(position).put(otherPosition, distance);
+                                    distances.get(otherPosition).put(position, distance);
+                                }
+                            }
+
+                            this.distances = distances;
+                            areDistancesGenerated = true;
+                        }
+                     * 
+                     */
                     
                     // totalDistance = vehicle position at t=0 to position at t=minutesToSimulate
 
@@ -79,8 +98,8 @@ public class SimulationEngine {
                             .orElse(null);
                     if (failure != null && (failure.shiftOccurredOn-1)*8 < currentTime.getHour()) {
                         // Calculate the percentage of progress along the route
-                        int progress = Environment.calculateManhattanDistance(vehicle.position, to.getPosition());
-                        double progressPercentage = (double) progress / totalDistance * 100;
+                        //int progress = Environment.calculateManhattanDistance(vehicle.position, to.getPosition());
+                        //double progressPercentage = (double) progress / totalDistance * 100;
 
                         // Check if the progress is between 5% and 35%
                         if (progressPercentage >= 5 && progressPercentage <= 35) {
@@ -100,6 +119,11 @@ public class SimulationEngine {
                             }
                         }
                     }
+                    // switch para cada accion como en simulate(), domain/Solution.java
+
+                    // case: trasvase/entrega
+                    // vehicle.transferMinutes = 15;
+                    // vehicle.transferMinutes -= timeUnit;
 
                     ///////////////////////
                     // old
