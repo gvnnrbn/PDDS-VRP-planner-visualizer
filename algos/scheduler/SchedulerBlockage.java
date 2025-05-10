@@ -10,12 +10,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SchedulerBlockage {
-    int id;
-    Time startTime;
-    Time endTime;
-    List<Position> vertices; // check
+    public int id;
+    public Time startTime;
+    public Time endTime;
+    public List<Position> vertices; // check
 
-    SchedulerBlockage(int id, Time startTime, Time endTime, List<Position> vertices) {
+    public SchedulerBlockage(int id, Time startTime, Time endTime, List<Position> vertices) {
         this.id = id;
         this.startTime = startTime;
         this.endTime = endTime;

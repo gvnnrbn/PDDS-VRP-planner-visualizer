@@ -9,18 +9,18 @@ import java.util.List;
 import domain.Position;
 
 public class SchedulerVehicle {
-    String id; // TA01
-    String type;
-    EnumVehicleState state;
+    public String id; // TA01
+    public String type;
+    public EnumVehicleState state;
     // Vehicle class attributes:
-    int weight;
-    int maxFuel;
-    double currentFuel;
-    int maxGLP;
-    int currentGLP;
-    Position initialPosition;
+    public int weight;
+    public int maxFuel;
+    public double currentFuel;
+    public int maxGLP;
+    public int currentGLP;
+    public Position initialPosition;
     
-    SchedulerVehicle(String id, String type,EnumVehicleState state, int weight, int maxFuel, 
+    public SchedulerVehicle(String id, String type,EnumVehicleState state, int weight, int maxFuel, 
     double currentFuel, int maxGLP, int currentGLP, Position initialPosition) {
         this.id = id;
         this.type = type;

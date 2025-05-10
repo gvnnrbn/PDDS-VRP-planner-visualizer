@@ -2,45 +2,49 @@ package utils;
 
 import domain.*;
 import scheduler.ScheduleState;
+import scheduler.SchedulerBlockage;
+import scheduler.SchedulerOrder;
+import scheduler.SchedulerVehicle;
+import scheduler.SchedulerWarehouse;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class EnvironmentBuilder {
 
-    public static Environment build(ScheduleState state, int scMinutes) {
-        // Calcular el rango de tiempo de planificación
+    // copy or convert into Environment attributes
+    public static Environment build(ScheduleState state) {
         Time currentTime = state.currentTime;
-        Time maxDeadline = currentTime.addMinutes(scMinutes);
+        List<Vehicle> environmentVehicles = convertToVehicles(state.vehicles);
+        List<Warehouse> environmentWarehouses = convertToWarehouses(state.warehouses);
+        List<Blockage> environmentBlockages = convertToBlockages(state.blockages);
+        List<Order> environmentOrders = convertToOrders(state.orders);
 
-        // Filtrar pedidos que entran en el rango actual de planificación
-        List<Order> filteredOrders = state.pendingOrders.stream()
-            .filter(order -> !order.deadline().isAfter(maxDeadline)) // incluye solo los que vencen antes o dentro del SC
+        return new Environment(environmentVehicles, environmentOrders, environmentWarehouses, environmentBlockages, currentTime);
+    }
+
+    private static List<Vehicle> convertToVehicles(List<SchedulerVehicle> original) {
+        int[] idCounter = {0};
+        return original.stream()
+            .map(v -> new Vehicle(idCounter[0]++, v.weight, v.maxFuel,
+            v.currentFuel, v.maxGLP, v.currentGLP, v.initialPosition))
             .collect(Collectors.toList());
-
-        // Copiar vehículos y almacenes tal como están en el estado actual
-        List<Vehicle> copiedVehicles = deepCopyVehicles(state.vehicles);
-        List<Warehouse> copiedWarehouses = deepCopyWarehouses(state.warehouses);
-
-        // Bloqueos: si decides hacerlos dinámicos, aquí se actualizarían
-        List<Blockage> blockages = new ArrayList<>(); // vacíos por ahora, o puedes traerlos del estado
-        System.out.println(
-                "Planificando " + filteredOrders.size() + " pedidos entre " + currentTime + " y " + maxDeadline);
-
-        return new Environment(copiedVehicles, filteredOrders, copiedWarehouses, blockages, currentTime);
     }
 
-    private static List<Vehicle> deepCopyVehicles(List<Vehicle> original) {
+    private static List<Warehouse> convertToWarehouses(List<SchedulerWarehouse> original) {
         return original.stream()
-                .map(v -> new Vehicle(v.id(), v.weight(), v.maxFuel(), v.currentFuel(), v.maxGLP(), v.currentGLP(),
-                        v.initialPosition()))
-                .collect(Collectors.toList());
+            .map(w -> new Warehouse(w.id, w.position, w.currentGLP, w.maxGLP, w.isMain))
+            .collect(Collectors.toList());
     }
-
-    private static List<Warehouse> deepCopyWarehouses(List<Warehouse> original) {
+    
+    private static List<Blockage> convertToBlockages(List<SchedulerBlockage> original) {
         return original.stream()
-                .map(w -> new Warehouse(w.id(), w.position(), w.currentGLP(), w.maxGLP(), w.isMain()))
-                .collect(Collectors.toList());
+        .map(b -> new Blockage(b.vertices))
+        .collect(Collectors.toList());
+    }
+    private static List<Order> convertToOrders(List<SchedulerOrder> original) {
+        return original.stream()
+            .map(o -> new Order(o.id, o.amountGLP,o.position, o.deadline))
+            .collect(Collectors.toList());
     }
 }

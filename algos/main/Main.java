@@ -51,14 +51,14 @@ public class Main {
         int iteration = 0;
         while (!orders.isEmpty()) {// remove orders added to simulationState.pendingOrders from orders
             
-            // 3.0 Update simulation STATE with new data for this period of scheduling
+            // 3.0 Filters data available until currentTime
             simulationState.updateData(simulationState.currentTime, vehicles, orders, warehouses, blockages, maintenances, failures);
             
-            // System.out.println("\n--- PLANIFICACION #" + (++iteration) + " ---");
-            // System.out.println("Tiempo actual: " + simulationState.currentTime);
+            System.out.println("\n--- PLANIFICACION #" + (++iteration) + " ---");
+            System.out.println("Tiempo actual: " + simulationState.currentTime);
             
-            // 3.1. Construir environment con los pedidos del currentSTATE
-            Environment environment = EnvironmentBuilder.build(simulationState, Sc);
+            // 3.1. Build environment with current state
+            Environment environment = EnvironmentBuilder.build(simulationState);
             
             // 3.2. Generar solución inicial
             SolutionInitializer initializer = new SolutionInitializer();

@@ -15,7 +15,7 @@ public class SchedulerWarehouse {
     public int currentGLP;
     public boolean isMain;
 
-    SchedulerWarehouse(int id, Position position, int maxGLP, int currentGLP, boolean isMain) {
+    public SchedulerWarehouse(int id, Position position, int maxGLP, int currentGLP, boolean isMain) {
         this.position = position;
         this.maxGLP = maxGLP;
         this.currentGLP = currentGLP;

@@ -6,23 +6,22 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import domain.Position;
 import utils.Time;
 
 public class SchedulerOrder {
-    int id;
-    Time arrivalTime;
-    int positionX;
-    int positionY;
-    int amountGLP;
-    String clientId;
-    Time deadline;
+    public int id;
+    public Time arrivalTime;
+    public Position position;
+    public int amountGLP;
+    public String clientId;
+    public Time deadline;
     
     
-    SchedulerOrder(int id, Time arrivalTime, int positionX, int positionY, int amountGLP, String clientId, Time deadline) {
+    public SchedulerOrder(int id, Time arrivalTime, Position position, int amountGLP, String clientId, Time deadline) {
         this.id = id;
         this.arrivalTime = arrivalTime;
-        this.positionX = positionX;
-        this.positionY = positionY;
+        this.position = position;
         this.amountGLP = amountGLP;
         this.clientId = clientId;
         this.deadline = deadline;
@@ -65,7 +64,7 @@ public class SchedulerOrder {
     
                 Time deadline = creationTime.addMinutes(deadlineHours * 60);
 
-                SchedulerOrder order = new SchedulerOrder(id++, creationTime, x, y, amountGLP, clientId, deadline);
+                SchedulerOrder order = new SchedulerOrder(id++, creationTime,new Position(x, y), amountGLP, clientId, deadline);
                 orders.add(order);
             }
         } catch (IOException e) {

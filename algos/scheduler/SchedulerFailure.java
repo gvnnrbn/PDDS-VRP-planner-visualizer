@@ -9,14 +9,14 @@ import java.util.List;
 import utils.Time;
 
 public class SchedulerFailure {
-    int id;
-    int type;
-    int shiftOccurredOn; // 1=00:00-08:00, 2=08:00-16:00, 3=16:00-24:00
-    String vehicleId;
-    Time timeTillRepaired;
-    int minutesIdle;
+    public int id;
+    public int type;
+    public int shiftOccurredOn; // 1=00:00-08:00, 2=08:00-16:00, 3=16:00-24:00
+    public String vehicleId;
+    public Time timeTillRepaired;
+    public int minutesIdle;
 
-    SchedulerFailure(int id, int type, int shiftOccurredOn, String vehicleId) {
+    public SchedulerFailure(int id, int type, int shiftOccurredOn, String vehicleId) {
         this.id = id;
         this.vehicleId = vehicleId;
         this.type = type;

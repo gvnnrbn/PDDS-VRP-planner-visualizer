@@ -9,11 +9,11 @@ import java.util.List;
 import utils.Time;
 
 public class SchedulerMaintenance {
-    int id;
-    String vehicleId;
-    Time date;
+    public int id;
+    public String vehicleId;
+    public Time date;
 
-    SchedulerMaintenance(int id, String vehicleId, Time date) {
+    public SchedulerMaintenance(int id, String vehicleId, Time date) {
         this.id = id;
         this.vehicleId = vehicleId;
         this.date = date;
