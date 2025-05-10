@@ -24,10 +24,9 @@ public class EnvironmentBuilder {
     }
 
     private static List<Vehicle> convertToVehicles(List<SchedulerVehicle> original) {
-        int[] idCounter = {0};
         return original.stream()
-            .map(v -> new Vehicle(idCounter[0]++, v.weight, v.maxFuel,
-            v.currentFuel, v.maxGLP, v.currentGLP, v.initialPosition))
+            .map(v -> new Vehicle(v.id, v.weight, v.maxFuel,
+            v.currentFuel, v.maxGLP, v.currentGLP, v.position))
             .collect(Collectors.toList());
     }
 

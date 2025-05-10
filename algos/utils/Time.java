@@ -97,4 +97,33 @@ public class Time implements Comparable<Time> {
     public int getHour() {
         return this.hour;
     }
+    public Time copy() {
+        return new Time(this.year, this.month, this.day, this.hour, this.min);
+    }
+    public Time addTime(Time other) {
+        int totalMinutes = this.min + other.min;
+        int newMin = totalMinutes % 60;
+        int extraHours = totalMinutes / 60;
+
+        int totalHours = this.hour + other.hour + extraHours;
+        int newHour = totalHours % 24;
+        int extraDays = totalHours / 24;
+
+        int totalDays = this.day + other.day + extraDays;
+        int newDay = totalDays;
+        int newMonth = this.month;
+        int newYear = this.year;
+
+        // Adjust for months and years (assuming 30 days per month)
+        while (newDay > 30) {
+            newDay -= 30;
+            newMonth++;
+            if (newMonth > 12) {
+                newMonth = 1;
+                newYear++;
+            }
+        }
+
+        return new Time(newYear, newMonth, newDay, newHour, newMin);
+    }
 }

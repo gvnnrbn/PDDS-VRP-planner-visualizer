@@ -24,7 +24,9 @@ import utils.Time;
 
 public class Main {
     public static void main(String[] args) {
-        
+        // NEW, CHECK PARAMETERS
+        int updateStateTimeUnit = 1; 
+
         // === 1. PARAMETROS DEL PLANIFICADOR ===
         int Ta = 1; // Tiempo que tarda el algoritmo (minutos)
         int Sa = 5; // Cada cuánto se lanza el planificador (minutos)
@@ -77,9 +79,9 @@ public class Main {
             
             
             // 3.5. Simular la ejecución del plan y actualizar el estado
-            // inside apply() calculate if failure happens, return broken vehicles to vehicleList 
-            SimulationEngine.apply(bestSolution, simulationState, Sc);
-            simulationState.printState(iteration);
+            // inside apply() calculate if failure happens
+            SimulationEngine.apply(bestSolution, simulationState, Sc, updateStateTimeUnit,mainWarehouse);
+            // simulationState.printState(iteration);
         }
 
         System.out.println("\n✅ Todas las planificaciones completadas.");

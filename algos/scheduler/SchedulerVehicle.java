@@ -9,20 +9,24 @@ import java.util.List;
 import domain.Position;
 
 public class SchedulerVehicle {
-    public String id; // TA01
+    public int id;
+    public String plaque; // TA01
     public String type;
     public EnumVehicleState state;
+    public SchedulerFailure failure;
+    public SchedulerMaintenance maintenance;
     // Vehicle class attributes:
     public int weight;
     public int maxFuel;
     public double currentFuel;
     public int maxGLP;
     public int currentGLP;
-    public Position initialPosition;
+    public Position position;
     
-    public SchedulerVehicle(String id, String type,EnumVehicleState state, int weight, int maxFuel, 
-    double currentFuel, int maxGLP, int currentGLP, Position initialPosition) {
+    public SchedulerVehicle(int id, String plaque, String type,EnumVehicleState state, int weight, int maxFuel, 
+    double currentFuel, int maxGLP, int currentGLP, Position position) {
         this.id = id;
+        this.plaque = plaque;
         this.type = type;
         this.state = state;
         this.weight = weight;
@@ -30,11 +34,11 @@ public class SchedulerVehicle {
         this.currentFuel = currentFuel;
         this.maxGLP = maxGLP;
         this.currentGLP = currentGLP;
-        this.initialPosition = initialPosition;
+        this.position = position;
         
     }
 
-    public static List<SchedulerVehicle> parseVehicles(String filePath, Position initialPosition) {
+    public static List<SchedulerVehicle> parseVehicles(String filePath, Position position) {
         List<SchedulerVehicle> vehicles = new ArrayList<>();
         
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
@@ -52,8 +56,8 @@ public class SchedulerVehicle {
                 
                 // Create vehicle with all required fields
                 for (int i = 0; i < amountOfUnits; i++) {
-                    SchedulerVehicle vehicle = new SchedulerVehicle(type+""+i,type,EnumVehicleState.IDLE, 
-                    weight, (int) fuel, fuel, maxGLP, currentGLP, new Position(initialPosition.x(), initialPosition.y()));
+                    SchedulerVehicle vehicle = new SchedulerVehicle(i,type+""+i,type,EnumVehicleState.IDLE, 
+                    weight, (int) fuel, fuel, maxGLP, currentGLP, new Position(position.x(), position.y()));
                             
                     vehicles.add(vehicle);
                 }
@@ -63,7 +67,5 @@ public class SchedulerVehicle {
         }
         return vehicles;
     }
-
-    
     
 }
