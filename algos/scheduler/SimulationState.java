@@ -11,8 +11,8 @@ import utils.Time;
 
 public class SimulationState {
     public Time currentTime;
-    public List<Vehicle> vehicles;
-    public List<Order> pendingOrders;
+    public List<SchedulerVehicle> vehicles;
+    public List<SchedulerOrder> pendingOrders;
     public List<Warehouse> warehouses;
 
     public SimulationState(Time startTime, List<Vehicle> initialVehicles, List<Order> allOrders,

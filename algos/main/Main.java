@@ -10,13 +10,13 @@ import domain.Warehouse;
 import java.lang.Thread.State;
 import java.util.List;
 import localsearch.TabuSearch;
-import scheduler.Failure;
-import scheduler.Maintenance;
+import scheduler.SchedulerFailure;
+import scheduler.SchedulerMaintenance;
 import scheduler.SimulationState;
-import scheduler.StateBlockage;
-import scheduler.StateOrder;
-import scheduler.StateVehicle;
-import scheduler.StateWarehouse;
+import scheduler.SchedulerBlockage;
+import scheduler.SchedulerOrder;
+import scheduler.SchedulerVehicle;
+import scheduler.SchedulerWarehouse;
 import utils.EnvironmentBuilder;
 import utils.EnvironmentParser;
 import utils.SimulationEngine;
@@ -32,16 +32,20 @@ public class Main {
         int Sc = K * Sa; // Tiempo que se consume por cada planificación
 
         // === 2. PARSEAR DATOS DE ENTRADA ===
-        Time startTime = new Time(1, 1, 0, 0); // 01/01 00:00
+        Time startTime = new Time(1,1, 1, 0, 0); // 1/01/01 00:00
         EnvironmentParser parser = new EnvironmentParser(startTime);
 
         // Parsing state elements
-        List<StateVehicle> vehicles = StateVehicle.parseVehicles("main/vehicles.csv");
-        List<Maintenance> maintenances = Maintenance.parseMaintenances("main/maintenances.csv");
-        List<StateOrder> orders = StateOrder.parseOrders("main/orders.csv");
-        List<StateWarehouse> warehouses = StateWarehouse.parseWarehouses("main/warehouses.csv");
-        List<StateBlockage> blockages = StateBlockage.parseBlockages("main/blockages.csv");
-        List<Failure> failures = Failure.parseFailures("main/failures.csv");
+        List<SchedulerWarehouse> warehouses = SchedulerWarehouse.parseWarehouses("main/warehouses.csv");
+        SchedulerWarehouse mainWarehouse = warehouses.stream()
+            .filter(SchedulerWarehouse::isMain)
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("No main warehouse found"));
+        List<SchedulerVehicle> vehicles = SchedulerVehicle.parseVehicles("main/vehicles.csv", mainWarehouse.position);
+        List<SchedulerMaintenance> maintenances = SchedulerMaintenance.parseMaintenances("main/maintenances.csv");
+        List<SchedulerOrder> orders = SchedulerOrder.parseOrders("main/orders.csv");
+        List<SchedulerBlockage> blockages = SchedulerBlockage.parseBlockages("main/blockages.csv");
+        List<SchedulerFailure> failures = SchedulerFailure.parseFailures("main/failures.csv");
         
         // agregar bloqueos, mantenimientos y lista de averias (validar si empty para los escenarios que no consideren averias)
         // todo debe entrar filtrado inicialmente en t=0

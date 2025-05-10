@@ -9,21 +9,21 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class StateBlockage {
+public class SchedulerBlockage {
     int id;
     Time startTime;
     Time endTime;
     List<Position> vertices; // check
 
-    StateBlockage(int id, Time startTime, Time endTime, List<Position> vertices) {
+    SchedulerBlockage(int id, Time startTime, Time endTime, List<Position> vertices) {
         this.id = id;
         this.startTime = startTime;
         this.endTime = endTime;
         this.vertices = vertices;
     }
 
-    public static List<StateBlockage> parseBlockages(String filePath) {
-        List<StateBlockage> blockages = new ArrayList<>();
+    public static List<SchedulerBlockage> parseBlockages(String filePath) {
+        List<SchedulerBlockage> blockages = new ArrayList<>();
         
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             String line;
@@ -66,7 +66,7 @@ public class StateBlockage {
                     vertices.add(new Position(x, y));
                 }
 
-                StateBlockage blockage = new StateBlockage(id++, startTime, endTime, vertices);
+                SchedulerBlockage blockage = new SchedulerBlockage(id++, startTime, endTime, vertices);
                 blockages.add(blockage);
             }
         } catch (IOException e) {

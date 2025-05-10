@@ -8,7 +8,7 @@ import java.util.List;
 
 import utils.Time;
 
-public class Failure {
+public class SchedulerFailure {
     int id;
     int type;
     int shift; // 1=00:00-08:00, 2=08:00-16:00, 3=16:00-24:00
@@ -16,7 +16,7 @@ public class Failure {
     Time timeTillRepaired;
     int minutesIdle;
 
-    Failure(int id, int type, int shift, String vehicleId) {
+    SchedulerFailure(int id, int type, int shift, String vehicleId) {
         this.id = id;
         this.vehicleId = vehicleId;
         this.type = type;
@@ -45,8 +45,8 @@ public class Failure {
         }
     }
 
-    public static List<Failure> parseFailures(String filePath) {
-        List<Failure> failures = new ArrayList<>();
+    public static List<SchedulerFailure> parseFailures(String filePath) {
+        List<SchedulerFailure> failures = new ArrayList<>();
         
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             String line;
@@ -59,7 +59,7 @@ public class Failure {
                 String vehicleId = parts[1].trim();
                 int type = Integer.parseInt(parts[2].trim());
 
-                Failure failure = new Failure(id++, type, shift, vehicleId);
+                SchedulerFailure failure = new SchedulerFailure(id++, type, shift, vehicleId);
                 failures.add(failure);
             }
         } catch (IOException e) {

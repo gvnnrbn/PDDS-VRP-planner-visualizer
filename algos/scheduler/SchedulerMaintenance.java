@@ -8,21 +8,21 @@ import java.util.List;
 
 import utils.Time;
 
-public class Maintenance {
+public class SchedulerMaintenance {
     int id;
     String vehicleId;
     int year;
     Time date;
 
-    Maintenance(int id, String vehicleId, int year, Time date) {
+    SchedulerMaintenance(int id, String vehicleId, int year, Time date) {
         this.id = id;
         this.vehicleId = vehicleId;
         this.year = year;
         this.date = date;
     }
 
-    public static List<Maintenance> parseMaintenances(String filePath) {
-        List<Maintenance> maintenances = new ArrayList<>();
+    public static List<SchedulerMaintenance> parseMaintenances(String filePath) {
+        List<SchedulerMaintenance> maintenances = new ArrayList<>();
         
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             String line;
@@ -34,7 +34,7 @@ public class Maintenance {
                 int date = Integer.parseInt(parts[0].trim());
                 String vehicleId = parts[1].trim();
 
-                Maintenance maintenance = new Maintenance(id++, vehicleId, date/10000, new Time(0,date%10000/100, date%100, 0, 0));
+                SchedulerMaintenance maintenance = new SchedulerMaintenance(id++, vehicleId, date/10000, new Time(0,date%10000/100, date%100, 0, 0));
                 maintenances.add(maintenance);
             }
         } catch (IOException e) {

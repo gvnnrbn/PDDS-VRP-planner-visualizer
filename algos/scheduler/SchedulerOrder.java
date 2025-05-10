@@ -8,7 +8,7 @@ import java.util.List;
 
 import utils.Time;
 
-public class StateOrder {
+public class SchedulerOrder {
     int id;
     Time arrivalTime;
     int positionX;
@@ -17,7 +17,8 @@ public class StateOrder {
     String clientId;
     Time deadline;
     
-    StateOrder(int id, Time arrivalTime, int positionX, int positionY, int amountGLP, String clientId, Time deadline) {
+    
+    SchedulerOrder(int id, Time arrivalTime, int positionX, int positionY, int amountGLP, String clientId, Time deadline) {
         this.id = id;
         this.arrivalTime = arrivalTime;
         this.positionX = positionX;
@@ -27,8 +28,8 @@ public class StateOrder {
         this.deadline = deadline;
     }
 
-    public static List<StateOrder> parseOrders(String filePath) {
-        List<StateOrder> orders = new ArrayList<>();
+    public static List<SchedulerOrder> parseOrders(String filePath) {
+        List<SchedulerOrder> orders = new ArrayList<>();
         
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             String line;
@@ -64,7 +65,7 @@ public class StateOrder {
     
                 Time deadline = creationTime.addMinutes(deadlineHours * 60);
 
-                StateOrder order = new StateOrder(id++, creationTime, x, y, amountGLP, clientId, deadline);
+                SchedulerOrder order = new SchedulerOrder(id++, creationTime, x, y, amountGLP, clientId, deadline);
                 orders.add(order);
             }
         } catch (IOException e) {
