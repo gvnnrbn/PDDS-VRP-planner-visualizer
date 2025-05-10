@@ -11,7 +11,7 @@ import utils.Time;
 public class SchedulerMaintenance {
     public int id;
     public String vehicleId;
-    public Time date;
+    public Time date; // dia+1 hora0 min0 disponible
 
     public SchedulerMaintenance(int id, String vehicleId, Time date) {
         this.id = id;

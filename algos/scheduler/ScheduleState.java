@@ -35,7 +35,8 @@ public class ScheduleState {
         List<SchedulerBlockage> allblockages, List<SchedulerMaintenance> allmaintenances,
         List<SchedulerFailure> allFailures) {
 
-                
+                //NAYELY 
+        // filtrar los que no estan en maintenance
         // Filter and add allvehicles with state WAITING or ONTHEWAY
         this.vehicles.addAll(allvehicles.stream()
             .filter(v -> (v.state == EnumVehicleState.IDLE || v.state == EnumVehicleState.ONTHEWAY))
@@ -51,6 +52,7 @@ public class ScheduleState {
             .filter(w -> w.currentGLP  >= Environment.refillChunkSize)
             .collect(Collectors.toList()));
 
+            // que no entren los antiguos
         // Filter and add AVAILABLE blockages
         this.blockages.addAll(allblockages.stream()
             .filter(b -> b.startTime.isBeforeOrAt(currentTime))// endTime!!!!!

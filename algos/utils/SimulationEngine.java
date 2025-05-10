@@ -43,11 +43,15 @@ public class SimulationEngine {
                 int glp = vehicle.currentGLP;
                 Time currentTime = state.currentTime;
     
+                // LOOP DE AVANCE: CARLOS
                 for (int i = 0; i < route.size() - 1; i++) {
                     Node from = route.get(i);
                     Node to = route.get(i + 1);
                     int nodesDistance = Environment.calculateManhattanDistance(route.get.getPosition(), to.getPosition());
-                    /* ADAPTAR
+                    /* JORGE 
+                    ADAPTAR para conseguir distancia y posicion real
+                    + actualizar la posicion de vehicle
+
                      * public void generateDistances() {
                             Map<Position, Map<Position, Integer>> distances = new HashMap<>();
                             List<Position> positions = new ArrayList<>();
@@ -119,11 +123,16 @@ public class SimulationEngine {
                             }
                         }
                     }
+                    // GIOVANNA 
                     // switch para cada accion como en simulate(), domain/Solution.java
 
                     // case: trasvase/entrega
                     // vehicle.transferMinutes = 15;
                     // vehicle.transferMinutes -= timeUnit;
+
+
+
+
 
                     ///////////////////////
                     // old
