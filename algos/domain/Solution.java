@@ -131,10 +131,16 @@ public class Solution implements Cloneable {
                     currentTime = currentTime.addMinutes(Environment.timeAfterDelivery);
                 }
 
-                boolean breaksRefillChain = (originNode instanceof ProductRefillNode && !(destinationNode instanceof ProductRefillNode)) ||
-                 (originNode instanceof ProductRefillNode && destinationNode instanceof ProductRefillNode && ((ProductRefillNode) originNode).warehouse.id() != ((ProductRefillNode) destinationNode).warehouse.id());
+                // If it breaks a refill chain from a wasVehicle node
+                boolean isCurrentlyARefillFromVehicle = 
+                    (originNode instanceof ProductRefillNode && ((ProductRefillNode) originNode).warehouse.wasVehicle());
+                boolean isNextNodeARefillFromSameVehicle = 
+                    (destinationNode instanceof ProductRefillNode && ((ProductRefillNode) destinationNode).warehouse.wasVehicle())
+                    && originNode.getPosition() == destinationNode.getPosition();
+                boolean breaksRefillFromVehicleChain =
+                    (isCurrentlyARefillFromVehicle && !isNextNodeARefillFromSameVehicle);
 
-                if (breaksRefillChain) {
+                if (breaksRefillFromVehicleChain) {
                     currentTime = currentTime.addMinutes(Environment.timeAfterRefill);
                 }
 
