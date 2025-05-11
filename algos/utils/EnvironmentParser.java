@@ -173,6 +173,7 @@ public class EnvironmentParser {
                 int y = Integer.parseInt(parts[1]);
                 int maxGLP = Integer.parseInt(parts[2]);
                 boolean isMain = parts.length == 4 && parts[3].equals("main");
+                boolean wasVehicle = false;
                 
                 // Create warehouse with parsed values
                 Warehouse warehouse = new Warehouse(
@@ -180,7 +181,8 @@ public class EnvironmentParser {
                     new Position(x, y),      // position
                     maxGLP,                  // currentGLP (starts full)
                     maxGLP,                  // maxGLP
-                    isMain                   // isMain
+                    isMain,                   // isMain
+                    wasVehicle
                 );
                 warehouses.add(warehouse);
             }
