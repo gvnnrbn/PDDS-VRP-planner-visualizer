@@ -123,15 +123,9 @@ public class SimulationEngine {
                             }
                         }
                     }
-                    // GIOVANNA 
-                    // switch para cada accion como en simulate(), domain/Solution.java
-
-                    // case: trasvase/entrega
-                    // vehicle.transferMinutes = 15;
-                    // vehicle.transferMinutes -= timeUnit;
                     
                     if(vehicle.transferMinutes > 0){
-                        vehicle.transferMinutes -= 1;
+                        vehicle.transferMinutes -= timeUnit;
                         continue;
                     }
 
@@ -163,7 +157,7 @@ public class SimulationEngine {
                         case ProductRefillNode refillNode:
                             if(vehicle.position.equals(refillNode.getPosition())){
                                 Node nextNode = plan.getNextNode(vehicle.id, refillNode);
-                                while(true) {
+                                while(nextNode != null) {
                                     if(!refillNode.getPosition().equals(nextNode.getPosition())){
                                         break;
                                     }
@@ -175,12 +169,12 @@ public class SimulationEngine {
                                     if(warehouse != null) {
                                         warehouse.currentGLP -= refillNode.amountGLP;
                                     }
-                                    nextNode = plan.getNextNode(vehicle.id, orderNode);
+                                    nextNode = plan.getNextNode(vehicle.id, refillNode);
                                 }
-                                if(refillNode.warehouse.wasVehicle){
+                                if(refillNode.warehouse.wasVehicle){ // wait 15 min if vehicle
                                     vehicle.transferMinutes = 15;
                                 }
-                                else{
+                                else{ // refill fuel if warehouse
                                     vehicle.currentFuel = vehicle.maxFuel;
                                 }
                                 refillNode = (ProductRefillNode) nextNode;
@@ -189,55 +183,15 @@ public class SimulationEngine {
                                 // vehicle.position += vehicle.speed // abstracto todavía
                             }
                             break;
-                        
-                    }
-
-
-
-
-
-
-                    ///////////////////////
-                    // old
-                    //////////////////////
-                    int totalTime = (int) Math.ceil((double) totalDistance / Environment.speed * 60); // min
-                    Time arrivalTime = currentTime.addMinutes(totalTime);
-    
-                    if (arrivalTime.isAfter(endTime)) // colapso
-                        break;
-    
-                    // Avanzar el tiempo
-                    currentTime = arrivalTime;
-                    fuel -= Environment.calculateFuelCost(from, to, new Environment().getDistances(), vehicle); // simplified
-                    currentPos = to.getPosition();
-    
-                    // Manejar entrega o recarga
-                    if (to instanceof SchedulerOrderDeliverNode deliverNode) {
-                        int deliverAmount = deliverNode.amountGLP;
-    
-                        if (glp >= deliverAmount) {
-                            glp -= deliverAmount;
-                            SchedulerOrder o = orderMap.get(deliverNode.order.id());
-                            if (o != null) {
-                                int remaining = o.amountGLP() - deliverAmount;
-                                if (remaining <= 0) {
-                                    orderMap.remove(o.id());
-                                } else {
-                                    orderMap.put(o.id(), new SchedulerOrder(o.id(), remaining, o.position(), o.deadline()));
-                                }
-                            }
-                            currentTime = currentTime.addMinutes(Environment.timeAfterDelivery);
-                        }
-                    } else if (to instanceof ProductRefillNode refillNode) {
-                        glp += refillNode.amountGLP;
-                        fuel = vehicle.maxFuel();
-                        currentTime = currentTime.addMinutes(Environment.timeAfterRefill);
-                    }
+                        default:
+                            // vehicle.position += vehicle.speed // abstracto todavía
+                            break;
+                    }                    
                 }
             }
 
             // Update state's time, warehouse, check if blockage still active
-            state.currentTime.addMinutes(t);
+            state.currentTime.addMinutes(timeUnit);
         }
 
 
