@@ -355,4 +355,22 @@ public class Solution implements Cloneable {
             e.printStackTrace();
         }
     }
+
+    public Node getNextNode(int vehicleId, Node currentNode) {
+        List<Node> route = routes.get(vehicleId);
+        if (route == null || route.isEmpty()) {
+            throw new IllegalArgumentException("No route found for vehicle " + vehicleId);
+        }
+
+        int currentIndex = route.indexOf(currentNode);
+        if (currentIndex == -1) {
+            throw new IllegalArgumentException("Current node not found in the route for vehicle " + vehicleId);
+        }
+
+        if (currentIndex < route.size() - 1) {
+            return route.get(currentIndex + 1);
+        } else {
+            return null; // No next node, end of the route
+        }
+    }
 }

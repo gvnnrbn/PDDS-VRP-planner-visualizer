@@ -129,6 +129,69 @@ public class SimulationEngine {
                     // case: trasvase/entrega
                     // vehicle.transferMinutes = 15;
                     // vehicle.transferMinutes -= timeUnit;
+                    
+                    if(vehicle.transferMinutes > 0){
+                        vehicle.transferMinutes -= 1;
+                        continue;
+                    }
+
+                    switch(currNode){
+                        case OrderDeliverNode orderNode:
+                            if(vehicle.position.equals(orderNode.getPosition())){
+                                Node nextNode = plan.getNextNode(vehicle.id, orderNode);
+                                while(true) {
+                                    if(!orderNode.getPosition().equals(nextNode.getPosition())){
+                                        break;
+                                    }
+                                    vehicle.currentGLP -= orderNode.amountGLP;
+                                    SchedulerOrder order = state.orders.stream()
+                                        .filter(o -> o.id == orderNode.order.id())
+                                        .findFirst()
+                                        .orElse(null);
+                                    if(order != null) {
+                                        order.amountGLP -= orderNode.amountGLP;
+                                    }
+                                    orderNode = (OrderDeliverNode) nextNode;
+                                    nextNode = plan.getNextNode(vehicle.id, orderNode);
+                                }
+                                vehicle.transferMinutes = 15;
+                            }
+                            else{
+                                // vehicle.position += vehicle.speed // abstracto todavía
+                            }
+                            break;
+                        case ProductRefillNode refillNode:
+                            if(vehicle.position.equals(refillNode.getPosition())){
+                                Node nextNode = plan.getNextNode(vehicle.id, refillNode);
+                                while(true) {
+                                    if(!refillNode.getPosition().equals(nextNode.getPosition())){
+                                        break;
+                                    }
+                                    vehicle.currentGLP += refillNode.amountGLP;
+                                    SchedulerWarehouse warehouse = state.warehouses.stream()
+                                        .filter(w -> w.id == refillNode.warehouse.id())
+                                        .findFirst()
+                                        .orElse(null);
+                                    if(warehouse != null) {
+                                        warehouse.currentGLP -= refillNode.amountGLP;
+                                    }
+                                    nextNode = plan.getNextNode(vehicle.id, orderNode);
+                                }
+                                if(refillNode.warehouse.wasVehicle){
+                                    vehicle.transferMinutes = 15;
+                                }
+                                else{
+                                    vehicle.currentFuel = vehicle.maxFuel;
+                                }
+                                refillNode = (ProductRefillNode) nextNode;
+                            }
+                            else{
+                                // vehicle.position += vehicle.speed // abstracto todavía
+                            }
+                            break;
+                        
+                    }
+
 
 
 

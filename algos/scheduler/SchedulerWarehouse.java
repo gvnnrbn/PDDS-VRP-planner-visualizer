@@ -14,12 +14,15 @@ public class SchedulerWarehouse {
     public int maxGLP;
     public int currentGLP;
     public boolean isMain;
+    public boolean wasVehicle;
 
-    public SchedulerWarehouse(int id, Position position, int maxGLP, int currentGLP, boolean isMain) {
+    public SchedulerWarehouse(int id, Position position, int maxGLP, int currentGLP, boolean isMain, boolean wasVehicle) {
+        this.id = id;
         this.position = position;
         this.maxGLP = maxGLP;
         this.currentGLP = currentGLP;
         this.isMain = isMain;
+        this.wasVehicle = wasVehicle;
     }
 
     public static List<SchedulerWarehouse> parseWarehouses(String filePath) {
@@ -52,4 +55,8 @@ public class SchedulerWarehouse {
     public boolean isMain() {
         return this.isMain;
     }
+    public boolean wasVehicle() {
+        return this.wasVehicle;
+    }
 }
+
