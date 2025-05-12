@@ -1,13 +1,12 @@
 package scheduler;
 
 import domain.Position;
-import utils.Time;
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import utils.Time;
 
 public class SchedulerBlockage {
     public int id;

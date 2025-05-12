@@ -13,12 +13,17 @@ import java.util.stream.Collectors;
 public class EnvironmentBuilder {
 
     // copy or convert into Environment attributes
-    public static Environment build(ScheduleState state) {
+    public static Environment build(ScheduleState state,int scMinutes ) {
         Time currentTime = state.currentTime;
+        Time maxDeadline = currentTime.addMinutes(scMinutes);
+
         List<Vehicle> environmentVehicles = convertToVehicles(state.vehicles);
         List<Warehouse> environmentWarehouses = convertToWarehouses(state.warehouses);
         List<Blockage> environmentBlockages = convertToBlockages(state.blockages);
         List<Order> environmentOrders = convertToOrders(state.orders);
+        environmentOrders = environmentOrders.stream()
+            .filter(o -> o.releaseTime.isBefore(maxDeadline) && o.deadline.isAfter(currentTime))
+            .collect(Collectors.toList());
 
         return new Environment(environmentVehicles, environmentOrders, environmentWarehouses, environmentBlockages, currentTime);
     }
@@ -43,7 +48,7 @@ public class EnvironmentBuilder {
     }
     private static List<Order> convertToOrders(List<SchedulerOrder> original) {
         return original.stream()
-            .map(o -> new Order(o.id, o.amountGLP,o.position, o.deadline))
+            .map(o -> new Order(o.id, o.amountGLP,o.position, o.deadline, o.releaseTime))
             .collect(Collectors.toList());
     }
 }
