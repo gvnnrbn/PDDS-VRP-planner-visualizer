@@ -15,7 +15,7 @@ public class SchedulerVehicle {
     public EnumVehicleState state;
     public SchedulerFailure failure;
     public SchedulerMaintenance maintenance;
-    public int transferMinutes;
+    public int waitTransition;
     // Vehicle class attributes:
     public int weight;
     public int maxFuel;
@@ -36,7 +36,7 @@ public class SchedulerVehicle {
         this.maxGLP = maxGLP;
         this.currentGLP = currentGLP;
         this.position = position;
-        this.transferMinutes = 0;
+        this.waitTransition = 0;
     }
 
     public static List<SchedulerVehicle> parseVehicles(String filePath, Position position) {

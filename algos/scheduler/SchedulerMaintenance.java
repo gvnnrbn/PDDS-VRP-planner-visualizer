@@ -10,13 +10,15 @@ import utils.Time;
 
 public class SchedulerMaintenance {
     public int id;
-    public String vehicleId;
-    public Time date; // dia+1 hora0 min0 disponible
+    public String vehiclePlaque;
+    public Time startDate;
+    public Time endDate; 
 
-    public SchedulerMaintenance(int id, String vehicleId, Time date) {
+    public SchedulerMaintenance(int id, String vehiclePlaque, Time startDate, Time endDate) {
         this.id = id;
-        this.vehicleId = vehicleId;
-        this.date = date;
+        this.vehiclePlaque = vehiclePlaque;
+        this.startDate = startDate;
+        this.endDate = endDate;
     }
 
     public static List<SchedulerMaintenance> parseMaintenances(String filePath) {
@@ -29,10 +31,11 @@ public class SchedulerMaintenance {
                 String[] parts = line.split(":");
                 if (parts.length != 2) continue;
                 
-                int date = Integer.parseInt(parts[0].trim());
-                String vehicleId = parts[1].trim();
-
-                SchedulerMaintenance maintenance = new SchedulerMaintenance(id++, vehicleId, new Time(date/10000,date%10000/100, date%100, 0, 0));
+                int startDate = Integer.parseInt(parts[0].trim());
+                String vehiclePlaque = parts[1].trim();
+                Time start = new Time(startDate/10000,startDate%10000/100, startDate%100, 0, 0);
+                Time end = start.addTime(new Time(0, 0, 1, 0, 0));
+                SchedulerMaintenance maintenance = new SchedulerMaintenance(id++, vehiclePlaque, start, end);
                 maintenances.add(maintenance);
             }
         } catch (IOException e) {

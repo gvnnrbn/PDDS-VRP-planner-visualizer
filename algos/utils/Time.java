@@ -126,4 +126,8 @@ public class Time implements Comparable<Time> {
 
         return new Time(newYear, newMonth, newDay, newHour, newMin);
     }
+
+    public boolean isSameDate(Time other) {
+        return this.year == other.year && this.month == other.month && this.day == other.day;
+    }
 }

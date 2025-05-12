@@ -42,7 +42,7 @@ public class SchedulerWarehouse {
                 boolean isMain = parts.length == 4 && parts[3].equals("main");
                 
                 // Create warehouse with parsed values
-                SchedulerWarehouse warehouse = new SchedulerWarehouse(id,new Position(x, y), maxGLP, maxGLP, isMain);
+                SchedulerWarehouse warehouse = new SchedulerWarehouse(id,new Position(x, y), maxGLP, maxGLP, isMain, false);
                 warehouses.add(warehouse);
             }
         } catch (IOException e) {

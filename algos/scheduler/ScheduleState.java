@@ -60,7 +60,7 @@ public class ScheduleState {
 
         // Filter and add maintenances
         this.maintenances.addAll(allmaintenances.stream()
-            .filter(m -> m.date.isBeforeOrAt(currentTime))
+            .filter(m -> m.startDate.isBeforeOrAt(currentTime))
             .collect(Collectors.toList()));
         
         // Add all failures which could happen in this update

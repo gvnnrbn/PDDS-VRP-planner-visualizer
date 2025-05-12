@@ -32,7 +32,7 @@ public class EnvironmentBuilder {
 
     private static List<Warehouse> convertToWarehouses(List<SchedulerWarehouse> original) {
         return original.stream()
-            .map(w -> new Warehouse(w.id, w.position, w.currentGLP, w.maxGLP, w.isMain))
+            .map(w -> new Warehouse(w.id, w.position, w.currentGLP, w.maxGLP, w.isMain, w.wasVehicle))
             .collect(Collectors.toList());
     }
     

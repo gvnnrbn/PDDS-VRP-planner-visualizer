@@ -4,6 +4,7 @@ import domain.*;
 import scheduler.EnumVehicleState;
 import scheduler.ScheduleState;
 import scheduler.SchedulerFailure;
+import scheduler.SchedulerMaintenance;
 import scheduler.SchedulerOrder;
 import scheduler.SchedulerVehicle;
 import scheduler.SchedulerWarehouse;
@@ -11,26 +12,49 @@ import scheduler.SchedulerWarehouse;
 import java.util.*;
 import java.util.stream.Collectors;
 
+
+
 public class SimulationEngine {
+    private static final int ROUTINE_MAINTENANCE_time = 15; // minutes
+    private static final int GLP_TRANSFER_TIME = 15; // minutes
+
     public static void apply(Solution plan, ScheduleState state, int minutesToSimulate, int timeUnit, SchedulerWarehouse mainWarehouse) {      
         
-        boolean vehicleNotAvailable = false;
-
+        
         for (int t = 0; t < minutesToSimulate; t += timeUnit) {
             for (SchedulerVehicle vehicle : state.vehicles) {
-                // check failure stage if occured
+                // wait for 'GLP transfer' or 'routine maintenance' to end 
+                if(vehicle.waitTransition > 0){
+                    vehicle.waitTransition -= timeUnit;
+                    continue;
+                }
+
+                // check if vehicle has planned route
+                boolean noPlan = false;
                 if(vehicle.state == EnumVehicleState.STUCK && vehicle.failure.endStuckTime.isBefore(state.currentTime)) {
-                        vehicle.state = EnumVehicleState.REPAIR;
-                        vehicleNotAvailable = true; // en la siguiente llamada al algoritmo entra como warehouse??
+                    vehicle.state = EnumVehicleState.REPAIR;
+                    noPlan = true; // en la siguiente llamada al algoritmo entra como warehouse??
                 }
                 if(vehicle.state == EnumVehicleState.REPAIR && vehicle.failure.endRepairTime.isBefore(state.currentTime)){
                     vehicle.state = EnumVehicleState.IDLE;
                     vehicle.failure = null;
-                    vehicleNotAvailable = true;
+                    noPlan = true;
                 }
-                if(vehicleNotAvailable){
+                if(vehicle.state == EnumVehicleState.MAINTENANCE && vehicle.maintenance.endDate.isBeforeOrAt(state.currentTime)){
+                    vehicle.state = EnumVehicleState.IDLE;
+                    vehicle.maintenance = null;
+                    noPlan = true;
+                    
+                }
+                if(noPlan 
+                || vehicle.state == EnumVehicleState.MAINTENANCE
+                || vehicle.state == EnumVehicleState.STUCK
+                || vehicle.state == EnumVehicleState.REPAIR
+                || vehicle.state == EnumVehicleState.IDLE
+                ) {
                     continue; // vehicle without schedule. will be available in future scheduling iteration
                 }
+                vehicle.state = EnumVehicleState.ONTHEWAY;
 
                 // update vehicle's route
                 List<Node> route = plan.routes.get(vehicle.id);
@@ -124,11 +148,21 @@ public class SimulationEngine {
                         }
                     }
                     
-                    if(vehicle.transferMinutes > 0){
-                        vehicle.transferMinutes -= timeUnit;
-                        continue;
-                    }
 
+
+                    // handle maintenance
+                    SchedulerMaintenance maintenance = state.maintenances.stream()
+                            .filter(m -> m.vehiclePlaque.equals(vehicle.plaque))
+                            .findFirst()
+                            .orElse(null);
+                            if (maintenance != null && !maintenance.date.isSameDate(currentTime)) {
+                                vehicle.state = EnumVehicleState.MAINTENANCE;
+                                vehicle.maintenance = maintenance;
+                                noPlan = true; // until next day 00:00
+                                break; // next vehicle or timeUnit
+                            }
+
+                    // handle delivery and refill
                     switch(currNode){
                         case OrderDeliverNode orderNode:
                             if(vehicle.position.equals(orderNode.getPosition())){
@@ -148,7 +182,7 @@ public class SimulationEngine {
                                     orderNode = (OrderDeliverNode) nextNode;
                                     nextNode = plan.getNextNode(vehicle.id, orderNode);
                                 }
-                                vehicle.transferMinutes = 15;
+                                vehicle.waitTransition = GLP_TRANSFER_TIME;
                             }
                             else{
                                 // vehicle.position += vehicle.speed // abstracto todavía
@@ -171,11 +205,12 @@ public class SimulationEngine {
                                     }
                                     nextNode = plan.getNextNode(vehicle.id, refillNode);
                                 }
-                                if(refillNode.warehouse.wasVehicle){ // wait 15 min if vehicle
-                                    vehicle.transferMinutes = 15;
+                                if(refillNode.warehouse.wasVehicle()){ // wait 15 min if vehicle
+                                    vehicle.waitTransition = GLP_TRANSFER_TIME;
                                 }
                                 else{ // refill fuel if warehouse
                                     vehicle.currentFuel = vehicle.maxFuel;
+                                    vehicle.waitTransition = ROUTINE_MAINTENANCE_time;
                                 }
                                 refillNode = (ProductRefillNode) nextNode;
                             }
@@ -186,7 +221,8 @@ public class SimulationEngine {
                         default:
                             // vehicle.position += vehicle.speed // abstracto todavía
                             break;
-                    }                    
+                    }    
+                    
                 }
             }
 
