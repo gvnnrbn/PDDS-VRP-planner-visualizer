@@ -16,6 +16,7 @@ public class SchedulerOrder {
     public int amountGLP;
     public String clientId;
     public Time deadline;
+    public Time deliverTime;
     
     
     public SchedulerOrder(int id, Time arrivalTime, Position position, int amountGLP, String clientId, Time deadline) {
@@ -25,6 +26,7 @@ public class SchedulerOrder {
         this.amountGLP = amountGLP;
         this.clientId = clientId;
         this.deadline = deadline;
+        this.deliverTime = null;
     }
 
     public static List<SchedulerOrder> parseOrders(String filePath) {

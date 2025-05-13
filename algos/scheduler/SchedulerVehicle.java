@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import domain.Node;
 import domain.Position;
 import utils.PathBuilder;
 
@@ -26,6 +27,7 @@ public class SchedulerVehicle {
     public Position position;
 
     public List<Position> currentPath;
+    public Node currentNode;
     
     public SchedulerVehicle(int id, String plaque, String type,EnumVehicleState state, int weight, int maxFuel, 
     double currentFuel, int maxGLP, int currentGLP, Position position) {
