@@ -61,7 +61,7 @@ public class Main {
             System.out.println("Tiempo actual: " + simulationState.currentTime);
             
             // 3.1. Build environment with current state
-            Environment environment = EnvironmentBuilder.build(simulationState);
+            Environment environment = EnvironmentBuilder.build(simulationState, Sc);
             
             // 3.2. Generar solución inicial
             SolutionInitializer initializer = new SolutionInitializer();

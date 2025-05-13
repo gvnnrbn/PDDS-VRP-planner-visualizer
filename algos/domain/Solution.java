@@ -200,7 +200,7 @@ public class Solution implements Cloneable {
                         orderMap.remove(order.id());
                     } else {
                         // Update the order amount
-                        Order updatedOrder = new Order(order.id(), orderMap.get(order.id()).amountGLP() - GLPToDeliver, order.position(), order.deadline());
+                        Order updatedOrder = new Order(order.id(), orderMap.get(order.id()).amountGLP() - GLPToDeliver, order.position(), order.deadline(), order.releaseTime());
                         orderMap.put(order.id(), updatedOrder);
                     }
                 }

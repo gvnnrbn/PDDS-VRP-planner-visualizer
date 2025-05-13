@@ -22,7 +22,7 @@ public class EnvironmentBuilder {
         List<Blockage> environmentBlockages = convertToBlockages(state.blockages);
         List<Order> environmentOrders = convertToOrders(state.orders);
         environmentOrders = environmentOrders.stream()
-            .filter(o -> o.releaseTime.isBefore(maxDeadline) && o.deadline.isAfter(currentTime))
+            .filter(o -> o.releaseTime().isBefore(maxDeadline) && o.deadline().isAfter(currentTime))
             .collect(Collectors.toList());
 
         return new Environment(environmentVehicles, environmentOrders, environmentWarehouses, environmentBlockages, currentTime);
@@ -48,7 +48,7 @@ public class EnvironmentBuilder {
     }
     private static List<Order> convertToOrders(List<SchedulerOrder> original) {
         return original.stream()
-            .map(o -> new Order(o.id, o.amountGLP,o.position, o.deadline, o.releaseTime))
+            .map(o -> new Order(o.id, o.amountGLP,o.position, o.deadline, o.arrivalTime))
             .collect(Collectors.toList());
     }
 }
