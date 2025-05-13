@@ -3,14 +3,10 @@ package domain;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.PriorityQueue;
-import java.util.Comparator;
-import java.util.Set;
+import java.util.stream.Collectors;
 
+import utils.PathBuilder;
 import utils.Time;
-
-import java.util.HashSet;
 
 public class Environment {
     public static int deliverChunkSize = 10; // Max number of m3 of GLP that can be transported or refilled in one chunk
@@ -53,7 +49,8 @@ public class Environment {
 
     public Map<Position, Map<Position, Double>> getDistances() {
         if (!areDistancesGenerated) {
-            generateDistances();
+            distances = PathBuilder.generateDistances(getNodes().stream().map(Node::getPosition).collect(Collectors.toList()), blockages, gridLength, gridWidth);
+            areDistancesGenerated = true;
         }
         return distances;
     }
@@ -176,209 +173,5 @@ public class Environment {
         double distance = distances.get(from.getPosition()).get(to.getPosition());
         double fuelCost = distance * (vehicle.weight() + vehicle.currentGLP() * 0.5) / 180;
         return fuelCost;
-    }
-
-    public void generateDistances() {
-        Map<Position, Map<Position, Double>> distances = new HashMap<>();
-        List<Position> positions = new ArrayList<>();
-        Set<Position> uniquePositions = new HashSet<>();
-        for (Node node : getNodes()) {
-            uniquePositions.add(node.getPosition());
-        }
-        positions.addAll(uniquePositions);
-
-        // Initialize the distance map for all positions
-        for (Position position : positions) {
-            distances.put(position, new HashMap<>());
-            // Set diagonal to 0
-            distances.get(position).put(position, 0.0);
-        }
-
-        // Only calculate distances for the upper triangle
-        for (int i = 0; i < positions.size(); i++) {
-            Position position = positions.get(i);
-            for (int j = i + 1; j < positions.size(); j++) {
-                Position otherPosition = positions.get(j);
-                double distance = 0;
-
-                Position originalPosition = position;
-                Position originalOtherPosition = otherPosition;
-
-                // If starting node is not an integer position, account for this difference
-                if (position.x() != Math.floor(position.x()) || position.y() != Math.floor(position.y())) {
-                    distance += Math.abs(position.x() - Math.floor(position.x())) + Math.abs(position.y() - Math.floor(position.y()));
-                    position = new Position(Math.floor(position.x()), Math.floor(position.y()));
-                }
-
-                // If ending node is not an integer position, account for this difference
-                if (otherPosition.x() != Math.floor(otherPosition.x()) || otherPosition.y() != Math.floor(otherPosition.y())) {
-                    distance += Math.abs(otherPosition.x() - Math.floor(otherPosition.x())) + Math.abs(otherPosition.y() - Math.floor(otherPosition.y()));
-                    otherPosition = new Position(Math.floor(otherPosition.x()), Math.floor(otherPosition.y()));
-                }
-
-                if (isManhattanAvailable(position, otherPosition)) {
-                    distance += calculateManhattanDistance(position, otherPosition);
-                } else {
-                    distance += calculateAStarDistance(position, otherPosition);
-                }
-                // Set distance in both directions
-                distances.get(originalPosition).put(originalOtherPosition, distance);
-                distances.get(originalOtherPosition).put(originalPosition, distance);
-            }
-        }
-
-        this.distances = distances;
-        areDistancesGenerated = true;
-    }
-
-    private boolean isManhattanAvailable(Position from, Position to) {
-        // Create intermediate points for the L-shaped Manhattan path
-        Position intermediate1 = new Position(from.x(), to.y());
-        Position intermediate2 = new Position(to.x(), from.y());
-
-        // Check both possible L-shaped paths
-        boolean path1Available = !isRouteBlocked(from, intermediate1) && !isRouteBlocked(intermediate1, to);
-        boolean path2Available = !isRouteBlocked(from, intermediate2) && !isRouteBlocked(intermediate2, to);
-
-        return path1Available || path2Available;
-    }
-
-    private boolean isRouteBlocked(Position a, Position b) {
-        for (Blockage blockage : blockages) {
-            if (blockage.blocksRoute(a, b)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public static double calculateManhattanDistance(Position from, Position to) {
-        return Math.abs(from.x() - to.x()) + Math.abs(from.y() - to.y());
-    }
-
-    private double calculateAStarDistance(Position from, Position to) {
-        // Priority queue for open nodes, sorted by f-score (g + h)
-        PriorityQueue<AstarNode> openSet = new PriorityQueue<>(Comparator.comparingDouble(n -> n.f));
-        // Set to track visited nodes
-        Set<Position> closedSet = new HashSet<>();
-        // Map to store g-scores (cost from start to current)
-        Map<Position, Double> gScore = new HashMap<>();
-        // Map to store parent nodes for path reconstruction
-        Map<Position, Position> cameFrom = new HashMap<>();
-
-        // Initialize g-score for start position
-        gScore.put(from, 0.0);
-        openSet.add(new AstarNode(from, 0.0, calculateManhattanDistance(from, to)));
-
-        while (!openSet.isEmpty()) {
-            AstarNode current = openSet.poll();
-
-            if (current.position.equals(to)) {
-                return gScore.get(to);
-            }
-
-            closedSet.add(current.position);
-
-            // Generate neighbors (up, down, left, right)
-            for (Position neighbor : getAstarNeighbors(current.position)) {
-                if (closedSet.contains(neighbor)) {
-                    continue;
-                }
-
-                // Calculate tentative g-score
-                double tentativeGScore = gScore.get(current.position) + 1.0;
-
-                if (!gScore.containsKey(neighbor) || tentativeGScore < gScore.get(neighbor)) {
-                    cameFrom.put(neighbor, current.position);
-                    gScore.put(neighbor, tentativeGScore);
-                    double fScore = tentativeGScore + calculateManhattanDistance(neighbor, to);
-                    openSet.add(new AstarNode(neighbor, tentativeGScore, fScore));
-                }
-            }
-        }
-
-        // If we get here, no path was found
-        return Double.MAX_VALUE;
-    }
-
-    private List<Position> getAstarNeighbors(Position current) {
-        List<Position> neighbors = new ArrayList<>();
-        double[][] directions = { { 0.0, 1.0 }, { 1.0, 0.0 }, { 0.0, -1.0 }, { -1.0, 0.0 } }; // up, right, down, left
-
-        for (double[] dir : directions) {
-            double newX = current.x() + dir[0];
-            double newY = current.y() + dir[1];
-
-            // Check if the new position is within grid boundaries
-            if (newX >= 0 && newX < gridLength && newY >= 0 && newY < gridWidth) {
-                Position neighbor = new Position(newX, newY);
-                if (!isRouteBlocked(current, neighbor)) {
-                    neighbors.add(neighbor);
-                }
-            }
-        }
-
-        return neighbors;
-    }
-
-    // Helper class for A* algorithm
-    private static class AstarNode {
-        Position position;
-        double f; // g + heuristic
-
-        AstarNode(Position position, double g, double f) {
-            this.position = position;
-            this.f = f;
-        }
-    }
-
-    public void reportGeneratedNodes() {
-        if (!areNodesGenerated) {
-            System.out.println("Nodes have not been generated yet.");
-            return;
-        }
-
-        System.out.println("\n=== Node Generation Report ===");
-        System.out.println("Total nodes generated: " + nodes.size());
-
-        int emptyNodes = 0;
-        int orderNodes = 0;
-        int refillNodes = 0;
-        int finalNodes = 0;
-
-        for (Node node : nodes) {
-            if (node instanceof EmptyNode)
-                emptyNodes++;
-            else if (node instanceof OrderDeliverNode)
-                orderNodes++;
-            else if (node instanceof ProductRefillNode)
-                refillNodes++;
-            else if (node instanceof FinalNode)
-                finalNodes++;
-        }
-
-        System.out.println("Node types breakdown:");
-        System.out.println("- Empty nodes (vehicle start positions): " + emptyNodes);
-        System.out.println("- Order delivery nodes: " + orderNodes);
-        System.out.println("- Product refill nodes: " + refillNodes);
-        System.out.println("- Final nodes: " + finalNodes);
-
-        // Print total GLP to be delivered
-        int totalGLPToDeliver = 0;
-        for (Node node : nodes) {
-            if (node instanceof OrderDeliverNode) {
-                totalGLPToDeliver += ((OrderDeliverNode) node).amountGLP;
-            }
-        }
-        System.out.println("\nTotal GLP to be delivered: " + totalGLPToDeliver + " m³");
-
-        // Print total GLP to be refilled
-        int totalGLPToRefill = 0;
-        for (Node node : nodes) {
-            if (node instanceof ProductRefillNode) {
-                totalGLPToRefill += ((ProductRefillNode) node).amountGLP;
-            }
-        }
-        System.out.println("Total GLP to be refilled: " + totalGLPToRefill + " m³");
     }
 }

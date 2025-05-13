@@ -68,7 +68,7 @@ public class EnvironmentParser {
                 Time deadline = creationTime.addMinutes(deadlineHours * 60);
                 Position position = new Position(x, y);
     
-                Order order = new Order(orderId++, amountGLP, position, deadline, 0);
+                Order order = new Order(orderId++, amountGLP, position, deadline, creationTime);
                 orders.add(order);
             }
         } catch (IOException e) {

@@ -1,7 +1,6 @@
 package utils;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -13,142 +12,159 @@ import domain.Blockage;
 import domain.Position;
 
 public class PathBuilder {
-    private final List<Blockage> blockages;
-    private final int gridLength;
-    private final int gridWidth;
-
-    public PathBuilder(List<Blockage> blockages, int gridLength, int gridWidth) {
-        this.blockages = blockages;
-        this.gridLength = gridLength;
-        this.gridWidth = gridWidth;
-    }
-
     public static List<Position> buildPath(Position from, Position to, List<Blockage> blockages, 
                                          int gridLength, int gridWidth) {
-        PathBuilder builder = new PathBuilder(blockages, gridLength, gridWidth);
-
         List<Position> path = new ArrayList<>();
 
-        Position fromNotInteger = null;
-        Position toNotInteger = null;
-
-        if (from.x() != Math.floor(from.x()) || from.y() != Math.floor(from.y())) {
-            fromNotInteger = from;
-            from = new Position(Math.floor(from.x()), Math.floor(from.y()));
+        if (from.x() == to.x() && from.y() == to.y()) {
+            return path;
         }
 
-        if (to.x() != Math.floor(to.x()) || to.y() != Math.floor(to.y())) {
-            toNotInteger = to;
-            to = new Position(Math.floor(to.x()), Math.floor(to.y()));
+        Position adjustedFrom = new Position(Math.floor(from.x()), Math.floor(from.y()));
+        Position adjustedTo = new Position(Math.ceil(to.x()), Math.ceil(to.y()));
+
+        if (isManhattanAvailable(adjustedFrom, adjustedTo, gridLength, gridWidth)) {
+            path = buildManhattanPath(adjustedFrom, adjustedTo, blockages, gridLength, gridWidth);
+        } else {
+            path = buildAstarPath(adjustedFrom, adjustedTo, blockages, gridLength, gridWidth);
         }
 
-        path = builder.findPathInteger(from, to);
-
-        if (fromNotInteger != null) {
-            path.addFirst(fromNotInteger);
+        if (from.x() != adjustedFrom.x() || from.y() != adjustedFrom.y()) {
+            path.addFirst(from);
         }
 
-        if (toNotInteger != null) {
-            path.addLast(toNotInteger);
+        if (to.x() != adjustedTo.x() || to.y() != adjustedTo.y()) {
+            path.addLast(to);
         }
 
         return path;
     }
 
-    private List<Position> findPathInteger(Position fromInteger, Position toInteger) {
-        if (fromInteger.equals(toInteger)) {
-            return new ArrayList<>();
+    public static double calculateDistance(List<Position> path) {
+        double distance = 0;
+        for (int i = 0; i < path.size() - 1; i++) {
+            distance += Math.abs(path.get(i).x() - path.get(i + 1).x()) + Math.abs(path.get(i).y() - path.get(i + 1).y());
         }
-
-        // If Manhattan path is available, use it directly
-        if (isManhattanAvailable(fromInteger, toInteger)) {
-            return buildManhattanPath(fromInteger, toInteger);
-        }
-        
-        // Otherwise, find A* path
-        return findAStarPath(fromInteger, toInteger);
+        return distance;
     }
 
-    private boolean isManhattanAvailable(Position from, Position to) {
-        // Check if either L-shaped path is available
-        Position intermediate1 = new Position(from.x(), to.y());
-        Position intermediate2 = new Position(to.x(), from.y());
-        
-        boolean path1Clear = !isRouteBlocked(from, intermediate1) && 
-                            !isRouteBlocked(intermediate1, to);
-                            
-        boolean path2Clear = !isRouteBlocked(from, intermediate2) && 
-                            !isRouteBlocked(intermediate2, to);
-                            
-        return path1Clear || path2Clear;
+    public static Map<Position, Map<Position, Double>> generateDistances(List<Position> positions, List<Blockage> blockages, int gridLength, int gridWidth) {
+        Map<Position, Map<Position, Double>> distances = new HashMap<>();
+
+        Set<Position> uniquePositions = new HashSet<>();
+        for (Position position : positions) {
+            uniquePositions.add(position);
+        }
+        positions.addAll(uniquePositions);
+
+        for (Position position : positions) {
+            distances.put(position, new HashMap<>());
+            distances.get(position).put(position, 0.0);
+        }
+
+        for (int i = 0; i < positions.size(); i++) {
+            Position position = positions.get(i);
+            for (int j = i + 1; j < positions.size(); j++) {
+                Position otherPosition = positions.get(j);
+
+                List<Position> path = buildPath(position, otherPosition, blockages, gridLength, gridWidth);
+                double distance = calculateDistance(path);
+
+                // Set distance in both directions
+                distances.get(position).put(otherPosition, distance);
+                distances.get(otherPosition).put(position, distance);
+            }
+        }
+
+        return distances;
     }
 
-    private List<Position> buildManhattanPath(Position from, Position to) {
+    private static double calculateManhattanDistance(Position a, Position b) {
+        return Math.abs(a.x() - b.x()) + Math.abs(a.y() - b.y());
+    }
+
+    private static boolean isManhattanAvailable(Position from, Position to, int gridLength, int gridWidth) {
+        double distance = calculateManhattanDistance(from, to);
+        return distance <= gridLength && distance <= gridWidth;
+    }
+
+    private static boolean isPathBlocked(Position from, Position to, List<Blockage> blockages) {
+        if (blockages == null || blockages.isEmpty()) {
+            return false;
+        }
+        for (Blockage blockage : blockages) {
+            if (blockage != null && blockage.blocksRoute(from, to)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static List<Position> buildManhattanPath(Position from, Position to, List<Blockage> blockages, int gridLength, int gridWidth) {
         List<Position> path = new ArrayList<>();
         path.add(from);
         
-        // First move horizontally, then vertically
-        Position horizontal = new Position(to.x(), from.y());
-        if (!from.equals(horizontal) && !isRouteBlocked(from, horizontal)) {
-            if (!horizontal.equals(to)) {
-                path.add(horizontal);
+        // First try: Move horizontally then vertically
+        Position horizontalThenVertical = new Position(to.x(), from.y());
+        if (!isPathBlocked(from, horizontalThenVertical, blockages) && 
+            !isPathBlocked(horizontalThenVertical, to, blockages)) {
+            if (!from.equals(horizontalThenVertical)) {
+                path.add(horizontalThenVertical);
             }
             path.add(to);
             return path;
         }
         
-        // If first path not available, try vertical then horizontal
-        Position vertical = new Position(from.x(), to.y());
-        path.add(vertical);
-        path.add(to);
-        return path;
-    }
-
-    private List<Position> findAStarPath(Position from, Position to) {
-        // Priority queue for open nodes, sorted by f-score (g + h)
-        PriorityQueue<AStarNode> openSet = new PriorityQueue<>(Comparator.comparingDouble(n -> n.f));
-        // Set to track visited nodes
-        Set<Position> closedSet = new HashSet<>();
-        // Map to store g-scores (cost from start to current)
-        Map<Position, Double> gScore = new HashMap<>();
-        // Map to store parent nodes for path reconstruction
-        Map<Position, Position> cameFrom = new HashMap<>();
-
-        // Initialize g-score for start position
-        gScore.put(from, 0.0);
-        openSet.add(new AStarNode(from, 0.0, calculateManhattanDistance(from, to)));
-
-        while (!openSet.isEmpty()) {
-            AStarNode current = openSet.poll();
-
-            if (current.position.equals(to)) {
-                return reconstructPath(cameFrom, current.position);
+        // Second try: Move vertically then horizontally
+        Position verticalThenHorizontal = new Position(from.x(), to.y());
+        if (!isPathBlocked(from, verticalThenHorizontal, blockages) && 
+            !isPathBlocked(verticalThenHorizontal, to, blockages)) {
+            if (!from.equals(verticalThenHorizontal)) {
+                path.add(verticalThenHorizontal);
             }
-
-            closedSet.add(current.position);
-
-            for (Position neighbor : getNeighbors(current.position)) {
-                if (closedSet.contains(neighbor)) {
-                    continue;
-                }
-
-                // Calculate tentative g-score (distance between current and neighbor is always 1)
-                double tentativeGScore = gScore.get(current.position) + 1.0;
-
-                if (!gScore.containsKey(neighbor) || tentativeGScore < gScore.get(neighbor)) {
-                    cameFrom.put(neighbor, current.position);
-                    gScore.put(neighbor, tentativeGScore);
-                    double fScore = tentativeGScore + calculateManhattanDistance(neighbor, to);
-                    openSet.add(new AStarNode(neighbor, tentativeGScore, fScore));
-                }
-            }
+            path.add(to);
+            return path;
         }
 
-        // If we get here, no path was found
-        return new ArrayList<>(); // Return empty path if no path found
+        return new ArrayList<>();
     }
 
-    private List<Position> reconstructPath(Map<Position, Position> cameFrom, Position current) {
+    private static class AstarNode implements Comparable<AstarNode> {
+        final Position position;
+        final double f; // f = g + h (total cost)
+        @SuppressWarnings("unused") // g is used in the compareTo method
+        final double g; // cost from start to current node
+
+        AstarNode(Position position, double g, double h) {
+            this.position = position;
+            this.g = g;
+            this.f = g + h;
+        }
+
+        @Override
+        public int compareTo(AstarNode other) {
+            return Double.compare(this.f, other.f);
+        }
+    }
+
+    private static List<Position> getAstarNeighbors(Position pos, int gridLength, int gridWidth) {
+        List<Position> neighbors = new ArrayList<>();
+        int[][] directions = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}}; // up, right, down, left
+        
+        for (int[] dir : directions) {
+            int newX = (int)pos.x() + dir[0];
+            int newY = (int)pos.y() + dir[1];
+            
+            // Check if the new position is within grid boundaries
+            if (newX >= 0 && newX < gridLength && newY >= 0 && newY < gridWidth) {
+                neighbors.add(new Position(newX, newY));
+            }
+        }
+        
+        return neighbors;
+    }
+
+    private static List<Position> reconstructPath(Map<Position, Position> cameFrom, Position current) {
         List<Position> path = new ArrayList<>();
         path.add(current);
         
@@ -160,47 +176,47 @@ public class PathBuilder {
         return path;
     }
 
-    private List<Position> getNeighbors(Position current) {
-        List<Position> neighbors = new ArrayList<>();
-        double[][] directions = { { 0.0, 1.0 }, { 1.0, 0.0 }, { 0.0, -1.0 }, { -1.0, 0.0 } }; // up, right, down, left
+    private static List<Position> buildAstarPath(Position from, Position to, List<Blockage> blockages, int gridLength, int gridWidth) {
+        // Priority queue for open nodes, sorted by f-score (g + h)
+        PriorityQueue<AstarNode> openSet = new PriorityQueue<>();
+        // Set to track visited nodes
+        Set<Position> closedSet = new HashSet<>();
+        // Map to store g-scores (cost from start to current)
+        Map<Position, Double> gScore = new HashMap<>();
+        // Map to store parent nodes for path reconstruction
+        Map<Position, Position> cameFrom = new HashMap<>();
 
-        for (double[] dir : directions) {
-            double newX = current.x() + dir[0];
-            double newY = current.y() + dir[1];
+        // Initialize g-score for start position
+        gScore.put(from, 0.0);
+        openSet.add(new AstarNode(from, 0.0, calculateManhattanDistance(from, to)));
 
-            // Check if the new position is within grid boundaries
-            if (newX >= 0 && newX < gridLength && newY >= 0 && newY < gridWidth) {
-                Position neighbor = new Position(newX, newY);
-                if (!isRouteBlocked(current, neighbor)) {
-                    neighbors.add(neighbor);
+        while (!openSet.isEmpty()) {
+            AstarNode current = openSet.poll();
+
+            if (current.position.equals(to)) {
+                return reconstructPath(cameFrom, to);
+            }
+
+            closedSet.add(current.position);
+
+            // Generate neighbors (up, down, left, right)
+            for (Position neighbor : getAstarNeighbors(current.position, gridLength, gridWidth)) {
+                if (closedSet.contains(neighbor) || isPathBlocked(current.position, neighbor, blockages)) {
+                    continue;
+                }
+
+                // Calculate tentative g-score (each move costs 1)
+                double tentativeGScore = gScore.get(current.position) + 1.0;
+
+                if (!gScore.containsKey(neighbor) || tentativeGScore < gScore.get(neighbor)) {
+                    cameFrom.put(neighbor, current.position);
+                    gScore.put(neighbor, tentativeGScore);
+                    double hScore = calculateManhattanDistance(neighbor, to);
+                    openSet.add(new AstarNode(neighbor, tentativeGScore, hScore));
                 }
             }
         }
 
-        return neighbors;
-    }
-
-    private boolean isRouteBlocked(Position a, Position b) {
-        for (Blockage blockage : blockages) {
-            if (blockage.blocksRoute(a, b)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static double calculateManhattanDistance(Position from, Position to) {
-        return Math.abs(from.x() - to.x()) + Math.abs(from.y() - to.y());
-    }
-
-    // Helper class for A* algorithm
-    private static class AStarNode {
-        final Position position;
-        final double f; // g + heuristic
-
-        AStarNode(Position position, double g, double f) {
-            this.position = position;
-            this.f = f;
-        }
+        return new ArrayList<>();
     }
 }

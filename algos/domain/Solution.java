@@ -145,8 +145,8 @@ public class Solution implements Cloneable {
                 }
 
                 // Pass time after traveling from originNode to destinationNode
-                int distance = environment.getDistances().get(originNode.getPosition()).get(destinationNode.getPosition());
-                int timeSpent = (int) Math.ceil((double) distance / Environment.speed) * 60; // Convert hours to minutes
+                double distance = environment.getDistances().get(originNode.getPosition()).get(destinationNode.getPosition());
+                int timeSpent = (int) Math.ceil(distance / Environment.speed) * 60; // Convert hours to minutes
                 currentTime = currentTime.addMinutes(timeSpent);
 
                 // Calculate and check fuel cost
