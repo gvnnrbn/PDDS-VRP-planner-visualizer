@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import domain.Position;
+import utils.PathBuilder;
 
 public class SchedulerVehicle {
     public int id;
@@ -23,6 +24,8 @@ public class SchedulerVehicle {
     public int maxGLP;
     public int currentGLP;
     public Position position;
+
+    public List<Position> currentPath;
     
     public SchedulerVehicle(int id, String plaque, String type,EnumVehicleState state, int weight, int maxFuel, 
     double currentFuel, int maxGLP, int currentGLP, Position position) {
@@ -69,4 +72,28 @@ public class SchedulerVehicle {
         return vehicles;
     }
     
+    public void advancePath(double units) {
+        if (currentPath == null || currentPath.isEmpty() || currentPath.size() < 2) {
+            currentPath = null;
+            return;
+        }
+
+        Position from = currentPath.get(0);
+        Position to = currentPath.get(1);
+
+        while (units > 0 && currentPath.size() > 1) {
+            double distance = PathBuilder.calculateDistance(List.of(from,to));
+            if (distance > units) { 
+                // Move 'from' position the corresponding amount of units
+                double deltaX = to.x() - from.x();
+                double deltaY = to.y() - from.y();
+                currentPath.set(0, new Position(from.x() + deltaX, from.y() + deltaY));
+                units = 0;
+            } else if (distance <= units) {
+                // Remove 'from' position from path
+                currentPath.remove(0);
+                units -= distance;
+            }
+        }
+    }
 }
