@@ -41,7 +41,7 @@ public class Environment {
 
     private List<Node> nodes;
     private boolean areNodesGenerated = false;
-    private Map<Position, Map<Position, Integer>> distances;
+    private Map<Position, Map<Position, Double>> distances;
     private boolean areDistancesGenerated = false;
 
     public List<Node> getNodes() {
@@ -51,7 +51,7 @@ public class Environment {
         return nodes;
     }
 
-    public Map<Position, Map<Position, Integer>> getDistances() {
+    public Map<Position, Map<Position, Double>> getDistances() {
         if (!areDistancesGenerated) {
             generateDistances();
         }
@@ -171,15 +171,15 @@ public class Environment {
     // Dist Max = 25 * 180 / 15 = 300 Km.
     // Fuel (in galons) = Distance (in km) * [weight (in kg) + 0.5 * GLP (in m3)] /
     // 180
-    public static double calculateFuelCost(Node from, Node to, Map<Position, Map<Position, Integer>> distances,
+    public static double calculateFuelCost(Node from, Node to, Map<Position, Map<Position, Double>> distances,
             Vehicle vehicle) {
-        int distance = distances.get(from.getPosition()).get(to.getPosition());
+        double distance = distances.get(from.getPosition()).get(to.getPosition());
         double fuelCost = distance * (vehicle.weight() + vehicle.currentGLP() * 0.5) / 180;
         return fuelCost;
     }
 
     public void generateDistances() {
-        Map<Position, Map<Position, Integer>> distances = new HashMap<>();
+        Map<Position, Map<Position, Double>> distances = new HashMap<>();
         List<Position> positions = new ArrayList<>();
         Set<Position> uniquePositions = new HashSet<>();
         for (Node node : getNodes()) {
@@ -191,7 +191,7 @@ public class Environment {
         for (Position position : positions) {
             distances.put(position, new HashMap<>());
             // Set diagonal to 0
-            distances.get(position).put(position, 0);
+            distances.get(position).put(position, 0.0);
         }
 
         // Only calculate distances for the upper triangle
@@ -199,15 +199,31 @@ public class Environment {
             Position position = positions.get(i);
             for (int j = i + 1; j < positions.size(); j++) {
                 Position otherPosition = positions.get(j);
-                int distance;
+                double distance = 0;
+
+                Position originalPosition = position;
+                Position originalOtherPosition = otherPosition;
+
+                // If starting node is not an integer position, account for this difference
+                if (position.x() != Math.floor(position.x()) || position.y() != Math.floor(position.y())) {
+                    distance += Math.abs(position.x() - Math.floor(position.x())) + Math.abs(position.y() - Math.floor(position.y()));
+                    position = new Position(Math.floor(position.x()), Math.floor(position.y()));
+                }
+
+                // If ending node is not an integer position, account for this difference
+                if (otherPosition.x() != Math.floor(otherPosition.x()) || otherPosition.y() != Math.floor(otherPosition.y())) {
+                    distance += Math.abs(otherPosition.x() - Math.floor(otherPosition.x())) + Math.abs(otherPosition.y() - Math.floor(otherPosition.y()));
+                    otherPosition = new Position(Math.floor(otherPosition.x()), Math.floor(otherPosition.y()));
+                }
+
                 if (isManhattanAvailable(position, otherPosition)) {
-                    distance = calculateManhattanDistance(position, otherPosition);
+                    distance += calculateManhattanDistance(position, otherPosition);
                 } else {
-                    distance = calculateAStarDistance(position, otherPosition);
+                    distance += calculateAStarDistance(position, otherPosition);
                 }
                 // Set distance in both directions
-                distances.get(position).put(otherPosition, distance);
-                distances.get(otherPosition).put(position, distance);
+                distances.get(originalPosition).put(originalOtherPosition, distance);
+                distances.get(originalOtherPosition).put(originalPosition, distance);
             }
         }
 
@@ -236,23 +252,23 @@ public class Environment {
         return false;
     }
 
-    public static int calculateManhattanDistance(Position from, Position to) {
+    public static double calculateManhattanDistance(Position from, Position to) {
         return Math.abs(from.x() - to.x()) + Math.abs(from.y() - to.y());
     }
 
-    private int calculateAStarDistance(Position from, Position to) {
+    private double calculateAStarDistance(Position from, Position to) {
         // Priority queue for open nodes, sorted by f-score (g + h)
-        PriorityQueue<AstarNode> openSet = new PriorityQueue<>(Comparator.comparingInt(n -> n.f));
+        PriorityQueue<AstarNode> openSet = new PriorityQueue<>(Comparator.comparingDouble(n -> n.f));
         // Set to track visited nodes
         Set<Position> closedSet = new HashSet<>();
         // Map to store g-scores (cost from start to current)
-        Map<Position, Integer> gScore = new HashMap<>();
+        Map<Position, Double> gScore = new HashMap<>();
         // Map to store parent nodes for path reconstruction
         Map<Position, Position> cameFrom = new HashMap<>();
 
         // Initialize g-score for start position
-        gScore.put(from, 0);
-        openSet.add(new AstarNode(from, 0, calculateManhattanDistance(from, to)));
+        gScore.put(from, 0.0);
+        openSet.add(new AstarNode(from, 0.0, calculateManhattanDistance(from, to)));
 
         while (!openSet.isEmpty()) {
             AstarNode current = openSet.poll();
@@ -270,28 +286,28 @@ public class Environment {
                 }
 
                 // Calculate tentative g-score
-                int tentativeGScore = gScore.get(current.position) + 1;
+                double tentativeGScore = gScore.get(current.position) + 1.0;
 
                 if (!gScore.containsKey(neighbor) || tentativeGScore < gScore.get(neighbor)) {
                     cameFrom.put(neighbor, current.position);
                     gScore.put(neighbor, tentativeGScore);
-                    int fScore = tentativeGScore + calculateManhattanDistance(neighbor, to);
+                    double fScore = tentativeGScore + calculateManhattanDistance(neighbor, to);
                     openSet.add(new AstarNode(neighbor, tentativeGScore, fScore));
                 }
             }
         }
 
         // If we get here, no path was found
-        return Integer.MAX_VALUE;
+        return Double.MAX_VALUE;
     }
 
     private List<Position> getAstarNeighbors(Position current) {
         List<Position> neighbors = new ArrayList<>();
-        int[][] directions = { { 0, 1 }, { 1, 0 }, { 0, -1 }, { -1, 0 } }; // up, right, down, left
+        double[][] directions = { { 0.0, 1.0 }, { 1.0, 0.0 }, { 0.0, -1.0 }, { -1.0, 0.0 } }; // up, right, down, left
 
-        for (int[] dir : directions) {
-            int newX = current.x() + dir[0];
-            int newY = current.y() + dir[1];
+        for (double[] dir : directions) {
+            double newX = current.x() + dir[0];
+            double newY = current.y() + dir[1];
 
             // Check if the new position is within grid boundaries
             if (newX >= 0 && newX < gridLength && newY >= 0 && newY < gridWidth) {
@@ -308,9 +324,9 @@ public class Environment {
     // Helper class for A* algorithm
     private static class AstarNode {
         Position position;
-        int f; // g + heuristic
+        double f; // g + heuristic
 
-        AstarNode(Position position, int g, int f) {
+        AstarNode(Position position, double g, double f) {
             this.position = position;
             this.f = f;
         }
