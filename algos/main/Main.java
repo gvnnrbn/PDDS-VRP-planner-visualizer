@@ -27,6 +27,7 @@ public class Main {
         // NEW, CHECK PARAMETERS
         int minutesToSimulate = 75;
         int timeUnit = 1; 
+        int iterations =(int) (7*24*60) / minutesToSimulate + 1;
 
         // === 1. PARAMETROS DEL PLANIFICADOR ===
         int Ta = 1; // Tiempo que tarda el algoritmo (minutos)
@@ -52,7 +53,7 @@ public class Main {
         ScheduleState simulationState = new ScheduleState(startTime); // initial state (no input)
 
         int iteration = 0;
-        while (!orders.isEmpty()) {// remove orders added to simulationState.pendingOrders from orders
+        for(int a=0; a<iterations; a++) {
             
             // 3.0 Filters data available until currentTime
             simulationState.updateData(simulationState.currentTime, vehicles, orders, warehouses, blockages, maintenances, failures);
