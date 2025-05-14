@@ -53,13 +53,9 @@ public class Main {
         ScheduleState simulationState = new ScheduleState(startTime); // initial state (no input)
 
         int iteration = 0;
-<<<<<<< HEAD
         int maxIterations = 24 * 60 * 7 / Sc + 1;
         while (orders.stream().noneMatch(o -> o.deliverTime != null) && iteration < maxIterations) {// remove orders added to simulationState.pendingOrders from orders
-=======
-        for(int a=0; a<iterations; a++) {
->>>>>>> refs/remotes/origin/main
-            
+
             // 3.0 Filters data available until currentTime
             simulationState.updateData(simulationState.currentTime, vehicles, orders, warehouses, blockages, maintenances, failures);
             
