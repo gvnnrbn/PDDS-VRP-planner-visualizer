@@ -77,7 +77,29 @@ public class Time implements Comparable<Time> {
     }
 
     public Time subtractMinutes(int minutes) {
-        return addMinutes(-minutes);
+        int totalMinutes = this.min - minutes;
+        int newMin = (totalMinutes % 60 + 60) % 60; // Handle negative minutes
+        int extraHours = (int)Math.floorDiv(totalMinutes, 60);
+        
+        int totalHours = this.hour + extraHours;
+        int newHour = (totalHours % 24 + 24) % 24; // Handle negative hours
+        int extraDays = (int)Math.floorDiv(totalHours, 24);
+        
+        int newDay = this.day + extraDays;
+        int newMonth = this.month;
+        int newYear = this.year;
+        
+        // Handle days underflow (assuming 30 days per month)
+        while (newDay < 1) {
+            newMonth--;
+            if (newMonth < 1) {
+                newMonth = 12;
+                newYear--;
+            }
+            newDay += 30; // Add days from previous month
+        }
+        
+        return new Time(newYear, newMonth, newDay, newHour, newMin);
     }
 
     public int minutesUntil(Time other) {

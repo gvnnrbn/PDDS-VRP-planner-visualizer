@@ -8,6 +8,7 @@ import scheduler.SchedulerOrder;
 import scheduler.SchedulerVehicle;
 import scheduler.SchedulerWarehouse;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -16,15 +17,20 @@ public class EnvironmentBuilder {
     // copy or convert into Environment attributes
     public static Environment build(ScheduleState state,int scMinutes ) {
         Time currentTime = state.currentTime;
-        Time maxDeadline = currentTime.addMinutes(scMinutes);
+        Time previousTime = currentTime.subtractMinutes(scMinutes);
 
         List<Vehicle> environmentVehicles = convertToVehicles(state.vehicles);
         List<Warehouse> environmentWarehouses = convertToWarehouses(state.warehouses, state.vehicles);
         List<Blockage> environmentBlockages = convertToBlockages(state.blockages, state.currentTime);
         List<Order> environmentOrders = convertToOrders(state.orders);
-        environmentOrders = environmentOrders.stream()
-            .filter(o -> o.releaseTime().isBefore(maxDeadline) && o.deadline().isAfter(currentTime))
-            .collect(Collectors.toList());
+        List<Order> filteredOrders = new ArrayList<>();
+        for (Order order : environmentOrders) {
+            Time releaseTime = order.releaseTime();
+            if (releaseTime.isAfter(previousTime) && releaseTime.isBefore(currentTime)) {
+                filteredOrders.add(order);
+            }
+        }
+        environmentOrders = filteredOrders;
 
         return new Environment(environmentVehicles, environmentOrders, environmentWarehouses, environmentBlockages, currentTime);
     }

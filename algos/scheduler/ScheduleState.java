@@ -39,33 +39,33 @@ public class ScheduleState {
         // filtrar los que no estan en maintenance
         // Filter and add allvehicles with state WAITING or ONTHEWAY
         this.vehicles.addAll(allvehicles.stream()
-            .filter(v -> (v.state == EnumVehicleState.IDLE || v.state == EnumVehicleState.ONTHEWAY))
+            .filter(v -> (v.state == EnumVehicleState.IDLE || v.state == EnumVehicleState.ONTHEWAY) && !this.vehicles.contains(v))
             .collect(Collectors.toList()));
 
         // Filter and add allOrders
         this.orders.addAll(allOrders.stream()
-            .filter(o -> o.arrivalTime.isBeforeOrAt(currentTime))
+            .filter(o -> o.arrivalTime.isBeforeOrAt(currentTime) && !this.orders.contains(o))
             .collect(Collectors.toList()));
         
         // Filter and add AVAILABLE warehouses
         this.warehouses.addAll(allwarehouses.stream()
-            .filter(w -> w.currentGLP  >= Environment.refillChunkSize)
+            .filter(w -> w.currentGLP  >= Environment.refillChunkSize && !this.warehouses.contains(w))
             .collect(Collectors.toList()));
 
             // que no entren los antiguos
         // Filter and add AVAILABLE blockages
         this.blockages.addAll(allblockages.stream()
-            .filter(b -> b.startTime.isBeforeOrAt(currentTime))// endTime!!!!!
+            .filter(b -> b.startTime.isBeforeOrAt(currentTime) && !this.blockages.contains(b))// endTime!!!!!
             .collect(Collectors.toList()));
 
         // Filter and add maintenances
         this.maintenances.addAll(allmaintenances.stream()
-            .filter(m -> m.startDate.isBeforeOrAt(currentTime))
+            .filter(m -> m.startDate.isBeforeOrAt(currentTime) && !this.maintenances.contains(m))
             .collect(Collectors.toList()));
         
         // Add all failures which could happen in this update
         this.failures.addAll(allFailures.stream()
-            .filter(f -> (f.shiftOccurredOn-1) * 8 < currentTime.getHour())
+            .filter(f -> (f.shiftOccurredOn-1) * 8 < currentTime.getHour() && !this.failures.contains(f))
             .collect(Collectors.toList()));
         
     }
