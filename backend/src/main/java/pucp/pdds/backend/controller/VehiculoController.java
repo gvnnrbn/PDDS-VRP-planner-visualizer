@@ -44,6 +44,10 @@ public class VehiculoController {
         return vehiculoRepository.findById(id)
                 .map(vehiculo -> {
                     vehiculo.setTipo(vehiculoDetails.getTipo());
+                    vehiculo.setPeso(vehiculoDetails.getPeso());
+                    vehiculo.setMaxCombustible(vehiculoDetails.getMaxCombustible());
+                    vehiculo.setMaxGlp(vehiculoDetails.getMaxGlp());
+                    vehiculo.setDisponible(vehiculoDetails.isDisponible());
                     Vehiculo updatedVehiculo = vehiculoRepository.save(vehiculo);
                     return ResponseEntity.ok(updatedVehiculo);
                 })
