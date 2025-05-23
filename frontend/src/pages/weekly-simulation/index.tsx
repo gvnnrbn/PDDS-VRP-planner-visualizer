@@ -72,7 +72,7 @@ export default function WeeklySimulation() {
   }
 
   return (
-    <Flex h="full" overflowY="auto">
+    <Flex height="full" overflowY="auto">
       <Box flex={1} p={4} bg={bgColor} h="full">
         <Routes>
           <Route path="pedidos" element={<PedidosPhase />} />

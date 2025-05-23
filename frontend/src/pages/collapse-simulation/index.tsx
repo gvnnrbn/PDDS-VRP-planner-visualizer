@@ -61,7 +61,7 @@ export default function CollapseSimulation() {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   return (
-    <Flex h="full" overflowY="auto">
+    <Flex height="full" overflowY="auto">
       <Box flex={1} p={4} bg={bgColor} h="full">
         <VStack spacing={4} align="stretch">
           <Text fontSize="2xl" fontWeight="bold">
