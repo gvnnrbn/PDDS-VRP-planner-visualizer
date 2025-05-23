@@ -3,25 +3,26 @@ package pucp.pdds.backend.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import pucp.pdds.backend.dto.TipoVehiculoDto;
-import pucp.pdds.backend.service.TipoVehiculoService;
 
-import java.util.List;
+import pucp.pdds.backend.model.TipoVehiculo;
+import pucp.pdds.backend.repository.TipoVehiculoRepository;
 
 @RestController
 @RequestMapping("/api/tipos-vehiculos")
 public class TipoVehiculoController {
     
     @Autowired
-    private TipoVehiculoService tipoVehiculoService;
+    private TipoVehiculoRepository tipoVehiculoRepository;
     
     @GetMapping
-    public ResponseEntity<List<TipoVehiculoDto>> getAllTipos() {
-        return ResponseEntity.ok(tipoVehiculoService.getAllTipos());
+    public ResponseEntity<TipoVehiculo[]> getAllTipos() {
+        return ResponseEntity.ok(tipoVehiculoRepository.getAll());
     }
     
     @GetMapping("/{tipoId}")
-    public ResponseEntity<TipoVehiculoDto> getTipoById(@PathVariable String tipoId) {
-        return ResponseEntity.ok(tipoVehiculoService.getTipoById(tipoId));
+    public ResponseEntity<TipoVehiculo> getTipoById(@PathVariable String tipoId) {
+        return tipoVehiculoRepository.findById(tipoId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }

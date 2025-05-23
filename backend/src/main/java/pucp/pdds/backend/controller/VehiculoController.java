@@ -7,6 +7,8 @@ import pucp.pdds.backend.model.Vehiculo;
 import pucp.pdds.backend.repository.VehiculoRepository;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/vehiculos")
@@ -16,15 +18,18 @@ public class VehiculoController {
     private VehiculoRepository vehiculoRepository;
     
     @GetMapping
-    public ResponseEntity<List<Vehiculo>> getAllVehiculos() {
+    public ResponseEntity<List<Map<String, Object>>> getAllVehiculos() {
         List<Vehiculo> vehiculos = vehiculoRepository.findAll();
-        return ResponseEntity.ok(vehiculos);
+        List<Map<String, Object>> vehiculoMaps = vehiculos.stream()
+            .map(Vehiculo::toMap)
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(vehiculoMaps);
     }
     
     @GetMapping("/{id}")
-    public ResponseEntity<Vehiculo> getVehiculoById(@PathVariable Long id) {
+    public ResponseEntity<Map<String, Object>> getVehiculoById(@PathVariable Long id) {
         return vehiculoRepository.findById(id)
-                .map(ResponseEntity::ok)
+                .map(vehiculo -> ResponseEntity.ok(vehiculo.toMap()))
                 .orElse(ResponseEntity.notFound().build());
     }
     
