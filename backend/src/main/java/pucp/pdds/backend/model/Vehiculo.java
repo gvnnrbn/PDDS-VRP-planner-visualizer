@@ -1,10 +1,6 @@
 package pucp.pdds.backend.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import java.util.Map;
 
 @Entity
@@ -15,18 +11,35 @@ public class Vehiculo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
+    @Enumerated(EnumType.STRING)
     private TipoVehiculo tipo;
 
     public enum TipoVehiculo {
         TA, TB, TC, TD
     }
+
+    @Column(name = "peso")
     private int peso;
+
+    @Column(name = "max_combustible")
     private float maxCombustible;
+
+    @Column(name = "max_glp")
     private float maxGlp;
+
+    @Column(name = "curr_combustible")
     private float currCombustible;
+
+    @Column(name = "curr_glp")
     private float currGlp;
+
+    @Column(name = "posicionx")
     private float posicionX;
+
+    @Column(name = "posiciony")
     private float posicionY;
+
+    @Column(name = "disponible")
     private boolean disponible;
 
     public Vehiculo() {}

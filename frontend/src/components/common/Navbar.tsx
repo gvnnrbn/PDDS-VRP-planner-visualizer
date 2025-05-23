@@ -46,7 +46,7 @@ export const Navbar = () => {
       height="4rem"
     >
       <Flex h="full" alignItems="center" justifyContent="flex-end">
-        <NavLink to="/weekly-simulation">
+        <NavLink to="/weekly-simulation/pedidos">
           Simulación Semanal
         </NavLink>
         <NavLink to="/collapse-simulation">

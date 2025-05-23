@@ -1,6 +1,11 @@
-import { Box, Text, VStack, Flex, useColorModeValue } from '@chakra-ui/react'
-import { SectionBar } from '../../components/SectionBar'
+import { Box, Text, useColorModeValue } from '@chakra-ui/react'
+import { Route, Routes, useLocation } from 'react-router-dom'
+import { SectionBar } from '../../components/common/SectionBar'
 import { useState } from 'react'
+import { Flex } from '@chakra-ui/react'
+import PedidosPhase from './PedidosPhase'
+import IncidenciasPhase from './IncidenciasPhase'
+import SimulationPhase from './SimulationPhase'
 
 const sections = [
   {
@@ -8,7 +13,7 @@ const sections = [
     content: (
       <Box>
         <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
-          Contenido de la sección Pedidos
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
         </Text>
       </Box>
     )
@@ -18,7 +23,7 @@ const sections = [
     content: (
       <Box>
         <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
-          Contenido de la sección Flota
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
         </Text>
       </Box>
     )
@@ -28,7 +33,7 @@ const sections = [
     content: (
       <Box>
         <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
-          Contenido de la sección Averías
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
         </Text>
       </Box>
     )
@@ -38,7 +43,7 @@ const sections = [
     content: (
       <Box>
         <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
-          Contenido de la sección Mantenimiento
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
         </Text>
       </Box>
     )
@@ -48,7 +53,7 @@ const sections = [
     content: (
       <Box>
         <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
-          Contenido de la sección Indicadores
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
         </Text>
       </Box>
     )
@@ -57,26 +62,34 @@ const sections = [
 
 export default function WeeklySimulation() {
   const bgColor = useColorModeValue('#e8edef', '#1a1a1a')
-  const [currentSection, setCurrentSection] = useState('Pedidos')
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [section, setSection] = useState(sections[0].title)
+
+  const currPath = useLocation().pathname.split('/').pop()
+
+  const handleSectionChange = (section: string) => {
+    setSection(section)
+  }
 
   return (
     <Flex h="full" overflowY="auto">
       <Box flex={1} p={4} bg={bgColor} h="full">
-        <VStack spacing={4} align="stretch">
-          <Text fontSize="2xl" fontWeight="bold">
-            Simulación Semanal
-          </Text>
-        </VStack>
+        <Routes>
+          <Route path="pedidos" element={<PedidosPhase />} />
+          <Route path="incidencias" element={<IncidenciasPhase />} />
+          <Route path="simulacion" element={<SimulationPhase />} />
+        </Routes>
       </Box>
 
-      <SectionBar
-        sections={sections}
-        onSectionChange={setCurrentSection}
-        currentSection={currentSection}
-        isCollapsed={isCollapsed}
-        onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
-      />
+      {currPath == "simulacion" && (
+        <SectionBar
+          sections={sections}
+          onSectionChange={handleSectionChange}
+          currentSection={section}
+          isCollapsed={isCollapsed}
+          onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+        />
+      )}
     </Flex>
   )
 }

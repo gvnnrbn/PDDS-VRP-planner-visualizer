@@ -1,5 +1,5 @@
 import { Box, Text, VStack, Flex, useColorModeValue } from '@chakra-ui/react'
-import { SectionBar } from '../../components/SectionBar'
+import { SectionBar } from '../../components/common/SectionBar'
 import { useState } from 'react'
 
 const sections = [
