@@ -26,10 +26,18 @@ export const PedidoForm = ({ pedido, onFinish, onCancel }: PedidoFormProps) => {
 
   const handleSubmit = async () => {
     try {
+      // Create a copy of formData and format the date
+      const formattedData = { ...formData }
+      if (formattedData.fechaRegistro) {
+        const date = new Date(formattedData.fechaRegistro)
+        // Format date as ISO 8601 string (YYYY-MM-DDTHH:mm:ss)
+        formattedData.fechaRegistro = date.toISOString().replace('T', ' ').substring(0, 19)
+      }
+
       if (pedido?.id) {
-        await pedidoService.updatePedido(formData.id, formData)
+        await pedidoService.updatePedido(formData.id, formattedData)
       } else {
-        await pedidoService.createPedido(formData)
+        await pedidoService.createPedido(formattedData)
       }
       queryClient.invalidateQueries({ queryKey: ['pedidos'] })
       onFinish()

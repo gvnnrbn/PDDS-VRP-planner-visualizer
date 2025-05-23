@@ -7,7 +7,6 @@ import pucp.pdds.backend.model.Pedido;
 import pucp.pdds.backend.repository.PedidoRepository;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Random;
 
 @Component
 public class PedidoSeeder implements CommandLineRunner {
@@ -15,7 +14,6 @@ public class PedidoSeeder implements CommandLineRunner {
     @Autowired
     private PedidoRepository pedidoRepository;
     
-    private static final Random RANDOM = new Random();
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     
     @Override
@@ -34,7 +32,7 @@ public class PedidoSeeder implements CommandLineRunner {
         for (String[] pedidoData : pedidos) {
             Pedido pedido = new Pedido(
                 pedidoData[0], // codigoCliente
-                LocalDateTime.parse(pedidoData[1], DATE_FORMATTER), // fechaRegistro
+                LocalDateTime.parse(pedidoData[1], DATE_FORMATTER),
                 Integer.parseInt(pedidoData[2]), // posicionX
                 Integer.parseInt(pedidoData[3]), // posicionY
                 Integer.parseInt(pedidoData[4]), // cantidadGLP

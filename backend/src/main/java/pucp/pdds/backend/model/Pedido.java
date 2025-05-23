@@ -1,5 +1,6 @@
 package pucp.pdds.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -17,7 +18,10 @@ public class Pedido {
     private Long id;
     
     private String codigoCliente;
+    
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime fechaRegistro;
+    
     private int posicionX;
     private int posicionY;
     private int cantidadGLP;
