@@ -22,57 +22,52 @@ export const SectionBar = ({
 }: SectionBarProps) => {
   const selectedColor = useColorModeValue('#E5E5E5', '#1a1a1a')
   const notSelectedColor = useColorModeValue('#BDBDBD', '#BDBDBD')
-  const bg = useColorModeValue('#white', 'gray.300')
 
   return (
     <Flex
       width={isCollapsed ? '50px' : '30%'}
       transition="width 0.3s ease"
-      // bg={selectedColor}
       direction="column"
       h="full"
     >
       <Tabs 
-        isFitted 
         variant='enclosed' 
         orientation='vertical' 
-        // colorScheme='purple' 
-        bg={'red'}
-        
         h='full' 
       >
         <TabList 
           aria-orientation='vertical'
-          // borderRight='1px solid'
-          // notSelectedColor='#3E4990'
-          paddingY={2}
           sx={{ gap: '3px' }}
         >
+          <Tab
+          onClick={onToggleCollapse}
+            bg={notSelectedColor}
+            borderLeftRadius='10px'
+            borderTopRightRadius='0'
+            _hover={{
+              bg: selectedColor,
+            }}
+            _selected={{}}
+          >
+            {isCollapsed ? '<' : '>'}
+          </Tab>
           {sections.map((section) => (
             <Tab
+            height='100%'
             key={section.title}
-            height="120px"
-            minW="unset"
-            // borderRadius="lg"
+            color='#3E4990'
+            onClick={() => onSectionChange(section.title)}
             bg={currentSection === section.title ? selectedColor : notSelectedColor}
             borderTopRightRadius='10px'
             borderBottomRightRadius='10px'
             borderTopLeftRadius='0'
-            _selected={{
-                bg: {selectedColor},
-                color: 'black',
-                // borderRight: '2px solid',
-                // zIndex: 1,
-            }}
             _hover={{
-              bg: '#3E4990',
-              color: 'white',
+              bg: selectedColor,
             }}
             sx={{
               writingMode: 'vertical-rl',
               transform: 'rotate(180deg)',
               textAlign: 'center',
-              // borderRadius: 'md',
               transition: 'all 0.2s',
               padding: '7px'
             }}

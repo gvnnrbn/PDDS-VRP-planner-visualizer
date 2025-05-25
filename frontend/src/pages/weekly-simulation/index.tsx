@@ -1,4 +1,4 @@
-import { Box, Text, useColorModeValue } from '@chakra-ui/react'
+import { Box, Button, Text, useColorModeValue } from '@chakra-ui/react'
 import { Route, Routes, useLocation } from 'react-router-dom'
 import { SectionBar } from '../../components/common/SectionBar'
 import { useState } from 'react'
@@ -6,16 +6,37 @@ import { Flex } from '@chakra-ui/react'
 import PedidosPhase from './PedidosPhase'
 import IncidenciasPhase from './IncidenciasPhase'
 import SimulationPhase from './SimulationPhase'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+
 
 const sections = [
   {
     title: 'Pedidos',
     content: (
-      <Box>
-        <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
-          Contenido pedidos
-        </Text>
-      </Box>
+      <Flex bg='white' borderRadius='10px' p={3}>
+        <Box flex='1'>
+          <Flex gap={4} align='end'>
+            <Text id='orderid' fontSize={20} color='purple'>P-0123</Text>
+            <Text id='state'>Entregando</Text>
+          </Flex>
+          <Flex gap={1}>
+            <Text id='glp'>GLP: {50}m³</Text>
+            |
+            <Text id='deadline'>Fecha Límite: {'D1 17:00'}</Text>
+          </Flex>
+          <Flex id='vehicle' gap={1} color='grey' fontSize={14}>
+            <Text id='plaque'>{'VH3-A2S'}</Text>
+            |
+            <Text id='eta'>ETA: {'13:43'}</Text>
+          </Flex>
+        </Box>
+        <Box>
+          <Button colorScheme='purple'>
+            Enfocar
+            <FontAwesomeIcon icon="fa-solid fa-arrows-to-dot" />
+          </Button>
+        </Box>
+      </Flex>
     )
   },
   {
@@ -57,11 +78,11 @@ const sections = [
         </Text>
       </Box>
     )
-  }
+  },
 ]
 
 export default function WeeklySimulation() {
-  const bgColor = useColorModeValue('#e8edef', '#1a1a1a')
+  const bgColor = useColorModeValue('white', '#1a1a1a')
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [section, setSection] = useState(sections[0].title)
 

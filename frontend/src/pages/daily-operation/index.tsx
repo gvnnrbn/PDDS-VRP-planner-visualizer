@@ -56,7 +56,7 @@ const sections = [
 ]
 
 export default function DailyOperation() {
-  const bgColor = useColorModeValue('#e8edef', '#1a1a1a')
+  const bgColor = useColorModeValue('white', '#1a1a1a')
   const [currentSection, setCurrentSection] = useState('Pedidos')
   const [isCollapsed, setIsCollapsed] = useState(false)
 

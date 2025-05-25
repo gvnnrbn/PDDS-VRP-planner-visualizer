@@ -56,14 +56,14 @@ const sections = [
 ]
 
 export default function CollapseSimulation() {
-  const bgColor = useColorModeValue('#e8edef', '#1a1a1a')
+  const bgColor = useColorModeValue('white', '#1a1a1a')
   const [currentSection, setCurrentSection] = useState('Pedidos')
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   return (
     <Flex height="full" overflowY="auto">
       <Box flex={1} p={4} bg={bgColor} h="full">
-        <VStack borderSpacing={4} align="stretch">
+        <VStack spacing={4} align="stretch">
           <Text fontSize="2xl" fontWeight="bold">
             Simulación hasta el colapso
           </Text>
