@@ -13,7 +13,7 @@ const sections = [
     content: (
       <Box>
         <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+          Contenido pedidos
         </Text>
       </Box>
     )
@@ -23,7 +23,7 @@ const sections = [
     content: (
       <Box>
         <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+          Lcontenido flota
         </Text>
       </Box>
     )
@@ -33,7 +33,7 @@ const sections = [
     content: (
       <Box>
         <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+          contenido averias
         </Text>
       </Box>
     )
@@ -43,7 +43,7 @@ const sections = [
     content: (
       <Box>
         <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+          contenido mantenimiento
         </Text>
       </Box>
     )
@@ -53,7 +53,7 @@ const sections = [
     content: (
       <Box>
         <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+          contenido indicadores
         </Text>
       </Box>
     )

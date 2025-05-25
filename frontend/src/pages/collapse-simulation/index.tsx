@@ -63,7 +63,7 @@ export default function CollapseSimulation() {
   return (
     <Flex height="full" overflowY="auto">
       <Box flex={1} p={4} bg={bgColor} h="full">
-        <VStack spacing={4} align="stretch">
+        <VStack borderSpacing={4} align="stretch">
           <Text fontSize="2xl" fontWeight="bold">
             Simulación hasta el colapso
           </Text>

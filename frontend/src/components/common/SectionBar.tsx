@@ -1,4 +1,4 @@
-import { Box, Button, Flex, useColorModeValue } from '@chakra-ui/react'
+import { Box, Button, Flex, Tab, TabList, TabPanel, TabPanels, Tabs, useColorModeValue } from '@chakra-ui/react'
 
 interface Section {
   title: string
@@ -20,20 +20,78 @@ export const SectionBar = ({
   isCollapsed,
   onToggleCollapse 
 }: SectionBarProps) => {
-  const bgColor = useColorModeValue('#f3f4f6', '#1a1a1a')
-  const borderColor = useColorModeValue('gray.200', 'gray.700')
+  const selectedColor = useColorModeValue('#E5E5E5', '#1a1a1a')
+  const notSelectedColor = useColorModeValue('#BDBDBD', '#BDBDBD')
+  const bg = useColorModeValue('#white', 'gray.300')
 
   return (
     <Flex
-      width={isCollapsed ? '50px' : '25%'}
+      width={isCollapsed ? '50px' : '30%'}
       transition="width 0.3s ease"
-      bg={bgColor}
-      borderLeft="1px"
-      borderColor={borderColor}
+      // bg={selectedColor}
       direction="column"
       h="full"
     >
-      <Button
+      <Tabs 
+        isFitted 
+        variant='enclosed' 
+        orientation='vertical' 
+        // colorScheme='purple' 
+        bg={'red'}
+        
+        h='full' 
+      >
+        <TabList 
+          aria-orientation='vertical'
+          // borderRight='1px solid'
+          // notSelectedColor='#3E4990'
+          paddingY={2}
+          sx={{ gap: '3px' }}
+        >
+          {sections.map((section) => (
+            <Tab
+            key={section.title}
+            height="120px"
+            minW="unset"
+            // borderRadius="lg"
+            bg={currentSection === section.title ? selectedColor : notSelectedColor}
+            borderTopRightRadius='10px'
+            borderBottomRightRadius='10px'
+            borderTopLeftRadius='0'
+            _selected={{
+                bg: {selectedColor},
+                color: 'black',
+                // borderRight: '2px solid',
+                // zIndex: 1,
+            }}
+            _hover={{
+              bg: '#3E4990',
+              color: 'white',
+            }}
+            sx={{
+              writingMode: 'vertical-rl',
+              transform: 'rotate(180deg)',
+              textAlign: 'center',
+              // borderRadius: 'md',
+              transition: 'all 0.2s',
+              padding: '7px'
+            }}
+            >
+              {section.title}
+            </Tab>
+          ))}
+        </TabList>
+        <TabPanels bg={selectedColor}>
+          {sections.map((section) => (
+            <TabPanel
+              key={section.title}
+            >
+              {section.content}
+            </TabPanel>
+          ))}
+        </TabPanels>
+      </Tabs>
+      {/* <Button
         size="sm"
         w="full"
         h="40px"
@@ -52,7 +110,6 @@ export const SectionBar = ({
       {!isCollapsed && (
         <Box p={2} flex={1} overflowY="auto">
           <Flex direction="column" gap={2} h="full">
-            {/* Sections */}
             <Box
               overflowX="auto"
               sx={{
@@ -83,13 +140,12 @@ export const SectionBar = ({
               </Flex>
             </Box>
 
-            {/* Content */}
             <Box p={4} bg={useColorModeValue('white', 'gray.800')} borderRadius="md" mt={2} flex={1}>
               {sections.find(s => s.title === currentSection)?.content}
             </Box>
           </Flex>
         </Box>
-      )}
+      )} */}
     </Flex>
   )
 }
