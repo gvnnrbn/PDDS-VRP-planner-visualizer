@@ -6,6 +6,8 @@ import { Flex } from '@chakra-ui/react'
 import PedidosPhase from './PedidosPhase'
 import IncidenciasPhase from './IncidenciasPhase'
 import SimulationPhase from './SimulationPhase'
+import VehiculosPhase from './VehiculosPhase'
+
 import { OrderCard } from '../../components/common/OrderCard'
 import type { IOrderCard } from '../../core/types/pedido'
 const ordersOutput = [
@@ -108,6 +110,7 @@ export default function WeeklySimulation() {
           <Route path="pedidos" element={<PedidosPhase />} />
           <Route path="incidencias" element={<IncidenciasPhase />} />
           <Route path="simulacion" element={<SimulationPhase />} />
+          <Route path="vehiculos" element={<VehiculosPhase />} />
         </Routes>
       </Box>
 
