@@ -24,16 +24,6 @@ const sections = [
     )
   },
   {
-    title: 'Averias',
-    content: (
-      <Box>
-        <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
-          Contenido de la sección Averías
-        </Text>
-      </Box>
-    )
-  },
-  {
     title: 'Mantenimiento',
     content: (
       <Box>

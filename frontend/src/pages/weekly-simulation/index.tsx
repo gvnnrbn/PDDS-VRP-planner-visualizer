@@ -30,6 +30,10 @@ const ordersOutput = [
   },
 ]
 
+import LegendPanel from '../../components/common/Legend'
+import BottomLeftControls from '../../components/common/MapActions'
+
+
 const sections = [
   {
     title: 'Pedidos',
@@ -112,14 +116,24 @@ export default function WeeklySimulation() {
       </Box>
 
       {currPath == "simulacion" && (
-        <SectionBar
+          <SectionBar
           sections={sections}
           onSectionChange={handleSectionChange}
           currentSection={section}
           isCollapsed={isCollapsed}
           onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
-        />
+          />
+        
+
       )}
+      <LegendPanel isSidebarCollapsed={isCollapsed} />
+      <BottomLeftControls 
+        variant="full"
+        date="Día 1 | 03/04/2025 | 11:00"
+        //speed={simSpeed}
+        //onStop={() => pauseSimulacion()}
+        //onSpeedChange={(v) => setSimSpeed(v)}
+      />
     </Flex>
   )
 }
