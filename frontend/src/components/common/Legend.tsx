@@ -10,6 +10,8 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 import { ChevronUpIcon, ChevronDownIcon } from "@chakra-ui/icons";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTruck, faWarehouse, faIndustry, faSquare, faLocationDot } from '@fortawesome/free-solid-svg-icons';
 import React from "react";
 
 interface LegendPanelProps {
@@ -58,41 +60,40 @@ const LegendPanel: React.FC<LegendPanelProps> = ({ isSidebarCollapsed }) => {
 
       {/* Collapsible Content */}
       <Collapse in={isOpen} animateOpacity>
-        <Box px={16} py={2}>
+        <Box px={10} py={2}>
             <SimpleGrid columns={2} spacingX={5} spacingY={3}>
-                <HStack>
-                    <Box bg="black" w="12px" h="12px" borderRadius="2px" />
-                    <Text fontSize="sm">Vehículos</Text>
-                </HStack>
-                <HStack>
-                    <Box bg="black" w="12px" h="12px" borderRadius="2px" />
-                    <Text fontSize="sm">Almacén Principal</Text>
-                </HStack>
-                
-                <HStack>
-                    <Box bg="red.500" w="12px" h="12px" borderRadius="2px" />
-                    <Text fontSize="sm">Averiado</Text>
-                </HStack>
-                <HStack>
-                    <Box bg="red.400" w="12px" h="12px" borderRadius="2px" />
-                    <Text fontSize="sm">Tanque Cerrado</Text>
-                </HStack>
-                <HStack>
-                    <Box bg="yellow.400" w="12px" h="12px" borderRadius="2px" />
-                    <Text fontSize="sm">Mantenimiento</Text>
-                </HStack>
-                <HStack>
-                    <Box bg="green.400" w="12px" h="12px" borderRadius="2px" />
-                    <Text fontSize="sm">Tanque disponible</Text>
-                </HStack>
-                <HStack>
-                    <Box bg="black" w="12px" h="12px" borderRadius="2px" />
-                    <Text fontSize="sm">Bloqueo</Text>
-                </HStack>
-                <HStack>
-                    <Box bg="red.400" w="12px" h="12px" borderRadius="2px" />
-                    <Text fontSize="sm">Destino</Text>
-                </HStack>
+              <HStack>
+                <FontAwesomeIcon icon={faTruck} size="lg" />
+                <Text fontSize="sm">Vehículos</Text>
+              </HStack>
+              <HStack>
+                <FontAwesomeIcon icon={faWarehouse} size="lg" />
+                <Text fontSize="sm">Almacén Principal</Text>
+              </HStack>
+              <HStack>
+                <FontAwesomeIcon icon={faTruck} size="lg" color="red" />
+                <Text fontSize="sm">Averiado</Text>
+              </HStack>
+              <HStack>
+                <FontAwesomeIcon icon={faIndustry} size="lg" color="red" />
+                <Text fontSize="sm">Tanque Cerrado</Text>
+              </HStack>
+              <HStack>
+                <FontAwesomeIcon icon={faTruck} size="lg" color="yellow" />
+                <Text fontSize="sm">Mantenimiento</Text>
+              </HStack>
+              <HStack>
+                <FontAwesomeIcon icon={faIndustry} size="lg" color="green" />
+                <Text fontSize="sm">Tanque disponible</Text>
+              </HStack>
+              <HStack>
+                <FontAwesomeIcon icon={faSquare} size="lg" />
+                <Text fontSize="sm">Bloqueo</Text>
+              </HStack>
+              <HStack>
+                <FontAwesomeIcon icon={faLocationDot} size="lg" color="red" />
+                <Text fontSize="sm">Destino</Text>
+              </HStack>
             </SimpleGrid>
         </Box>
       </Collapse>

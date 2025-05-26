@@ -1,7 +1,7 @@
 import { Box, Text, useColorModeValue, VStack } from '@chakra-ui/react'
 import { Route, Routes, useLocation } from 'react-router-dom'
 import { SectionBar } from '../../components/common/SectionBar'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Flex } from '@chakra-ui/react'
 import PedidosPhase from './PedidosPhase'
 import IncidenciasPhase from './IncidenciasPhase'
@@ -35,6 +35,7 @@ const ordersOutput = [
 
 import LegendPanel from '../../components/common/Legend'
 import BottomLeftControls from '../../components/common/MapActions'
+import LoadingOverlay from '../../components/common/LoadingOverlay'
 
 
 const sections = [
@@ -104,22 +105,32 @@ export default function WeeklySimulation() {
 
   const currPath = useLocation().pathname.split('/').pop()
 
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (currPath === "simulacion") {
+      setIsLoading(true);
+      const timer = setTimeout(() => setIsLoading(false), 10000); // 10s simulado
+      return () => clearTimeout(timer);
+    }
+  }, [currPath]);
+
   const handleSectionChange = (section: string) => {
     setSection(section)
   }
 
   return (
-    <Flex height="full" overflowY="auto">
+    <Flex height="full" overflowY="auto" position="relative">
       <Box flex={1} p={4} bg={bgColor} h="full">
         <Routes>
           <Route path="pedidos" element={<PedidosPhase />} />
           <Route path="incidencias" element={<IncidenciasPhase />} />
-          <Route path="simulacion" element={<SimulationPhase />} />
           <Route path="vehiculos" element={<VehiculosPhase />} />
+          <Route path="simulacion" element={<SimulationPhase />} />
         </Routes>
       </Box>
 
-      {currPath === "simulacion" && (
+      {currPath === "simulacion" && !isLoading && (
         <>
           <SectionBar
             sections={sections}
@@ -134,12 +145,11 @@ export default function WeeklySimulation() {
           <BottomLeftControls 
             variant="full"
             date="Día 1 | 03/04/2025 | 11:00"
-            //speed={simSpeed}
-            //onStop={() => pauseSimulacion()}
-            //onSpeedChange={(v) => setSimSpeed(v)}
           />
         </>
       )}
+
+      <LoadingOverlay isVisible={currPath === "simulacion" && isLoading} />
     </Flex>
-  )
+  );
 }

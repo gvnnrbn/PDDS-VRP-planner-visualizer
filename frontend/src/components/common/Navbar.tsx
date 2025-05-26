@@ -67,7 +67,7 @@ export const Navbar = () => {
         <Flex h="full" gap={4} alignItems="center">
           <NavLink to="/daily-operation">Operación día a día</NavLink>
           <NavLink to="/weekly-simulation/pedidos">Simulación Semanal</NavLink>
-          <NavLink to="/collapse-simulation">Simulación hasta el colapso</NavLink>
+          <NavLink to="/collapse-simulation/pedidos">Simulación hasta el colapso</NavLink>
         </Flex>
       </Flex>
     </Box>

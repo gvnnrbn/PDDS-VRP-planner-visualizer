@@ -1,15 +1,54 @@
-import { Box, Text, VStack, Flex, useColorModeValue } from '@chakra-ui/react'
+import { Box, Text, useColorModeValue, VStack } from '@chakra-ui/react'
+import { Route, Routes, useLocation } from 'react-router-dom'
 import { SectionBar } from '../../components/common/SectionBar'
 import { useState } from 'react'
+import { Flex } from '@chakra-ui/react'
+import SimulationPhase from './SimulationPhase'
+
+import { OrderCard } from '../../components/common/OrderCard'
+
+const ordersOutput = [
+  {
+    orderId: 'PED-001',
+    state: 'En Proceso',
+    glp: 150,
+    deadline: '2023-10-15',
+    vehicles: [
+      { plaque: 'ABC123', eta: '2023-10-14 12:00' },
+      { plaque: 'XYZ789', eta: '2023-10-14 14:30' }
+    ]
+  },
+  {
+    orderId: 'PED-002',
+    state: 'Completado',
+    glp: 200,
+    deadline: '2023-10-16',
+    vehicles: [
+      { plaque: 'LMN456', eta: '2023-10-15 10:00' },
+    ]
+  },
+]
+
+import LegendPanel from '../../components/common/Legend'
+import BottomLeftControls from '../../components/common/MapActions'
+import PedidosPhaseCollapse from './PedidosPhase'
+
 
 const sections = [
   {
     title: 'Pedidos',
     content: (
       <Box>
-        <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
-          Contenido de la sección Pedidos
-        </Text>
+        <VStack spacing={4} align="stretch">
+          {ordersOutput.map((order) => (
+            <Box key={order.orderId}>
+              <OrderCard 
+                orderCard={order} 
+                onClick={() => console.log('Enfocar pedido clicked')}
+              />
+            </Box>
+          ))}
+        </VStack>
       </Box>
     )
   },
@@ -18,7 +57,7 @@ const sections = [
     content: (
       <Box>
         <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
-          Contenido de la sección Flota
+          Lcontenido flota
         </Text>
       </Box>
     )
@@ -28,7 +67,7 @@ const sections = [
     content: (
       <Box>
         <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
-          Contenido de la sección Mantenimiento
+          contenido mantenimiento
         </Text>
       </Box>
     )
@@ -38,35 +77,54 @@ const sections = [
     content: (
       <Box>
         <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
-          Contenido de la sección Indicadores
+          contenido indicadores
         </Text>
       </Box>
     )
-  }
+  },
 ]
 
 export default function CollapseSimulation() {
   const bgColor = useColorModeValue('white', '#1a1a1a')
-  const [currentSection, setCurrentSection] = useState('Pedidos')
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [section, setSection] = useState(sections[0].title)
+
+  const currPath = useLocation().pathname.split('/').pop()
+
+  const handleSectionChange = (section: string) => {
+    setSection(section)
+  }
 
   return (
     <Flex height="full" overflowY="auto">
       <Box flex={1} p={4} bg={bgColor} h="full">
-        <VStack spacing={4} align="stretch">
-          <Text fontSize="2xl" fontWeight="bold">
-            Simulación hasta el colapso
-          </Text>
-        </VStack>
+        <Routes>
+          <Route path="pedidos" element={<PedidosPhaseCollapse />} />
+          <Route path="simulacion" element={<SimulationPhase />} />
+        </Routes>
       </Box>
 
-      <SectionBar
-        sections={sections}
-        onSectionChange={setCurrentSection}
-        currentSection={currentSection}
-        isCollapsed={isCollapsed}
-        onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
-      />
+      {currPath === "simulacion" && (
+        <>
+          <SectionBar
+            sections={sections}
+            onSectionChange={handleSectionChange}
+            currentSection={section}
+            isCollapsed={isCollapsed}
+            onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+          />
+
+          <LegendPanel isSidebarCollapsed={isCollapsed} />
+
+          <BottomLeftControls 
+            variant="full"
+            date="Día 1 | 03/04/2025 | 11:00"
+            //speed={simSpeed}
+            //onStop={() => pauseSimulacion()}
+            //onSpeedChange={(v) => setSimSpeed(v)}
+          />
+        </>
+      )}
     </Flex>
   )
 }

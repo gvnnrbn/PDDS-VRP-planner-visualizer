@@ -19,7 +19,6 @@ const BottomLeftControls: React.FC<BottomLeftControlsProps> = ({
   onSpeedChange,
 }) => {
   const panelBg = useColorModeValue("white", "gray.800");
-  const shadow = useColorModeValue("md", "dark-lg");
 
   const showSpeed = variant === "full";
   const showDate = variant === "full" || variant === "date-pause";
