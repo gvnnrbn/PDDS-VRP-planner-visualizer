@@ -1,4 +1,4 @@
-import { Box, Button, Text, useColorModeValue } from '@chakra-ui/react'
+import { Box, Button, defineStyle, defineStyleConfig, extendTheme, Text, useColorModeValue } from '@chakra-ui/react'
 import { Route, Routes, useLocation } from 'react-router-dom'
 import { SectionBar } from '../../components/common/SectionBar'
 import { useState } from 'react'
@@ -7,13 +7,13 @@ import PedidosPhase from './PedidosPhase'
 import IncidenciasPhase from './IncidenciasPhase'
 import SimulationPhase from './SimulationPhase'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-
+import { faArrowsToDot } from '@fortawesome/free-solid-svg-icons';
 
 const sections = [
   {
     title: 'Pedidos',
     content: (
-      <Flex bg='white' borderRadius='10px' p={3}>
+      <Flex bg='white' borderRadius='10px' py={3} px={4} mx={-1}>
         <Box flex='1'>
           <Flex gap={4} align='end'>
             <Text id='orderid' fontSize={20} color='purple'>P-0123</Text>
@@ -24,16 +24,24 @@ const sections = [
             |
             <Text id='deadline'>Fecha Límite: {'D1 17:00'}</Text>
           </Flex>
-          <Flex id='vehicle' gap={1} color='grey' fontSize={14}>
-            <Text id='plaque'>{'VH3-A2S'}</Text>
-            |
-            <Text id='eta'>ETA: {'13:43'}</Text>
+          <Flex id='vehicles' direction='column'>
+            <Flex id='vehicle' gap={1} color='grey' fontSize={14}>
+              <Text id='plaque'>{'VH3-A2S'}</Text>
+              |
+              <Text id='eta'>ETA: {'13:43'}</Text>
+            </Flex>
+            <Flex id='vehicle' gap={1} color='grey' fontSize={14}>
+              <Text id='plaque'>{'VH3-A2S'}</Text>
+              |
+              <Text id='eta'>ETA: {'13:43'}</Text>
+            </Flex>
+
           </Flex>
         </Box>
         <Box>
-          <Button colorScheme='purple'>
+          <Button gap={1} variant='primary'>
             Enfocar
-            <FontAwesomeIcon icon="fa-solid fa-arrows-to-dot" />
+            <FontAwesomeIcon icon={faArrowsToDot} />
           </Button>
         </Box>
       </Flex>
