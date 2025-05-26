@@ -1,4 +1,4 @@
-import { Box, Button, defineStyle, defineStyleConfig, extendTheme, Text, useColorModeValue } from '@chakra-ui/react'
+import { Box, Text, useColorModeValue } from '@chakra-ui/react'
 import { Route, Routes, useLocation } from 'react-router-dom'
 import { SectionBar } from '../../components/common/SectionBar'
 import { useState } from 'react'
@@ -6,45 +6,40 @@ import { Flex } from '@chakra-ui/react'
 import PedidosPhase from './PedidosPhase'
 import IncidenciasPhase from './IncidenciasPhase'
 import SimulationPhase from './SimulationPhase'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowsToDot } from '@fortawesome/free-solid-svg-icons';
+import { OrderCard } from '../../components/common/OrderCard'
+import type { IOrderCard } from '../../core/types/pedido'
+const ordersOutput = [
+  {
+    orderId: 'PED-001',
+    state: 'En Proceso',
+    glp: 150,
+    deadline: '2023-10-15',
+    vehicles: [
+      { plaque: 'ABC123', eta: '2023-10-14 12:00' },
+      { plaque: 'XYZ789', eta: '2023-10-14 14:30' }
+    ]
+  },
+  {
+    orderId: 'PED-002',
+    state: 'Completado',
+    glp: 200,
+    deadline: '2023-10-16',
+    vehicles: [
+      { plaque: 'LMN456', eta: '2023-10-15 10:00' },
+    ]
+  },
+]
 
 const sections = [
   {
     title: 'Pedidos',
     content: (
-      <Flex bg='white' borderRadius='10px' py={3} px={4} mx={-1}>
-        <Box flex='1'>
-          <Flex gap={4} align='end'>
-            <Text id='orderid' fontSize={20} color='purple'>P-0123</Text>
-            <Text id='state'>Entregando</Text>
-          </Flex>
-          <Flex gap={1}>
-            <Text id='glp'>GLP: {50}m³</Text>
-            |
-            <Text id='deadline'>Fecha Límite: {'D1 17:00'}</Text>
-          </Flex>
-          <Flex id='vehicles' direction='column'>
-            <Flex id='vehicle' gap={1} color='grey' fontSize={14}>
-              <Text id='plaque'>{'VH3-A2S'}</Text>
-              |
-              <Text id='eta'>ETA: {'13:43'}</Text>
-            </Flex>
-            <Flex id='vehicle' gap={1} color='grey' fontSize={14}>
-              <Text id='plaque'>{'VH3-A2S'}</Text>
-              |
-              <Text id='eta'>ETA: {'13:43'}</Text>
-            </Flex>
-
-          </Flex>
-        </Box>
-        <Box>
-          <Button gap={1} variant='primary'>
-            Enfocar
-            <FontAwesomeIcon icon={faArrowsToDot} />
-          </Button>
-        </Box>
-      </Flex>
+      <>
+      {ordersOutput.map((order) => {
+        <OrderCard orderCard={order} onClick={()=>{console.log('Enfocar pedido clicked')}}/>
+      })}
+      </>
+      
     )
   },
   {

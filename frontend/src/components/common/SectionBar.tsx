@@ -47,7 +47,6 @@ export const SectionBar = ({
             _hover={{
               bg: selectedColor,
             }}
-            _selected={{}}
           >
             {isCollapsed ? '<' : '>'}
           </Tab>
