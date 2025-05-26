@@ -43,7 +43,7 @@ const BottomLeftControls: React.FC<BottomLeftControlsProps> = ({
                 boxShadow={boxShadow}
                 minW="170px"
                 >
-                <Text fontSize="sm">{date}</Text>
+                <Text fontWeight="bold" color="purple.800">{date}</Text>
             </Box>
         )}
 

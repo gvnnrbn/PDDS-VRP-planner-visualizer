@@ -1,14 +1,22 @@
 package pucp.pdds.backend.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import pucp.pdds.backend.model.Vehiculo;
-import pucp.pdds.backend.repository.VehiculoRepository;
-
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import pucp.pdds.backend.model.Vehiculo;
+import pucp.pdds.backend.repository.VehiculoRepository;
 
 @RestController
 @RequestMapping("/api/vehiculos")
@@ -47,7 +55,12 @@ public class VehiculoController {
                     vehiculo.setPeso(vehiculoDetails.getPeso());
                     vehiculo.setMaxCombustible(vehiculoDetails.getMaxCombustible());
                     vehiculo.setMaxGlp(vehiculoDetails.getMaxGlp());
+                    vehiculo.setCurrCombustible(vehiculoDetails.getCurrCombustible());
+                    vehiculo.setCurrGlp(vehiculoDetails.getCurrGlp());
                     vehiculo.setDisponible(vehiculoDetails.isDisponible());
+                    vehiculo.setPosicionX(vehiculoDetails.getPosicionX());
+                    vehiculo.setPosicionY(vehiculoDetails.getPosicionY());
+
                     Vehiculo updatedVehiculo = vehiculoRepository.save(vehiculo);
                     return ResponseEntity.ok(updatedVehiculo);
                 })

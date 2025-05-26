@@ -6,8 +6,11 @@ import { Flex } from '@chakra-ui/react'
 import PedidosPhase from './PedidosPhase'
 import IncidenciasPhase from './IncidenciasPhase'
 import SimulationPhase from './SimulationPhase'
+import VehiculosPhase from './VehiculosPhase'
+
 import { OrderCard } from '../../components/common/OrderCard'
 import type { IOrderCard } from '../../core/types/pedido'
+
 const ordersOutput = [
   {
     orderId: 'PED-001',
@@ -112,28 +115,31 @@ export default function WeeklySimulation() {
           <Route path="pedidos" element={<PedidosPhase />} />
           <Route path="incidencias" element={<IncidenciasPhase />} />
           <Route path="simulacion" element={<SimulationPhase />} />
+          <Route path="vehiculos" element={<VehiculosPhase />} />
         </Routes>
       </Box>
 
-      {currPath == "simulacion" && (
+      {currPath === "simulacion" && (
+        <>
           <SectionBar
-          sections={sections}
-          onSectionChange={handleSectionChange}
-          currentSection={section}
-          isCollapsed={isCollapsed}
-          onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+            sections={sections}
+            onSectionChange={handleSectionChange}
+            currentSection={section}
+            isCollapsed={isCollapsed}
+            onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
           />
-        
 
+          <LegendPanel isSidebarCollapsed={isCollapsed} />
+
+          <BottomLeftControls 
+            variant="full"
+            date="Día 1 | 03/04/2025 | 11:00"
+            //speed={simSpeed}
+            //onStop={() => pauseSimulacion()}
+            //onSpeedChange={(v) => setSimSpeed(v)}
+          />
+        </>
       )}
-      <LegendPanel isSidebarCollapsed={isCollapsed} />
-      <BottomLeftControls 
-        variant="full"
-        date="Día 1 | 03/04/2025 | 11:00"
-        //speed={simSpeed}
-        //onStop={() => pauseSimulacion()}
-        //onSpeedChange={(v) => setSimSpeed(v)}
-      />
     </Flex>
   )
 }
