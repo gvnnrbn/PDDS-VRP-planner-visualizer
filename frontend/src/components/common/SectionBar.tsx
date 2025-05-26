@@ -76,6 +76,7 @@ export const SectionBar = ({
           ))}
         </TabList>
         <TabPanels bg={selectedColor}>
+          <TabPanel/>
           {sections.map((section) => (
             <TabPanel
               key={section.title}

@@ -1,4 +1,4 @@
-import { Box, Text, useColorModeValue } from '@chakra-ui/react'
+import { Box, Text, useColorModeValue, VStack } from '@chakra-ui/react'
 import { Route, Routes, useLocation } from 'react-router-dom'
 import { SectionBar } from '../../components/common/SectionBar'
 import { useState } from 'react'
@@ -34,12 +34,18 @@ const sections = [
   {
     title: 'Pedidos',
     content: (
-      <>
-      {ordersOutput.map((order) => {
-        <OrderCard orderCard={order} onClick={()=>{console.log('Enfocar pedido clicked')}}/>
-      })}
-      </>
-      
+      <Box>
+        <VStack spacing={4} align="stretch">
+          {ordersOutput.map((order) => (
+            <Box key={order.orderId}>
+              <OrderCard 
+                orderCard={order} 
+                onClick={() => console.log('Enfocar pedido clicked')}
+              />
+            </Box>
+          ))}
+        </VStack>
+      </Box>
     )
   },
   {
