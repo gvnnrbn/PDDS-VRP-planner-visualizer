@@ -17,13 +17,13 @@ const NavLink = ({ to, children }: { to: string; children: React.ReactNode }) =>
       fontSize="lg"
       fontWeight="bold"
       _hover={{
-        bg: '#7f8ecf',
-        color: '#483190',
+        bg: 'purple.200',
+        color: '#e8edef',
       }}
       sx={{
         ...(isActive && {
-          bg: '#7f8ecf',
-          color: '#483190',
+          bg: 'purple.200',
+          color: '#e8edef',
           boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
         }),
       }}
@@ -34,8 +34,8 @@ const NavLink = ({ to, children }: { to: string; children: React.ReactNode }) =>
 }
 
 export const Navbar = () => {
-  const bgColor = useColorModeValue("#483190", "#2d1c5b");
-  const textColor = useColorModeValue("#e8edef", "#ffffff");
+  const bgColor = useColorModeValue('purple.100', '#2d1c5b')
+  const textColor = useColorModeValue('#e8edef', '#ffffff')
 
   return (
     <Box
