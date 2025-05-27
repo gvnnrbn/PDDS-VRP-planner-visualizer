@@ -1,13 +1,19 @@
-import { Box, Text, useColorModeValue, VStack } from '@chakra-ui/react'
+import { Box, Input, InputGroup, InputLeftElement, InputRightElement, Text, useColorModeValue, VStack } from '@chakra-ui/react'
 import { Route, Routes, useLocation } from 'react-router-dom'
 import { SectionBar } from '../../components/common/SectionBar'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Flex } from '@chakra-ui/react'
 import PedidosPhase from './PedidosPhase'
 import IncidenciasPhase from './IncidenciasPhase'
 import SimulationPhase from './SimulationPhase'
-import { OrderCard } from '../../components/common/OrderCard'
+import { OrderCard } from '../../components/common/PedidoCard'
 import type { IOrderCard } from '../../core/types/pedido'
+import { IncidenciaCard } from '../../components/common/IncidenciaCard'
+import { SearchIcon } from '@chakra-ui/icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
+
+// mock data
 const ordersOutput = [
   {
     orderId: 'PED-001',
@@ -29,6 +35,35 @@ const ordersOutput = [
     ]
   },
 ]
+const incidencias = [
+  {
+    id: 1,
+    estado: 'En Curso',
+    placa: 'ABC123',
+    turno: "T1",
+    tipo: "TI1",
+    fechaInicio: '2023-10-14 18:00',
+    fechaFin: '2023-10-14 22:00',
+  },
+  {
+    id: 2,
+    estado: 'Estimada',
+    placa: 'IJK123',
+    turno: "T1",
+    tipo: "TI2",
+    fechaInicio: '2023-10-14 18:00',
+    fechaFin: '2023-10-14 22:00',
+  },
+  {
+    id: 3,
+    estado: 'Resuelta',
+    placa: 'IJK123',
+    turno: "T1",
+    tipo: "TI2",
+    fechaInicio: '2023-10-14 18:00',
+    fechaFin: '2023-10-14 22:00',
+  },
+]
 
 const sections = [
   {
@@ -36,11 +71,16 @@ const sections = [
     content: (
       <Box>
         <VStack spacing={4} align="stretch">
+          <Flex bg='white' borderRadius='20px' py={1} px={4} mx={-1} gap={1} align={'center'}>
+            <Input border={0} size='sm'>
+            </Input>
+            <FontAwesomeIcon icon={faMagnifyingGlass} color='black' size={'lg'}/>
+          </Flex>
           {ordersOutput.map((order) => (
             <Box key={order.orderId}>
               <OrderCard 
                 orderCard={order} 
-                onClick={() => console.log('Enfocar pedido clicked')}
+                onClick={() => console.log('Enfocando pedido')}
               />
             </Box>
           ))}
@@ -62,9 +102,17 @@ const sections = [
     title: 'Averias',
     content: (
       <Box>
-        <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
-          contenido averias
-        </Text>
+        <VStack spacing={4} align="stretch">
+        {incidencias.map((incidencia) => (
+          <Box key={incidencia.id}>
+            <IncidenciaCard 
+              incidenciaCard={incidencia} 
+              onClick={() => console.log('Enfocando avería')}
+            />
+          </Box>
+      ))}
+
+        </VStack>
       </Box>
     )
   },
@@ -92,7 +140,7 @@ const sections = [
 
 export default function WeeklySimulation() {
   const bgColor = useColorModeValue('white', '#1a1a1a')
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(true)
   const [section, setSection] = useState(sections[0].title)
 
   const currPath = useLocation().pathname.split('/').pop()
@@ -100,7 +148,11 @@ export default function WeeklySimulation() {
   const handleSectionChange = (section: string) => {
     setSection(section)
   }
-
+  useEffect(() => {
+    if(isCollapsed){
+      setSection('')
+    }
+  }, [isCollapsed]);
   return (
     <Flex height="full" overflowY="auto">
       <Box flex={1} p={4} bg={bgColor} h="full">

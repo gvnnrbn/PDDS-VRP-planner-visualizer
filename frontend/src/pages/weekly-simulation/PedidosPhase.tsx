@@ -33,7 +33,7 @@ export default function PedidosPhase() {
       <VStack spacing={4} align="stretch">
         <HStack justify="space-between" align="center">
           <Button 
-            colorScheme="blue" 
+            variant='primary'
             width="15rem"
             opacity={0}
           />
@@ -41,8 +41,8 @@ export default function PedidosPhase() {
             Gestión de Pedidos
           </Text>
           <Button 
+            variant='primary'
             onClick={handleNextPhase}
-            colorScheme="blue" 
             width="15rem"
           >
             Siguiente: Incidencias
@@ -51,7 +51,7 @@ export default function PedidosPhase() {
 
         <HStack justify="flex-end">
           <Button 
-            colorScheme="blue" 
+            variant='primary'
             onClick={() => {
               setSelectedPedido(null)
               setShowForm(true)
