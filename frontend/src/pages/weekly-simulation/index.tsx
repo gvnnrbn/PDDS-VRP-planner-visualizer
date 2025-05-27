@@ -6,7 +6,9 @@ import { Flex } from '@chakra-ui/react'
 import PedidosPhase from './PedidosPhase'
 import IncidenciasPhase from './IncidenciasPhase'
 import SimulationPhase from './SimulationPhase'
-import { OrderCard } from '../../components/common/PedidoCard'
+import VehiculosPhase from './VehiculosPhase'
+
+import { OrderCard } from '../../components/common/OrderCard'
 import type { IOrderCard } from '../../core/types/pedido'
 import { IncidenciaCard } from '../../components/common/IncidenciaCard'
 import { SearchIcon } from '@chakra-ui/icons'
@@ -160,6 +162,7 @@ export default function WeeklySimulation() {
           <Route path="pedidos" element={<PedidosPhase />} />
           <Route path="incidencias" element={<IncidenciasPhase />} />
           <Route path="simulacion" element={<SimulationPhase />} />
+          <Route path="vehiculos" element={<VehiculosPhase />} />
         </Routes>
       </Box>
 

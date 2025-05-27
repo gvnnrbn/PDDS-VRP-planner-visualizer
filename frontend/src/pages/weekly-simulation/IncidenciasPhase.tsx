@@ -33,7 +33,7 @@ export default function IncidenciasPhase() {
   }
 
   const handleNextPhase = () => {
-    navigate('/weekly-simulation/simulacion')
+    navigate('/weekly-simulation/vehiculos')
   }
 
   return (
@@ -55,7 +55,7 @@ export default function IncidenciasPhase() {
             variant='primary'
             width="15rem"
           >
-            Siguiente: Simulación
+            Siguiente: Vehiculos
           </Button>
         </HStack>
 
