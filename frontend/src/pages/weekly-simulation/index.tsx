@@ -1,4 +1,4 @@
-import { Box, Button, Input, Text, useColorModeValue, VStack } from '@chakra-ui/react'
+import { Box, Text, useColorModeValue, VStack } from '@chakra-ui/react'
 import { Route, Routes, useLocation } from 'react-router-dom'
 import { SectionBar } from '../../components/common/SectionBar'
 import { useEffect, useState } from 'react'
@@ -7,8 +7,6 @@ import PedidosPhase from './PedidosPhase'
 import IncidenciasPhase from './IncidenciasPhase'
 import SimulationPhase from './SimulationPhase'
 import VehiculosPhase from './VehiculosPhase'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
 
 import LegendPanel from '../../components/common/Legend'
 import BottomLeftControls from '../../components/common/MapActions'
@@ -18,6 +16,7 @@ import { IncidenciaCard } from '../../components/common/cards/IncidenciaCard'
 import { FlotaCard } from '../../components/common/cards/FlotaCard'
 import { PanelSearchBar } from '../../components/common/PanelSearchBar'
 import { MantenimientoCard } from '../../components/common/cards/mantenimientoCard'
+import { FilterSortButtons } from '../../components/common/cards/FilterSortButtons'
 
 // mock data
 const ordersOutput = [
@@ -155,6 +154,7 @@ const sections = [
       <Box>
         <VStack spacing={4} align="stretch">
           <PanelSearchBar onSubmit={()=>console.log('searching...')}/>
+            {/* <FilterSortButtons entity={'Pedidos'}/> */}
           {ordersOutput.map((order) => (
             <Box key={order.id}>
               <OrderCard 
@@ -248,7 +248,7 @@ export default function WeeklySimulation() {
   useEffect(() => {
     if (currPath === "simulacion") {
       setIsLoading(true);
-      const timer = setTimeout(() => setIsLoading(false), 1); // 10s simulado
+      const timer = setTimeout(() => setIsLoading(false), 100); // 10s simulado
       return () => clearTimeout(timer);
     }
   }, [currPath]);
