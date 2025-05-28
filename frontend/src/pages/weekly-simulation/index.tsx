@@ -9,7 +9,6 @@ import SimulationPhase from './SimulationPhase'
 import VehiculosPhase from './VehiculosPhase'
 
 import LegendPanel from '../../components/common/Legend'
-import BottomLeftControls from '../../components/common/MapActions'
 import LoadingOverlay from '../../components/common/LoadingOverlay'
 import { OrderCard } from '../../components/common/cards/PedidoCard'
 import { IncidenciaCard } from '../../components/common/cards/IncidenciaCard'
@@ -289,10 +288,7 @@ export default function WeeklySimulation() {
 
           <LegendPanel isSidebarCollapsed={isCollapsed} />
 
-          <BottomLeftControls 
-            variant="full"
-            date="Día 1 | 03/04/2025 | 11:00"
-          />
+          
         </>
       )}
 

@@ -4,7 +4,7 @@ import  type { VehiculoSimulado} from "../../../core/types/vehiculo";
 import { Image as KonvaImage } from "react-konva";
 import Konva from "konva";
 import useImage from "use-image";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, forwardRef } from "react";
 
 // Inyecta CSS para usar FontAwesome en runtime
 library.add(faTruck);
@@ -42,7 +42,9 @@ const getColorFromState = (estado: string): string => {
   }
 };
 
-export const VehicleIcon: React.FC<Props> = ({ vehiculo, nextVehiculo, cellSize, gridHeight, duration }) => {
+export const VehicleIcon = forwardRef<Konva.Image, Props>(({
+  vehiculo, nextVehiculo, cellSize, gridHeight, duration
+  }, ref) => {
   const [image] = useImage(createIconUrl(faTruck, getColorFromState(vehiculo.estado)));
   const shapeRef = useRef<any>(null);
 
@@ -61,7 +63,15 @@ export const VehicleIcon: React.FC<Props> = ({ vehiculo, nextVehiculo, cellSize,
         easing: Konva.Easings.EaseInOut,
       });
     }
+
+    // 👉 pasamos shapeRef hacia afuera
+    if (typeof ref === "function") {
+      ref(shapeRef.current);
+    } else if (ref) {
+      (ref as React.MutableRefObject<Konva.Image | null>).current = shapeRef.current;
+    }
   }, [toX, toY]);
+
 
   if (!image) return null;
 
@@ -75,4 +85,4 @@ export const VehicleIcon: React.FC<Props> = ({ vehiculo, nextVehiculo, cellSize,
       height={cellSize}
     />
   );
-};
+});

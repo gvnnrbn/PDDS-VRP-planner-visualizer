@@ -33,7 +33,8 @@ const BottomLeftControls: React.FC<BottomLeftControlsProps> = ({
 
     const handleSpeedChange = (newSpeed: string) => {
         setSpeed(newSpeed);
-        setIsOpen(false); // Ocultar el panel después de seleccionar
+        onSpeedChange?.(newSpeed); // ← llamada al padre
+        setIsOpen(false);
     };
 
     return (
