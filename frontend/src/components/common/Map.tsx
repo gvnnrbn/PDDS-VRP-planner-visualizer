@@ -5,6 +5,7 @@ import type {VehiculoSimulado} from "../../core/types/vehiculo";
 import type { PedidoSimulado } from "../../core/types/pedido";
 import { OrderIcon} from "./Icons/OrderIcon"
 import type { AlmacenSimulado } from "../../core/types/almacen";
+import type { BloqueoSimulado } from "../../core/types/bloqueos";
 import { WarehouseIcon } from "./Icons/WarehouseIcon";
 import React from "react";
 import { VehicleRouteLine } from "./Icons/VehicleRouteLine";
@@ -22,7 +23,9 @@ interface MinutoSimulacion {
 }
 
 interface SimulacionJson {
+  fechaInicio: string;
   simulacion: MinutoSimulacion[];
+  bloqueos: BloqueoSimulado[];
 }
 
 interface MapGridProps {
@@ -57,7 +60,17 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
     const pedidos = minutoActual?.pedidos || [];
     const almacenes = minutoActual?.almacenes || [];
 
-    const vehicleRefs = useRef<Record<number, Konva.ImageConfig>>({});
+    const vehicleRefs = useRef<Record<number, Konva.Image | null>>({});
+
+    const fechaSimulacionInicio = new Date(data.fechaInicio);
+    const fechaActual = new Date(fechaSimulacionInicio);
+    fechaActual.setDate(fechaSimulacionInicio.getDate() + minuto);
+    //Bloqueos activos
+    const bloqueosVisibles = data.bloqueos?.filter((b) => {
+      const inicio = new Date(b.fechaInicio);
+      const fin = new Date(b.fechaFin);
+      return fechaActual >= inicio && fechaActual <= fin;
+    }) || [];
 
     // Funciones de animación
 
@@ -164,27 +177,46 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
           />
         ))}
         {vehiculosActuales.map((v) => {
-        const next = vehiculosSiguientes.find((n) => n.idVehiculo === v.idVehiculo);
-        const avance = calcularAvanceEnRuta(v);
+          const next = vehiculosSiguientes.find((n) => n.idVehiculo === v.idVehiculo);
+          const avance = calcularAvanceEnRuta(v);
 
-        return (
-          <React.Fragment key={v.idVehiculo}>
-            <VehicleRouteLine
-              vehiculo={v}
-              cellSize={CELL_SIZE}
-              gridHeight={GRID_HEIGHT}
-              recorridoHastaAhora={avance}
+          return (
+            <React.Fragment key={v.idVehiculo}>
+              <VehicleRouteLine
+                vehiculo={v}
+                shapeRef={vehicleRefs.current[v.idVehiculo]}
+                cellSize={CELL_SIZE}
+                gridHeight={GRID_HEIGHT}
+                recorridoHastaAhora={avance}
+              />
+              <VehicleIcon
+                ref={(node) => { vehicleRefs.current[v.idVehiculo] = node }}
+                vehiculo={v}
+                nextVehiculo={next}
+                cellSize={CELL_SIZE}
+                gridHeight={GRID_HEIGHT}
+                duration={1000}
+              />
+            </React.Fragment>
+          );
+        })}
+        {bloqueosVisibles.map((bloqueo) => {
+          const puntos = bloqueo.segmentos.map(p => [
+            p.posX * CELL_SIZE,
+            (GRID_HEIGHT - p.posY) * CELL_SIZE
+          ]).flat();
+
+          return (
+            <Line
+              key={`bloqueo-${bloqueo.idBloqueo}`}
+              points={puntos}
+              stroke="black"
+              strokeWidth={6}
+              lineCap="round"
+              lineJoin="round"
             />
-            <VehicleIcon
-              vehiculo={v}
-              nextVehiculo={next}
-              cellSize={CELL_SIZE}
-              gridHeight={GRID_HEIGHT}
-              duration={1000}
-            />
-          </React.Fragment>
-        );
-})}
+          );
+        })}
 
         {/*  */}
       </Layer>
