@@ -1,55 +1,75 @@
 import { useRef, useState } from "react";
 import { Stage, Layer, Line } from "react-konva";
+import { VehicleIcon } from "./Icons/VehicleIcon";
+import type {VehiculoSimulado} from "../../core/types/vehiculoSimulado";
+import type { PedidoSimulado } from "../../core/types/pedidoSimulado";
+import { OrderIcon} from "./Icons/OrderIcon"
 
 const CELL_SIZE = 20; // Tamaño de cada celda
 const GRID_WIDTH = 70; // Número de celdas a lo ancho
 const GRID_HEIGHT = 50; // Número de celdas a lo alto
 
-export const MapGrid = () => {
-  const stageRef = useRef<any>(null);
-  const [scale, setScale] = useState(1);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+interface MinutoSimulacion {
+  minuto: number;
+  vehiculos: VehiculoSimulado[];
+  pedidos: PedidoSimulado[];
+}
 
-  // Manejo de zoom
-  const handleWheel = (e: any) => {
-    e.evt.preventDefault();
-    const scaleBy = 1.05;
-    const stage = stageRef.current;
+interface SimulacionJson {
+  simulacion: MinutoSimulacion[];
+}
 
-    const oldScale = stage.scaleX();
-    const pointer = stage.getPointerPosition();
+interface MapGridProps {
+  minuto: number;
+  data: SimulacionJson;
+}
 
-    const mousePointTo = {
-      x: (pointer.x - stage.x()) / oldScale,
-      y: (pointer.y - stage.y()) / oldScale,
+export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
+    const stageRef = useRef<any>(null);
+    const [scale, setScale] = useState(1);
+    const [position, setPosition] = useState({ x: 0, y: 0 });
+
+    const minutoData = data.simulacion.find((m: any) => m.minuto === minuto);
+    const vehiculos = minutoData?.vehiculos || [];
+    const pedidos = minutoData?.pedidos || [];
+    //const almacenes = minutoData?.almacenes || [];
+
+    // Manejo de zoom
+    const handleWheel = (e: any) => {
+      e.evt.preventDefault();
+      const scaleBy = 1.05;
+      const stage = stageRef.current;
+
+      const oldScale = stage.scaleX();
+      const pointer = stage.getPointerPosition();
+
+      // Punto relativo al stage antes de escalar
+      const mousePointTo = {
+        x: (pointer.x - stage.x()) / oldScale,
+        y: (pointer.y - stage.y()) / oldScale,
+      };
+
+      const direction = e.evt.deltaY > 0 ? -1 : 1;
+      const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
+
+      // Aplica nueva escala
+      stage.scale({ x: newScale, y: newScale });
+
+      // Calcula nueva posición para mantener el puntero "fijo"
+      const newPos = {
+        x: pointer.x - mousePointTo.x * newScale,
+        y: pointer.y - mousePointTo.y * newScale,
+      };
+
+      stage.position(newPos);
+      stage.batchDraw();
+
+      setScale(newScale);
+      setPosition(newPos);
     };
-
-    const direction = e.evt.deltaY > 0 ? -1 : 1;
-    const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
-
-    stage.scale({ x: newScale, y: newScale });
-
-    const newPos = {
-      x: pointer.x - mousePointTo.x * newScale,
-      y: pointer.y - mousePointTo.y * newScale,
-    };
-
-    // Calculo de límites para evitar espacios en blanco
-    const maxX = (GRID_WIDTH * CELL_SIZE * newScale) - stage.width();
-    const maxY = (GRID_HEIGHT * CELL_SIZE * newScale) - stage.height();
-
-    // Ajustar la posición para que no exceda los límites
-    newPos.x = Math.min(0, Math.max(newPos.x, maxX));
-    newPos.y = Math.min(0, Math.max(newPos.y, maxY));
-
-    stage.position(newPos);
-    stage.batchDraw();
-    setScale(newScale);
-    setPosition(newPos);
-  };
 
   // Generar líneas de la cuadrícula
-  const gridLines = () => {
+    const gridLines = () => {
     const lines = [];
 
     for (let i = 0; i <= GRID_WIDTH; i++) {
@@ -96,7 +116,26 @@ export const MapGrid = () => {
         overflow: "hidden",
         cursor: "grab" }}
     >
-      <Layer>{gridLines()}</Layer>
+      <Layer>
+        {gridLines()}
+        {vehiculos.map((v) => (
+          <VehicleIcon
+            key={v.idVehiculo}
+            vehiculo={v}
+            cellSize={CELL_SIZE}
+            gridHeight={GRID_HEIGHT}
+          />
+        ))}
+        {pedidos.map((v) => (
+          <OrderIcon
+            key={v.idPedido}
+            pedido={v}
+            cellSize={CELL_SIZE}
+            gridHeight={GRID_HEIGHT}
+          />
+        ))}
+        {/*  */}
+      </Layer>
     </Stage>
   );
 };

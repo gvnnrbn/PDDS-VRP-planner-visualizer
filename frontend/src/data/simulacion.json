@@ -1,0 +1,131 @@
+{
+  "bloqueos": [
+    {
+      "idBloqueo": 1,
+      "fechaInicio": "AAAA-MM-DDThh:mm:ss",
+      "fechaFin": "AAAA-MM-DDThh:mm:ss",
+      "segmentos":[
+        {
+          "posX":50,
+          "posY":50
+        },{
+          "posX":50,
+          "posY":60
+        },{
+          "posX":60,
+          "posY":60
+        }
+      ]
+    },{
+      "idBloqueo": 2,
+      "fechaInicio": "AAAA-MM-DDThh:mm:ss",
+      "fechaFin": "AAAA-MM-DDThh:mm:ss",
+      "segmentos":[
+        {
+          "posX":20,
+          "posY":10
+        },{
+          "posX":10,
+          "posY":10
+        },{
+          "posX":10,
+          "posY":30
+        }
+      ]
+    }
+  ],
+  "simulacion":[
+    {
+      "minuto": 0,
+      "almacenes":[
+        {
+          "idAlmacen": 1,
+          "posicion":{
+            "x": 10,
+            "y": 20
+          },
+          "isMain": true,
+          "wasVehicle": false
+        },{
+          "idAlmacen": 2,
+          "posicion":{
+            "x": 40,
+            "y": 60
+          },
+          "currentGLP": 10,
+          "maxGLP": 20,
+          "isMain": false,
+          "wasVehicle": false
+        },{
+          "idAlmacen": 3,
+          "posicion":{
+            "x": 40,
+            "y": 60
+          },
+          "currentGLP": 10,
+          "maxGLP": 20,
+          "isMain": false,
+          "wasVehicle": true
+        }
+      ],
+      "vehiculos":[
+        {
+          "idVehiculo": 1,
+          "tipo": "TA",
+          "combustible": 15,
+          "currGLP": 10,
+          "posicionX": 14,
+          "posicionY": 15,
+          "estado": "averiadoA",
+          "accion": "moviendose",
+          "rutaActual":[
+            {
+              "posX": 15,
+              "posY": 20
+            },{
+              "posX": 30,
+              "posY": 20
+            }
+          ]
+        },{
+          "idVehiculo": 2,
+          "tipo": "TB",
+          "combustible": 5,
+          "currGLP": 10,
+          "posicionX": 13,
+          "posicionY": 12,
+          "estado": "averiadoC",
+          "accion": "detenido"
+        }
+      ],
+      "pedidos":[
+        {
+          "idPedido": 1,
+          "posX": 35,
+          "posY": 35
+        },{
+          "idPedido": 2,
+          "posX": 15,
+          "posY": 15
+        }
+      ]
+    },{
+      "minuto": 1,
+      "almacenes":[
+      ],
+      "vehiculos":[
+      ],
+      "pedidos":[
+      ]
+    },{
+      "minuto": 2,
+      "almacenes":[
+      ],
+      "vehiculos":[
+      ],
+      "pedidos":[
+      ]
+    }
+  ]
+  
+}
