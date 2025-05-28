@@ -69,8 +69,8 @@ export const VehicleIcon: React.FC<Props> = ({ vehiculo, nextVehiculo, cellSize,
     <KonvaImage
       ref={shapeRef}
       image={image}
-      x={fromX - cellSize / 2}
-      y={fromY - cellSize / 2}
+      x={shapeRef.current?.x() ?? fromX - cellSize / 2}
+      y={shapeRef.current?.y() ?? fromY - cellSize / 2}
       width={cellSize}
       height={cellSize}
     />

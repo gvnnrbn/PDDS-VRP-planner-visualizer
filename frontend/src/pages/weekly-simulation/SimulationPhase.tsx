@@ -3,10 +3,10 @@ import { useState, useEffect } from 'react';
 import jsonData from "../../data/simulacion.json";
 
 export default function SimulationPhase() {
-  const [minuto, setMinuto] = useState(-1);
+  const [minuto, setMinuto] = useState(0);
 
   // Parámetro de velocidad: milisegundos por minuto de simulación
-  const speed = 0;
+  const speed = 5000;
 
   useEffect(() => {
     const totalMinutos = jsonData.simulacion.length;

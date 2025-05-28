@@ -4,6 +4,11 @@ import { VehicleIcon } from "./Icons/VehicleIcon";
 import type {VehiculoSimulado} from "../../core/types/vehiculo";
 import type { PedidoSimulado } from "../../core/types/pedido";
 import { OrderIcon} from "./Icons/OrderIcon"
+import type { AlmacenSimulado } from "../../core/types/almacen";
+import { WarehouseIcon } from "./Icons/WarehouseIcon";
+import React from "react";
+import { VehicleRouteLine } from "./Icons/VehicleRouteLine";
+import type Konva from "konva";
 
 const CELL_SIZE = 20; // Tamaño de cada celda
 const GRID_WIDTH = 70; // Número de celdas a lo ancho
@@ -13,6 +18,7 @@ interface MinutoSimulacion {
   minuto: number;
   vehiculos: VehiculoSimulado[];
   pedidos: PedidoSimulado[];
+  almacenes: AlmacenSimulado[];
 }
 
 interface SimulacionJson {
@@ -24,6 +30,15 @@ interface MapGridProps {
   data: SimulacionJson;
 }
 
+function calcularAvanceEnRuta(v: VehiculoSimulado): number {
+  if (!v.rutaActual || v.rutaActual.length === 0) return 0;
+
+  const actualIndex = v.rutaActual.findIndex(
+      (p) => p.posX === v.posicionX && p.posY === v.posicionY
+  );
+
+  return Math.max(actualIndex, 0);
+}
 
 
 export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
@@ -40,13 +55,11 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
     const vehiculosSiguientes = minutoSiguiente?.vehiculos || [];
 
     const pedidos = minutoActual?.pedidos || [];
+    const almacenes = minutoActual?.almacenes || [];
+
+    const vehicleRefs = useRef<Record<number, Konva.ImageConfig>>({});
 
     // Funciones de animación
-    const matchVehiculo = (vehiculoActual: VehiculoSimulado) => {
-      return vehiculosSiguientes.find(
-        (v) => v.idVehiculo === vehiculoActual.idVehiculo
-      );
-    };
 
     //const almacenes = minutoData?.almacenes || [];
 
@@ -134,16 +147,6 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
     >
       <Layer>
         {gridLines()}
-        {vehiculosActuales.map((v) => (
-          <VehicleIcon
-            key={v.idVehiculo}
-            vehiculo={v}
-            nextVehiculo={matchVehiculo(v)}
-            cellSize={CELL_SIZE}
-            gridHeight={GRID_HEIGHT}
-            duration={10000} // o el valor que desees
-          />
-        ))}
         {pedidos.map((v) => (
           <OrderIcon
             key={v.idPedido}
@@ -152,6 +155,37 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
             gridHeight={GRID_HEIGHT}
           />
         ))}
+        {almacenes.map((v) => (
+          <WarehouseIcon
+            key={v.idAlmacen}
+            almacen={v}
+            cellSize={CELL_SIZE}
+            gridHeight={GRID_HEIGHT}
+          />
+        ))}
+        {vehiculosActuales.map((v) => {
+        const next = vehiculosSiguientes.find((n) => n.idVehiculo === v.idVehiculo);
+        const avance = calcularAvanceEnRuta(v);
+
+        return (
+          <React.Fragment key={v.idVehiculo}>
+            <VehicleRouteLine
+              vehiculo={v}
+              cellSize={CELL_SIZE}
+              gridHeight={GRID_HEIGHT}
+              recorridoHastaAhora={avance}
+            />
+            <VehicleIcon
+              vehiculo={v}
+              nextVehiculo={next}
+              cellSize={CELL_SIZE}
+              gridHeight={GRID_HEIGHT}
+              duration={1000}
+            />
+          </React.Fragment>
+        );
+})}
+
         {/*  */}
       </Layer>
     </Stage>
