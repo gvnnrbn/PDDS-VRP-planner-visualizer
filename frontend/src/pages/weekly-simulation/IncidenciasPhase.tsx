@@ -42,7 +42,7 @@ export default function IncidenciasPhase() {
         <HStack justify="space-between" align="center">
           <Button 
             onClick={handlePreviousPhase}
-            colorScheme="gray" 
+            variant='primary'
             width="15rem"
           >
             Atrás: Pedidos
@@ -52,7 +52,7 @@ export default function IncidenciasPhase() {
           </Text>
           <Button 
             onClick={handleNextPhase}
-            colorScheme="blue" 
+            variant='primary'
             width="15rem"
           >
             Siguiente: Vehiculos
@@ -65,7 +65,7 @@ export default function IncidenciasPhase() {
               setSelectedIncidencia(undefined)
               setShowForm(true)
             }}
-            colorScheme="blue"
+            variant='primary'
           >
             Nueva Incidencia
           </Button>

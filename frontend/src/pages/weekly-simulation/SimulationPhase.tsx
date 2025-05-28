@@ -1,34 +1,29 @@
-import { Box, VStack, Text, HStack, Button } from '@chakra-ui/react'
-import { useNavigate } from 'react-router-dom'
+import { MapGrid } from '../../components/common/Map'
+import { useState, useEffect } from 'react';
+import jsonData from "../../data/simulacion.json";
 
 export default function SimulationPhase() {
-  const navigate = useNavigate()
+  const [minuto, setMinuto] = useState(-1);
 
-  const handlePreviousPhase = () => {
-    navigate('/weekly-simulation/incidencias')
-  }
+  // Parámetro de velocidad: milisegundos por minuto de simulación
+  const speed = 0;
+
+  useEffect(() => {
+    const totalMinutos = jsonData.simulacion.length;
+    console.log(minuto)
+
+    if (minuto >= totalMinutos - 1) return;
+    
+    const interval = setTimeout(() => {
+      setMinuto((prev) => prev + 1);
+    }, speed);
+
+    return () => clearTimeout(interval);
+  }, [minuto]);
 
   return (
-    <Box p={4}>
-      <VStack spacing={4} align="stretch">
-        <HStack justify="space-between" align="center">
-          <Button 
-            colorScheme="gray" 
-            onClick={handlePreviousPhase}
-            width="15rem"
-          >
-            Atrás: Incidencias
-          </Button>
-          <Text fontSize="2xl" fontWeight="bold" textAlign="center" width="100%">
-            Simulación de Rutas
-          </Text>
-          <Button 
-            colorScheme="blue" 
-            width="15rem"
-            opacity={0}
-          />
-        </HStack>
-      </VStack>
-    </Box>
-  )
+    <div>
+      <MapGrid minuto={minuto} data={jsonData} />
+    </div>
+  );
 }

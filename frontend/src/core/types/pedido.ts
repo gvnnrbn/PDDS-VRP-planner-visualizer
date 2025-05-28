@@ -9,7 +9,7 @@ export interface Pedido {
   // falta vehículos que lo están atendiendo
 }
 export interface IOrderCard{
-  orderId: string,
+  id: string,
   state: string,
   glp: number,
   deadline: string,
@@ -17,4 +17,10 @@ export interface IOrderCard{
       plaque: string,
       eta: string
   }>
+}
+
+export interface PedidoSimulado  {
+  idPedido: number;
+  posX: number;
+  posY: number;
 }

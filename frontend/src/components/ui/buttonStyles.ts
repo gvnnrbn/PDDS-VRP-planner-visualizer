@@ -1,10 +1,11 @@
+
 export const ButtonStyles = {
     variants: {
         primary:{
-            bg: '#5459EA',
+            bg: 'purple.100',
             color: 'white',
             _hover: {
-                backgroundColor: '#13187E',
+                backgroundColor: 'purple.300',
                 boxShadow: 'md',
             },
         },
