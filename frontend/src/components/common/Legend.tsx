@@ -36,6 +36,8 @@ const LegendPanel: React.FC<LegendPanelProps> = ({ isSidebarCollapsed }) => {
       zIndex={1000}
       transition="right 0.3s ease"
       minW="200px"
+      border="1px solid"
+      borderColor="blue.600"
     >
       {/* Header clickable */}
       <Flex
