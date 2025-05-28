@@ -22,10 +22,10 @@ export const SectionBar = ({
 }: SectionBarProps) => {
   const selectedColor = useColorModeValue('#E5E5E5', '#1a1a1a')
   const notSelectedColor = useColorModeValue('#BDBDBD', '#BDBDBD')
-
+  
   return (
     <Flex
-      width={isCollapsed ? '50px' : '30%'}
+      width={isCollapsed ? '40px' : '30%'}
       transition="width 0.3s ease"
       direction="column"
       h="full"
@@ -39,8 +39,8 @@ export const SectionBar = ({
           aria-orientation='vertical'
           sx={{ gap: '3px' }}
         >
-          <Tab
-          onClick={onToggleCollapse}
+          {/* <Tab
+            onClick={onToggleCollapse}
             bg={notSelectedColor}
             borderLeftRadius='10px'
             borderTopRightRadius='0'
@@ -49,13 +49,24 @@ export const SectionBar = ({
             }}
           >
             {isCollapsed ? '<' : '>'}
-          </Tab>
+          </Tab> */}
           {sections.map((section) => (
             <Tab
             height='100%'
             key={section.title}
             color='#3E4990'
-            onClick={() => onSectionChange(section.title)}
+            onClick={() => {
+              if (section.title === currentSection) {
+                // Si ya está seleccionado, alterna el colapso
+                onToggleCollapse();
+              } else {
+                // Si es un nuevo tab, cambia de sección y asegúrate de expandir si está colapsado
+                onSectionChange(section.title);
+                if (isCollapsed) {
+                  onToggleCollapse();
+                }
+              }
+            }}
             bg={currentSection === section.title ? selectedColor : notSelectedColor}
             borderTopRightRadius='10px'
             borderBottomRightRadius='10px'
@@ -76,7 +87,9 @@ export const SectionBar = ({
           ))}
         </TabList>
         <TabPanels bg={selectedColor}>
-          <TabPanel/>
+          {/* <TabPanel key={sections[0].title}>
+            {sections[0].content}
+          </TabPanel> */}
           {sections.map((section) => (
             <TabPanel
               key={section.title}

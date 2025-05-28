@@ -74,3 +74,79 @@ export const VehiculoTable = ({ onVehiculoSelect }: VehiculoTableProps) => {
     </Box>
   )
 }
+import {
+  Table, Thead, Tbody, Tr, Th, Td, TableContainer, IconButton, HStack, Text, Box, VStack, useToast
+} from '@chakra-ui/react'
+import { DeleteIcon, EditIcon } from '@chakra-ui/icons'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import type { Vehiculo } from '../core/types/vehiculo'
+import { VehiculoService } from '../core/services/VehiculoService'
+
+const vehiculoService = new VehiculoService()
+
+interface VehiculoTableProps {
+  onVehiculoSelect?: (vehiculo: Vehiculo) => void
+}
+
+export const VehiculoTable = ({ onVehiculoSelect }: VehiculoTableProps) => {
+  const queryClient = useQueryClient()
+  const toast = useToast()
+
+  const { data: vehiculos, isLoading, error } = useQuery({
+    queryKey: ['vehiculos'],
+    queryFn: () => vehiculoService.getAllVehiculos()
+  })
+
+  const handleDelete = async (id: number) => {
+    try {
+      await vehiculoService.deleteVehiculo(id)
+      queryClient.invalidateQueries({ queryKey: ['vehiculos'] })
+      toast({ title: 'Vehículo eliminado', status: 'success', duration: 2000, isClosable: true })
+    } catch (error) {
+      toast({ title: 'Error', description: 'No se pudo eliminar', status: 'error', duration: 3000, isClosable: true })
+    }
+  }
+
+  if (isLoading) return <Text>Cargando vehículos...</Text>
+  if (error) return <Text>Error al cargar vehículos</Text>
+
+  return (
+    <Box p={4}>
+      <VStack spacing={4} align="stretch">
+        <TableContainer>
+          <Table variant="simple">
+            <Thead>
+              <Tr>
+                <Th>Tipo</Th>
+                <Th>Peso</Th>
+                <Th>Combustible</Th>
+                <Th>GLP</Th>
+                <Th>Posición</Th>
+                <Th>Disponible</Th>
+                <Th>Acciones</Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              {vehiculos?.map((v) => (
+                <Tr key={v.id}>
+                  <Td>{v.tipo}</Td>
+                  <Td>{v.peso}</Td>
+                  <Td>{`${v.currCombustible}/${v.maxCombustible}`}</Td>
+                  <Td>{`${v.currGlp}/${v.maxGlp}`}</Td>
+                  <Td>{`${v.posicionX}, ${v.posicionY}`}</Td>
+                  <Td>{v.disponible ? 'Sí' : 'No'}</Td>
+                  <Td>
+                    <HStack>
+                      <IconButton aria-label="Editar" icon={<EditIcon />} onClick={() => onVehiculoSelect?.(v)} />
+                      <IconButton aria-label="Eliminar" icon={<DeleteIcon />} colorScheme="red" onClick={() => handleDelete(v.id)} />
+                    </HStack>
+                  </Td>
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+        </TableContainer>
+      </VStack>
+    </Box>
+  )
+}
