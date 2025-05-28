@@ -18,3 +18,9 @@ export interface IOrderCard{
       eta: string
   }>
 }
+
+export interface PedidoSimulado  {
+  idPedido: number;
+  posX: number;
+  posY: number;
+}
