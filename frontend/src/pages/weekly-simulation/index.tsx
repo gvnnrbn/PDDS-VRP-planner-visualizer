@@ -177,8 +177,12 @@ export default function WeeklySimulation() {
           <Route path="pedidos" element={<PedidosPhase />} />
           <Route path="incidencias" element={<IncidenciasPhase />} />
           <Route path="vehiculos" element={<VehiculosPhase />} />
-          <Route path="simulacion" element={<SimulationPhase />} />
-          <Route path="vehiculos" element={<VehiculosPhase />} />
+          <Route
+            path="simulacion"
+            element={
+              isLoading ? <></> : <SimulationPhase />
+            }
+          />
         </Routes>
       </Box>
 

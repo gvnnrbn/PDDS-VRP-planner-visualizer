@@ -1,6 +1,6 @@
 import { faLocationDot } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import type { PedidoSimulado } from "../../../core/types/pedidoSimulado";
+import type { PedidoSimulado } from "../../../core/types/pedido";
 import { Image as KonvaImage } from "react-konva";
 import useImage from "use-image";
 import { useEffect, useState } from "react";

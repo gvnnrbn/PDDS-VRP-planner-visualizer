@@ -1,8 +1,8 @@
 import { useRef, useState } from "react";
 import { Stage, Layer, Line } from "react-konva";
 import { VehicleIcon } from "./Icons/VehicleIcon";
-import type {VehiculoSimulado} from "../../core/types/vehiculoSimulado";
-import type { PedidoSimulado } from "../../core/types/pedidoSimulado";
+import type {VehiculoSimulado} from "../../core/types/vehiculo";
+import type { PedidoSimulado } from "../../core/types/pedido";
 import { OrderIcon} from "./Icons/OrderIcon"
 
 const CELL_SIZE = 20; // Tamaño de cada celda
@@ -24,14 +24,30 @@ interface MapGridProps {
   data: SimulacionJson;
 }
 
+
+
 export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
+    if (minuto < 0) return null;
+
     const stageRef = useRef<any>(null);
     const [scale, setScale] = useState(1);
     const [position, setPosition] = useState({ x: 0, y: 0 });
 
-    const minutoData = data.simulacion.find((m: any) => m.minuto === minuto);
-    const vehiculos = minutoData?.vehiculos || [];
-    const pedidos = minutoData?.pedidos || [];
+    const minutoActual = data.simulacion.find((m) => m.minuto === minuto);
+    const minutoSiguiente = data.simulacion.find((m) => m.minuto === minuto + 1);
+
+    const vehiculosActuales = minutoActual?.vehiculos || [];
+    const vehiculosSiguientes = minutoSiguiente?.vehiculos || [];
+
+    const pedidos = minutoActual?.pedidos || [];
+
+    // Funciones de animación
+    const matchVehiculo = (vehiculoActual: VehiculoSimulado) => {
+      return vehiculosSiguientes.find(
+        (v) => v.idVehiculo === vehiculoActual.idVehiculo
+      );
+    };
+
     //const almacenes = minutoData?.almacenes || [];
 
     // Manejo de zoom
@@ -118,12 +134,14 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
     >
       <Layer>
         {gridLines()}
-        {vehiculos.map((v) => (
+        {vehiculosActuales.map((v) => (
           <VehicleIcon
             key={v.idVehiculo}
             vehiculo={v}
+            nextVehiculo={matchVehiculo(v)}
             cellSize={CELL_SIZE}
             gridHeight={GRID_HEIGHT}
+            duration={10000} // o el valor que desees
           />
         ))}
         {pedidos.map((v) => (
