@@ -13,6 +13,16 @@ export interface Vehiculo {
   disponible: boolean;
 }
 
+export interface IFlotaCard {
+  id: number;
+  placa: string;
+  estado: "Entregando" | "Sin programación" | "En Mantenimiento" | "Reabasteciéndose" | "Averiado";
+  eta: string;
+  glp: number;
+  combustible: number;
+  maxCombustible: number;
+  pedidoId: string;
+}
 export interface VehiculoSimulado  {
   idVehiculo: number;
   tipo: string;

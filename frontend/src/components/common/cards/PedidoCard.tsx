@@ -1,7 +1,7 @@
-import { Badge, Box, Button, Flex, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, Text } from "@chakra-ui/react";
 import { faArrowsToDot } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import type { IOrderCard } from "../../core/types/pedido.ts";
+import type { IOrderCard } from "../../../core/types/pedido";
 
 interface OrderCardProps {
     orderCard: IOrderCard,
@@ -33,7 +33,7 @@ export const OrderCard = ({
         <Flex align='end'>
             <Box flex='1'>
                 <Flex gap={4} align='center'>
-                    <Text id='orderid' fontWeight={600} fontSize={22} color='purple.200'>{orderCard.orderId}</Text>
+                    <Text id='orderid' fontWeight={600} fontSize={18} color='purple.200'>{orderCard.id}</Text>
                     <Text id='state' variant='outline'>{orderCard.state}</Text>
                 </Flex>
                 

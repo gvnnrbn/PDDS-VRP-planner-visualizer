@@ -21,4 +21,22 @@ export class PedidoService extends BaseService {
   async deletePedido(id: number): Promise<void> {
     return this.delete(`/api/pedidos/${id}`)
   }
+  async importarPedidos(file: File): Promise<string> {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch('/api/pedidos/importar', {
+      method: 'POST',
+      body: formData
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Error al importar: ${errorText}`)
+    }
+
+    return response.text()
+  }
+
+
 }

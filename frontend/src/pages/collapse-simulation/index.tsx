@@ -4,11 +4,14 @@ import { SectionBar } from '../../components/common/SectionBar'
 import { useState } from 'react'
 import { Flex } from '@chakra-ui/react'
 import SimulationPhase from './SimulationPhase'
-
+import LegendPanel from '../../components/common/Legend'
+import BottomLeftControls from '../../components/common/MapActions'
+import PedidosPhaseCollapse from './PedidosPhase'
+import { OrderCard } from '../../components/common/cards/PedidoCard'
 
 const ordersOutput = [
   {
-    orderId: 'PED-001',
+    id: 'PED-001',
     state: 'En Proceso',
     glp: 150,
     deadline: '2023-10-15',
@@ -18,7 +21,7 @@ const ordersOutput = [
     ]
   },
   {
-    orderId: 'PED-002',
+    id: 'PED-002',
     state: 'Completado',
     glp: 200,
     deadline: '2023-10-16',
@@ -28,10 +31,6 @@ const ordersOutput = [
   },
 ]
 
-import LegendPanel from '../../components/common/Legend'
-import BottomLeftControls from '../../components/common/MapActions'
-import PedidosPhaseCollapse from './PedidosPhase'
-import { OrderCard } from '../../components/common/PedidoCard'
 
 
 const sections = [
@@ -41,7 +40,7 @@ const sections = [
       <Box>
         <VStack spacing={4} align="stretch">
           {ordersOutput.map((order) => (
-            <Box key={order.orderId}>
+            <Box key={order.id}>
               <OrderCard 
                 orderCard={order} 
                 onClick={() => console.log('Enfocar pedido clicked')}

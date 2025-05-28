@@ -1,7 +1,7 @@
-import { Badge, Box, Button, Flex, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, Text } from "@chakra-ui/react";
 import { faArrowsToDot } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import type { IIncidenciaCard } from "../../core/types/incidencia.ts";
+import type { IIncidenciaCard } from "../../../core/types/incidencia.ts";
 
 interface IncidenciaCardProps {
     incidenciaCard: IIncidenciaCard,
@@ -14,6 +14,7 @@ export const IncidenciaCard = ({
     let cardColor;
     let isFocus = false;
     let isEstimada = false;
+    const primaryTextSize = 18;
     switch(incidenciaCard.estado.toUpperCase()){
             case 'EN CURSO': 
             cardColor = '#FFCFCF';
@@ -36,21 +37,21 @@ export const IncidenciaCard = ({
             <Box flex='1'>
                 {isEstimada ?
                 <Flex gap={1} align='center'>
-                    <Text id={"placa"} fontWeight={600} fontSize={20} color='purple.200'>
+                    <Text id={"placa"} fontWeight={600} fontSize={primaryTextSize} color='purple.200'>
                         {incidenciaCard.placa}
                     </Text>
                     |
-                    <Text id={"turno"} fontWeight={600} fontSize={20} color='purple.200'>
+                    <Text id={"turno"} fontWeight={600} fontSize={primaryTextSize} color='purple.200'>
                         {"Turno "+incidenciaCard.turno.replace("T", "")}
                     </Text>
                     <Text id='state' variant='outline' pl={4}>{incidenciaCard.estado}</Text>
                 </Flex>
                 :
                 <Flex gap={4} align='center'>
-                    <Text id='fechaInicio' fontWeight={600} fontSize={20} color='purple.200'>
+                    <Text id='fechaInicio' fontWeight={600} fontSize={primaryTextSize} color='purple.200'>
                         {incidenciaCard.fechaInicio}
                     </Text>
-                    <Text id='estado' variant='outline'>{incidenciaCard.estado}</Text>
+                    <Text id='estado'>{incidenciaCard.estado}</Text>
                 </Flex>
                 }
                 
