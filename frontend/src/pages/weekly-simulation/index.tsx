@@ -8,9 +8,6 @@ import IncidenciasPhase from './IncidenciasPhase'
 import SimulationPhase from './SimulationPhase'
 import VehiculosPhase from './VehiculosPhase'
 
-import VehiculosPhase from './VehiculosPhase'
-
-import { OrderCard } from '../../components/common/OrderCard'
 import type { IOrderCard } from '../../core/types/pedido'
 import { IncidenciaCard } from '../../components/common/IncidenciaCard'
 import { SearchIcon } from '@chakra-ui/icons'
@@ -43,6 +40,7 @@ const ordersOutput = [
 import LegendPanel from '../../components/common/Legend'
 import BottomLeftControls from '../../components/common/MapActions'
 import LoadingOverlay from '../../components/common/LoadingOverlay'
+import { OrderCard } from '../../components/common/PedidoCard'
 
 const incidencias = [
   {

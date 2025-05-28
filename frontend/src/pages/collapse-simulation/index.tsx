@@ -5,7 +5,6 @@ import { useState } from 'react'
 import { Flex } from '@chakra-ui/react'
 import SimulationPhase from './SimulationPhase'
 
-import { OrderCard } from '../../components/common/OrderCard'
 
 const ordersOutput = [
   {
@@ -32,6 +31,7 @@ const ordersOutput = [
 import LegendPanel from '../../components/common/Legend'
 import BottomLeftControls from '../../components/common/MapActions'
 import PedidosPhaseCollapse from './PedidosPhase'
+import { OrderCard } from '../../components/common/PedidoCard'
 
 
 const sections = [
