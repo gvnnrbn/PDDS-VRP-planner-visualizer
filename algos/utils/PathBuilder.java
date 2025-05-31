@@ -11,8 +11,7 @@ import java.util.Set;
 import entities.PlannerBlockage;
 
 public class PathBuilder {
-    public static List<Position> buildPath(Position from, Position to, List<PlannerBlockage> blockages, 
-                                         int gridLength, int gridWidth) {
+    public static List<Position> buildPath(Position from, Position to, List<PlannerBlockage> blockages) {
         List<Position> path = new ArrayList<>();
 
         if (from.x == to.x && from.y == to.y) {
@@ -22,10 +21,10 @@ public class PathBuilder {
         Position adjustedFrom = new Position(Math.floor(from.x), Math.floor(from.y));
         Position adjustedTo = new Position(Math.ceil(to.x), Math.ceil(to.y));
 
-        if (isManhattanAvailable(adjustedFrom, adjustedTo, gridLength, gridWidth)) {
-            path = buildManhattanPath(adjustedFrom, adjustedTo, blockages, gridLength, gridWidth);
+        if (isManhattanAvailable(adjustedFrom, adjustedTo)) {
+            path = buildManhattanPath(adjustedFrom, adjustedTo, blockages);
         } else {
-            path = buildAstarPath(adjustedFrom, adjustedTo, blockages, gridLength, gridWidth);
+            path = buildAstarPath(adjustedFrom, adjustedTo, blockages);
         }
 
         if (from.x != adjustedFrom.x || from.y != adjustedFrom.y) {
@@ -47,7 +46,7 @@ public class PathBuilder {
         return distance;
     }
 
-    public static Map<Position, Map<Position, Double>> generateDistances(List<Position> positions, List<PlannerBlockage> blockages, int gridLength, int gridWidth) {
+    public static Map<Position, Map<Position, Double>> generateDistances(List<Position> positions, List<PlannerBlockage> blockages) {
         Map<Position, Map<Position, Double>> distances = new HashMap<>();
 
         Set<Position> uniquePositions = new HashSet<>();
@@ -66,7 +65,7 @@ public class PathBuilder {
             for (int j = i + 1; j < positions.size(); j++) {
                 Position otherPosition = positions.get(j);
 
-                List<Position> path = buildPath(position, otherPosition, blockages, gridLength, gridWidth);
+                List<Position> path = buildPath(position, otherPosition, blockages);
                 double distance = calculateDistance(path);
 
                 // Set distance in both directions
@@ -82,9 +81,9 @@ public class PathBuilder {
         return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
     }
 
-    private static boolean isManhattanAvailable(Position from, Position to, int gridLength, int gridWidth) {
+    private static boolean isManhattanAvailable(Position from, Position to) {
         double distance = calculateManhattanDistance(from, to);
-        return distance <= gridLength && distance <= gridWidth;
+        return distance <= SimulationProperties.gridLength && distance <= SimulationProperties.gridWidth;
     }
 
     private static boolean isPathBlocked(Position from, Position to, List<PlannerBlockage> blockages) {
@@ -99,7 +98,7 @@ public class PathBuilder {
         return false;
     }
 
-    private static List<Position> buildManhattanPath(Position from, Position to, List<PlannerBlockage> blockages, int gridLength, int gridWidth) {
+    private static List<Position> buildManhattanPath(Position from, Position to, List<PlannerBlockage> blockages) {
         List<Position> path = new ArrayList<>();
         path.add(from);
         
@@ -175,7 +174,7 @@ public class PathBuilder {
         return path;
     }
 
-    private static List<Position> buildAstarPath(Position from, Position to, List<PlannerBlockage> blockages, int gridLength, int gridWidth) {
+    private static List<Position> buildAstarPath(Position from, Position to, List<PlannerBlockage> blockages) {
         // Priority queue for open nodes, sorted by f-score (g + h)
         PriorityQueue<AstarNode> openSet = new PriorityQueue<>();
         // Set to track visited nodes
@@ -199,7 +198,7 @@ public class PathBuilder {
             closedSet.add(current.position);
 
             // Generate neighbors (up, down, left, right)
-            for (Position neighbor : getAstarNeighbors(current.position, gridLength, gridWidth)) {
+            for (Position neighbor : getAstarNeighbors(current.position, SimulationProperties.gridLength, SimulationProperties.gridWidth)) {
                 if (closedSet.contains(neighbor) || isPathBlocked(current.position, neighbor, blockages)) {
                     continue;
                 }
