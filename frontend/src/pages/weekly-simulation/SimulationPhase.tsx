@@ -19,13 +19,14 @@ export default function SimulationPhase() {
   const [speedMs, setSpeedMs] = useState(5000); // valor inicial
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [simulacionFinalizada, setSimulacionFinalizada] = useState(false);
+  const [fechaVisual, setFechaVisual] = useState(new Date(jsonData.fechaInicio));
 
   const totalMinutos = jsonData.simulacion.length;
   const fechaInicio = new Date(jsonData.fechaInicio);
 
   // ➕ Cálculo de fecha actual (usado por BottomLeftControls)
   const fechaActual = new Date(fechaInicio);
-  fechaActual.setDate(fechaInicio.getDate() + minuto);
+  fechaActual.setMinutes(fechaInicio.getMinutes() + minuto * 75);
 
   // ➕ Cálculo de fecha fin
   const fechaFin = new Date(fechaInicio);
@@ -42,18 +43,38 @@ export default function SimulationPhase() {
     return `${dd}/${mm}/${yyyy} ${hh}:${min}:${ss}`;
   };
 
-  const displayDate = `Día ${minuto + 1} | ${formatDateTime(fechaActual)} | 11:00`;
-
   // ➕ Simulación automática
   useEffect(() => {
-    console.log(minuto);
-    if (isPaused || minuto >= totalMinutos - 1) return;
+    const totalMinutos = jsonData.simulacion.length;
+    if (minuto >= totalMinutos - 1 || isPaused) return;
 
+    // Avanza minuto real
     const interval = setTimeout(() => {
       setMinuto((prev) => prev + 1);
     }, speedMs);
 
-    return () => clearTimeout(interval);
+    // Animar tiempo visual
+    const fechaInicio = new Date(jsonData.fechaInicio);
+    const from = new Date(fechaInicio);
+    from.setMinutes(from.getMinutes() + minuto * 75);
+
+    const to = new Date(fechaInicio);
+    to.setMinutes(to.getMinutes() + (minuto + 1) * 75);
+
+    const animSteps = 30;
+    let step = 0;
+
+    const animInterval = setInterval(() => {
+      step++;
+      const interpolatedTime = new Date(from.getTime() + ((to.getTime() - from.getTime()) * (step / animSteps)));
+      setFechaVisual(interpolatedTime);
+      if (step >= animSteps) clearInterval(animInterval);
+    }, speedMs / animSteps);
+
+    return () => {
+      clearTimeout(interval);
+      clearInterval(animInterval);
+    };
   }, [minuto, speedMs, isPaused]);
 
   useEffect(() => {
@@ -62,6 +83,11 @@ export default function SimulationPhase() {
       onOpen(); // solo una vez
     }
   }, [minuto, totalMinutos, isOpen, simulacionFinalizada]);
+
+  const displayDate = `${fechaVisual.toLocaleDateString()} | ${fechaVisual.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit'
+  })}`;
 
   //Funciones de acción
 

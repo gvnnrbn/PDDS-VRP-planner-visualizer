@@ -46,7 +46,8 @@
             "posY": 20
           },
           "isMain": true,
-          "wasVehicle": false
+          "wasVehicle": false,
+          "eventos": []
         },{
           "idAlmacen": 2,
           "posicion":{
@@ -56,7 +57,8 @@
           "currentGLP": 10,
           "maxGLP": 20,
           "isMain": false,
-          "wasVehicle": false
+          "wasVehicle": false,
+          "eventos": []
         },{
           "idAlmacen": 3,
           "posicion":{
@@ -66,7 +68,8 @@
           "currentGLP": 10,
           "maxGLP": 20,
           "isMain": false,
-          "wasVehicle": true
+          "wasVehicle": true,
+          "eventos": []
         }
       ],
       "vehiculos":[
@@ -127,7 +130,8 @@
             "posY": 20
           },
           "isMain": true,
-          "wasVehicle": false
+          "wasVehicle": false,
+          "eventos": []
         },{
           "idAlmacen": 2,
           "posicion":{
@@ -137,7 +141,8 @@
           "currentGLP": 10,
           "maxGLP": 20,
           "isMain": false,
-          "wasVehicle": false
+          "wasVehicle": false,
+          "eventos": []
         },{
           "idAlmacen": 3,
           "posicion":{
@@ -147,7 +152,8 @@
           "currentGLP": 10,
           "maxGLP": 20,
           "isMain": false,
-          "wasVehicle": true
+          "wasVehicle": true,
+          "eventos": []
         }
       ],
       "vehiculos":[
@@ -207,7 +213,8 @@
             "posY": 20
           },
           "isMain": true,
-          "wasVehicle": false
+          "wasVehicle": false,
+          "eventos": []
         },{
           "idAlmacen": 2,
           "posicion":{
@@ -217,7 +224,8 @@
           "currentGLP": 10,
           "maxGLP": 20,
           "isMain": false,
-          "wasVehicle": false
+          "wasVehicle": false,
+          "eventos": []
         },{
           "idAlmacen": 3,
           "posicion":{
@@ -227,7 +235,8 @@
           "currentGLP": 10,
           "maxGLP": 20,
           "isMain": false,
-          "wasVehicle": true
+          "wasVehicle": true,
+          "eventos": []
         }
       ],
       "vehiculos":[
@@ -284,7 +293,8 @@
             "posY": 20
           },
           "isMain": true,
-          "wasVehicle": false
+          "wasVehicle": false,
+          "eventos": []
         },{
           "idAlmacen": 2,
           "posicion":{
@@ -294,17 +304,19 @@
           "currentGLP": 10,
           "maxGLP": 20,
           "isMain": false,
-          "wasVehicle": false
+          "wasVehicle": false,
+          "eventos": []
         },{
           "idAlmacen": 3,
           "posicion":{
             "posX": 30,
             "posY": 10
           },
-          "currentGLP": 5,
+          "currentGLP": 10,
           "maxGLP": 20,
           "isMain": false,
-          "wasVehicle": true
+          "wasVehicle": true,
+          "eventos": []
         }
       ],
       "vehiculos":[
@@ -358,7 +370,8 @@
             "posY": 20
           },
           "isMain": true,
-          "wasVehicle": false
+          "wasVehicle": false,
+          "eventos": []
         },{
           "idAlmacen": 2,
           "posicion":{
@@ -368,7 +381,8 @@
           "currentGLP": 10,
           "maxGLP": 20,
           "isMain": false,
-          "wasVehicle": false
+          "wasVehicle": false,
+          "eventos": []
         },{
           "idAlmacen": 3,
           "posicion":{
@@ -378,7 +392,8 @@
           "currentGLP": 10,
           "maxGLP": 20,
           "isMain": false,
-          "wasVehicle": true
+          "wasVehicle": true,
+          "eventos": []
         }
       ],
       "vehiculos":[
@@ -430,7 +445,8 @@
             "posY": 20
           },
           "isMain": true,
-          "wasVehicle": false
+          "wasVehicle": false,
+          "eventos": []
         },{
           "idAlmacen": 2,
           "posicion":{
@@ -440,17 +456,19 @@
           "currentGLP": 10,
           "maxGLP": 20,
           "isMain": false,
-          "wasVehicle": false
+          "wasVehicle": false,
+          "eventos": []
         },{
           "idAlmacen": 3,
           "posicion":{
             "posX": 30,
             "posY": 10
           },
-          "currentGLP": 5,
+          "currentGLP": 10,
           "maxGLP": 20,
           "isMain": false,
-          "wasVehicle": true
+          "wasVehicle": true,
+          "eventos": []
         }
       ],
       "vehiculos":[
