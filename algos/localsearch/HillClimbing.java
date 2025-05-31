@@ -20,7 +20,7 @@ public class HillClimbing {
 
     // Default constructor with default values
     public HillClimbing() {
-        this(10_000, 55 * 1000, 1000, 0.1, false);
+        this(10_000, 55 * 1000, 1000, 0.1, true);
     }
 
     // Parameterized constructor

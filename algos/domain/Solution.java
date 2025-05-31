@@ -188,8 +188,7 @@ public class Solution implements Cloneable {
                         errors.add("Vehicle " + vehicle.id() + " has delivered order " + order.id() + " after the deadline.");
                     }
 
-                    // Deliver the order amount
-                    if (orderMap.get(order.id()).amountGLP() == GLPToDeliver) {
+                    if (order.amountGLP() == GLPToDeliver) {
                         // Remove the order from the orderMap
                         if (currentTime.isBefore(order.deadline())) {
                             deliveredOrdersOnTime++;
@@ -200,7 +199,7 @@ public class Solution implements Cloneable {
                         orderMap.remove(order.id());
                     } else {
                         // Update the order amount
-                        Order updatedOrder = new Order(order.id(), orderMap.get(order.id()).amountGLP() - GLPToDeliver, order.position(), order.deadline(), order.releaseTime());
+                        Order updatedOrder = new Order(order.id(), order.amountGLP() - GLPToDeliver, order.position(), order.deadline(), order.releaseTime());
                         orderMap.put(order.id(), updatedOrder);
                     }
                 }

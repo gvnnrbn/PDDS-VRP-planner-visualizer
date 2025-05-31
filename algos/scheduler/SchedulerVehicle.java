@@ -7,7 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import domain.Node;
-import domain.Position;
+
+import utils.Position;
 import utils.PathBuilder;
 
 public class SchedulerVehicle {
@@ -63,7 +64,7 @@ public class SchedulerVehicle {
                 // Create vehicle with all required fields
                 for (int i = 0; i < amountOfUnits; i++) {
                     SchedulerVehicle vehicle = new SchedulerVehicle(i,type+""+i,type,EnumVehicleState.IDLE, 
-                    weight, (int) fuel, fuel, maxGLP, currentGLP, new Position(position.x(), position.y()));
+                    weight, (int) fuel, fuel, maxGLP, currentGLP, position);
                             
                     vehicles.add(vehicle);
                 }
@@ -87,9 +88,9 @@ public class SchedulerVehicle {
             double distance = PathBuilder.calculateDistance(List.of(from,to));
             if (distance > units) { 
                 // Move 'from' position the corresponding amount of units
-                double deltaX = to.x() - from.x();
-                double deltaY = to.y() - from.y();
-                currentPath.set(0, new Position(from.x() + deltaX, from.y() + deltaY));
+                double deltaX = to.x - from.x;
+                double deltaY = to.y - from.y;
+                currentPath.set(0, new Position(from.x + deltaX, from.y + deltaY));
                 units = 0;
             } else if (distance <= units) {
                 // Remove 'from' position from path

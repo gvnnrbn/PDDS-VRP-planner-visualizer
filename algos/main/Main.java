@@ -12,6 +12,8 @@ import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.lang.Thread.State;
 import java.util.List;
+
+import localsearch.HillClimbing;
 import localsearch.TabuSearch;
 import scheduler.SchedulerFailure;
 import scheduler.SchedulerMaintenance;
@@ -124,17 +126,11 @@ public class Main {
             
             // 3.3. Run Tabu Search
             System.out.println("Running Tabu Search optimization...");
-            TabuSearch tabuSearch = new TabuSearch();
-            Solution bestSolution = tabuSearch.run(environment, initialSolution);
-            
-            if (!bestSolution.routes.isEmpty()) {
-                System.out.println("Solution found with " + bestSolution.routes.size() + " routes");
-                System.out.println("\n=== Solution Report ===");
-                System.out.println(bestSolution.getReport());
-                // bestSolution.exportToCSV("main/tabuSearchResults1.csv");
-            } else {
-                System.out.println("No valid routes generated in this iteration.");
-            }
+            HillClimbing hillClimbing = new HillClimbing();
+            Solution bestSolution = hillClimbing.run(environment, initialSolution);
+
+            System.out.println("\n=== Solution Report ===");
+            System.out.println(bestSolution.getReport());
             
             // 3.5. Simulate plan execution and update state
             System.out.println("\nSimulating plan execution...");

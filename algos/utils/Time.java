@@ -1,7 +1,6 @@
 package utils;
 
-// TODO: month handling is incorrect, it doesn't matter, just use days
-public class Time implements Comparable<Time> {
+public class Time implements Comparable<Time>, Cloneable {
     private int year;
     private int month;
     private int day;
@@ -151,5 +150,15 @@ public class Time implements Comparable<Time> {
 
     public boolean isSameDate(Time other) {
         return this.year == other.year && this.month == other.month && this.day == other.day;
+    }
+
+    @Override
+    public Time clone() {
+        try {
+            Time clone = (Time) super.clone();
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError(); // Can never happen
+        }
     }
 }

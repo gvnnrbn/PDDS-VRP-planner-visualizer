@@ -8,20 +8,19 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
 
-import domain.Blockage;
-import domain.Position;
+import entities.PlannerBlockage;
 
 public class PathBuilder {
-    public static List<Position> buildPath(Position from, Position to, List<Blockage> blockages, 
+    public static List<Position> buildPath(Position from, Position to, List<PlannerBlockage> blockages, 
                                          int gridLength, int gridWidth) {
         List<Position> path = new ArrayList<>();
 
-        if (from.x() == to.x() && from.y() == to.y()) {
+        if (from.x == to.x && from.y == to.y) {
             return path;
         }
 
-        Position adjustedFrom = new Position(Math.floor(from.x()), Math.floor(from.y()));
-        Position adjustedTo = new Position(Math.ceil(to.x()), Math.ceil(to.y()));
+        Position adjustedFrom = new Position(Math.floor(from.x), Math.floor(from.y));
+        Position adjustedTo = new Position(Math.ceil(to.x), Math.ceil(to.y));
 
         if (isManhattanAvailable(adjustedFrom, adjustedTo, gridLength, gridWidth)) {
             path = buildManhattanPath(adjustedFrom, adjustedTo, blockages, gridLength, gridWidth);
@@ -29,11 +28,11 @@ public class PathBuilder {
             path = buildAstarPath(adjustedFrom, adjustedTo, blockages, gridLength, gridWidth);
         }
 
-        if (from.x() != adjustedFrom.x() || from.y() != adjustedFrom.y()) {
+        if (from.x != adjustedFrom.x || from.y != adjustedFrom.y) {
             path.addFirst(from);
         }
 
-        if (to.x() != adjustedTo.x() || to.y() != adjustedTo.y()) {
+        if (to.x != adjustedTo.x || to.y != adjustedTo.y) {
             path.addLast(to);
         }
 
@@ -43,12 +42,12 @@ public class PathBuilder {
     public static double calculateDistance(List<Position> path) {
         double distance = 0;
         for (int i = 0; i < path.size() - 1; i++) {
-            distance += Math.abs(path.get(i).x() - path.get(i + 1).x()) + Math.abs(path.get(i).y() - path.get(i + 1).y());
+            distance += Math.abs(path.get(i).x - path.get(i + 1).x) + Math.abs(path.get(i).y - path.get(i + 1).y);
         }
         return distance;
     }
 
-    public static Map<Position, Map<Position, Double>> generateDistances(List<Position> positions, List<Blockage> blockages, int gridLength, int gridWidth) {
+    public static Map<Position, Map<Position, Double>> generateDistances(List<Position> positions, List<PlannerBlockage> blockages, int gridLength, int gridWidth) {
         Map<Position, Map<Position, Double>> distances = new HashMap<>();
 
         Set<Position> uniquePositions = new HashSet<>();
@@ -80,7 +79,7 @@ public class PathBuilder {
     }
 
     private static double calculateManhattanDistance(Position a, Position b) {
-        return Math.abs(a.x() - b.x()) + Math.abs(a.y() - b.y());
+        return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
     }
 
     private static boolean isManhattanAvailable(Position from, Position to, int gridLength, int gridWidth) {
@@ -88,24 +87,24 @@ public class PathBuilder {
         return distance <= gridLength && distance <= gridWidth;
     }
 
-    private static boolean isPathBlocked(Position from, Position to, List<Blockage> blockages) {
+    private static boolean isPathBlocked(Position from, Position to, List<PlannerBlockage> blockages) {
         if (blockages == null || blockages.isEmpty()) {
             return false;
         }
-        for (Blockage blockage : blockages) {
-            if (blockage != null && blockage.blocksRoute(from, to)) {
+        for (PlannerBlockage blockage : blockages) {
+            if (blockage.blocksRoute(from, to)) {
                 return true;
             }
         }
         return false;
     }
 
-    private static List<Position> buildManhattanPath(Position from, Position to, List<Blockage> blockages, int gridLength, int gridWidth) {
+    private static List<Position> buildManhattanPath(Position from, Position to, List<PlannerBlockage> blockages, int gridLength, int gridWidth) {
         List<Position> path = new ArrayList<>();
         path.add(from);
         
         // First try: Move horizontally then vertically
-        Position horizontalThenVertical = new Position(to.x(), from.y());
+        Position horizontalThenVertical = new Position(to.x, from.y);
         if (!isPathBlocked(from, horizontalThenVertical, blockages) && 
             !isPathBlocked(horizontalThenVertical, to, blockages)) {
             if (!from.equals(horizontalThenVertical)) {
@@ -116,7 +115,7 @@ public class PathBuilder {
         }
         
         // Second try: Move vertically then horizontally
-        Position verticalThenHorizontal = new Position(from.x(), to.y());
+        Position verticalThenHorizontal = new Position(from.x, to.y);
         if (!isPathBlocked(from, verticalThenHorizontal, blockages) && 
             !isPathBlocked(verticalThenHorizontal, to, blockages)) {
             if (!from.equals(verticalThenHorizontal)) {
@@ -152,8 +151,8 @@ public class PathBuilder {
         int[][] directions = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}}; // up, right, down, left
         
         for (int[] dir : directions) {
-            int newX = (int)pos.x() + dir[0];
-            int newY = (int)pos.y() + dir[1];
+            int newX = (int)pos.x + dir[0];
+            int newY = (int)pos.y + dir[1];
             
             // Check if the new position is within grid boundaries
             if (newX >= 0 && newX < gridLength && newY >= 0 && newY < gridWidth) {
@@ -176,7 +175,7 @@ public class PathBuilder {
         return path;
     }
 
-    private static List<Position> buildAstarPath(Position from, Position to, List<Blockage> blockages, int gridLength, int gridWidth) {
+    private static List<Position> buildAstarPath(Position from, Position to, List<PlannerBlockage> blockages, int gridLength, int gridWidth) {
         // Priority queue for open nodes, sorted by f-score (g + h)
         PriorityQueue<AstarNode> openSet = new PriorityQueue<>();
         // Set to track visited nodes

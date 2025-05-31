@@ -28,7 +28,7 @@ public class TabuSearch {
     }
 
     public TabuSearch() {
-        this(200, 10 * 1000, 100, 50, 0.1, true);
+        this(10000, 30 * 1000, 100, 50, 0.1, true);
     }
 
     public Solution run(Environment environment, Solution initialSolution) {
