@@ -77,8 +77,12 @@
           "currGLP": 10,
           "posicionX": 1,
           "posicionY": 1,
-          "estado": "MuevetePo",
+          "estado": "Entregando",
           "accion": "moviendose",
+          "maxCombustible": 30,
+          "pedidoId": "PE01",
+          "eta": "2025-05-30 13:00",
+          "placa": "TA123",
           "rutaActual":[
             {
               "posX": 1,
@@ -102,18 +106,50 @@
           "posicionX": 13,
           "posicionY": 12,
           "estado": "averiadoC",
-          "accion": "detenido"
+          "accion": "detenido","maxCombustible": 30,
+          "pedidoId": "PE01",
+          "eta": "2025-05-30 13:00",
+          "placa": "TA123",
+          "rutaActual":[]
         }
       ],
       "pedidos":[
         {
           "idPedido": 1,
+          "estado":"Pendiente",
+          "glp": 12,
+          "tiempoLimite": "yyyy-mm-dd hh:mm",
+          "vehiculosAtendiendo": [
+            {
+              "placa": "TA123",
+              "eta": "yyyy-mm-dd hh:mm"
+            },
+            {
+              "placa": "TD301",
+              "eta": "yyyy-mm-dd hh:mm"
+            }
+          ],
           "posX": 35,
           "posY": 35
         },{
           "idPedido": 2,
+          "estado":"Completado",
+          "glp": 12,
+          "tiempoLimite": "yyyy-mm-dd hh:mm",
+          "vehiculosAtendiendo": [],
           "posX": 15,
           "posY": 15
+        }
+      ],
+      "incedencias":[
+        {
+          "idIncidencia": 1,
+          "fechaInicio": "yyyy-mm-dd hh:mm",
+          "fechaFin": "yyyy-mm-dd hh:mm",
+          "turno": "T1" ,
+          "tipo": "TI1" ,
+          "placa": "TA12",
+          "estado": "En curso"
         }
       ]
     },
