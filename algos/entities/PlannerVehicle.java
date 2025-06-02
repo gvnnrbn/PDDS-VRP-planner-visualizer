@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import domain.Node;
+import algorithm.Node;
 import utils.Position;
 import utils.PathBuilder;
 
@@ -19,7 +19,7 @@ public class PlannerVehicle implements Cloneable {
     public PlannerFailure currentFailure;
     public PlannerMaintenance currentMaintenance;
     public int waitTransition;
-    public int weight;
+    public double weight;
     public int maxFuel;
     public double currentFuel;
     public int maxGLP;
@@ -32,7 +32,7 @@ public class PlannerVehicle implements Cloneable {
     public Node currentNode;
 
     public PlannerVehicle(int id, String plaque, String type, VehicleState state, 
-                         int weight, int maxFuel, double currentFuel, 
+                         double weight, int maxFuel, double currentFuel, 
                          int maxGLP, int currentGLP, Position position) {
         this.id = id;
         this.plaque = plaque;
@@ -121,16 +121,21 @@ public class PlannerVehicle implements Cloneable {
     public String toString() {
         return "PlannerVehicle{" +
             "id=" + id +
-            ", plaque='" + plaque + '\'' +
-            ", type='" + type + '\'' +
+            ", plaque='" + plaque + "'" +
+            ", type='" + type + "'" +
             ", state=" + state +
-            ", weight=" + weight +
-            ", maxFuel=" + maxFuel +
-            ", currentFuel=" + currentFuel +
-            ", maxGLP=" + maxGLP +
-            ", currentGLP=" + currentGLP +
-            ", position=" + position +
-            ", initialPosition=" + initialPosition +
+            ", currentFailure=" + (currentFailure != null ? currentFailure.toString() : "null") +
+            ", currentMaintenance=" + (currentMaintenance != null ? currentMaintenance.toString() : "null") +
+            ", waitTransition=" + waitTransition +
+            ", weight=" + weight + "kg" +
+            ", maxFuel=" + maxFuel + "L" +
+            ", currentFuel=" + currentFuel + "L" +
+            ", maxGLP=" + maxGLP + "m3" +
+            ", currentGLP=" + currentGLP + "m3" +
+            ", position=" + position.toString() +
+            ", initialPosition=" + initialPosition.toString() +
+            ", currentPath=" + (currentPath != null ? currentPath.size() + " positions" : "null") +
+            ", currentNode=" + (currentNode != null ? currentNode.toString() : "null") +
             '}';
     }
 

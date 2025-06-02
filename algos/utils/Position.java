@@ -18,6 +18,11 @@ public class Position implements Cloneable {
     }
 
     @Override
+    public String toString() {
+        return "Position{" + "x=" + x + ", y=" + y + '}';
+    }
+
+    @Override
     public Position clone() {
         try {
             Position clone = (Position) super.clone();

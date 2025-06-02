@@ -15,6 +15,26 @@ public class Time implements Comparable<Time>, Cloneable {
         this.min = min;
     }
 
+    public int getYear() {
+        return year;
+    }
+
+    public int getMonth() {
+        return month;
+    }
+
+    public int getDay() {
+        return day;
+    }
+
+    public int getHour() {
+        return hour;
+    }
+
+    public int getMinute() {
+        return min;
+    }
+
     @Override
     public String toString() {
         return String.format("%04d/%02d/%02d %02d:%02d", year, month, day, hour, min);
@@ -115,9 +135,6 @@ public class Time implements Comparable<Time>, Cloneable {
         return -other.minutesUntil(this);
     }
 
-    public int getHour() {
-        return this.hour;
-    }
     public Time copy() {
         return new Time(this.year, this.month, this.day, this.hour, this.min);
     }

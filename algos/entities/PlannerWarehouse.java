@@ -64,11 +64,14 @@ public class PlannerWarehouse implements Cloneable {
     public String toString() {
         return "PlannerWarehouse{" +
             "id=" + id +
-            ", position=" + position +
-            ", maxGLP=" + maxGLP +
-            ", currentGLP=" + currentGLP +
+            ", position=" + position.toString() +
+            ", maxGLP=" + maxGLP + "m3" +
+            ", currentGLP=" + currentGLP + "m3" +
             ", isMain=" + isMain +
             ", wasVehicle=" + wasVehicle +
+            ", isEmpty=" + (currentGLP == 0) +
+            ", isFull=" + (currentGLP == maxGLP) +
+            ", capacityPercentage=" + String.format("%.2f", ((double) currentGLP / maxGLP) * 100) + "%" +
             '}';
     }
 

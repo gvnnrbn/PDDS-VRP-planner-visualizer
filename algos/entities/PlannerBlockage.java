@@ -141,11 +141,23 @@ public class PlannerBlockage implements Cloneable {
 
     @Override
     public String toString() {
+        StringBuilder verticesStr = new StringBuilder("[");
+        for (int i = 0; i < vertices.size(); i++) {
+            Position vertex = vertices.get(i);
+            verticesStr.append("(").append(vertex.x).append(",").append(vertex.y).append(")");
+            if (i < vertices.size() - 1) {
+                verticesStr.append(", ");
+            }
+        }
+        verticesStr.append("]");
+
         return "PlannerBlockage{" +
             "id=" + id +
-            ", startTime=" + startTime +
-            ", endTime=" + endTime +
-            ", vertices=" + vertices +
+            ", startTime=" + startTime.toString() +
+            ", endTime=" + endTime.toString() +
+            ", duration=" + endTime.minutesSince(startTime) + " minutes" +
+            ", vertices=" + verticesStr +
+            ", isActive=" + isActive(new Time(0, 0, 1, 0, 0)) +
             '}';
     }
 

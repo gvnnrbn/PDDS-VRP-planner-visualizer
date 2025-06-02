@@ -89,13 +89,14 @@ public class PlannerOrder implements Cloneable {
     public String toString() {
         return "PlannerOrder{" +
             "id=" + id +
-            ", arrivalTime=" + arrivalTime +
-            ", position=" + position +
-            ", amountGLP=" + amountGLP +
-            ", clientId='" + clientId + '\'' +
-            ", deadline=" + deadline +
-            ", deliverTime=" + deliverTime +
-            ", releaseTime=" + releaseTime +
+            ", arrivalTime=" + arrivalTime.toString() +
+            ", position=" + position.toString() +
+            ", amountGLP=" + amountGLP + "m3" +
+            ", clientId='" + clientId + "'" +
+            ", deadline=" + deadline.toString() +
+            ", deliverTime=" + (deliverTime != null ? deliverTime.toString() : "null") +
+            ", releaseTime=" + releaseTime.toString() +
+            ", isDelivered=" + isDelivered() +
             '}';
     }
 
