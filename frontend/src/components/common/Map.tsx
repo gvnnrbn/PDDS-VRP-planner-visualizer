@@ -1,8 +1,9 @@
-import { useRef, useState } from "react";
-import { Stage, Layer, Line } from "react-konva";
+import { useEffect, useRef, useState } from "react";
+import { Stage, Layer, Line, Label, Tag } from "react-konva";
 import { VehicleIcon } from "./Icons/VehicleIcon";
 import type {VehiculoSimulado} from "../../core/types/vehiculo";
 import type { PedidoSimulado } from "../../core/types/pedido";
+import type { IncidenciaSimulado } from "../../core/types/incidencia";
 import { OrderIcon} from "./Icons/OrderIcon"
 import type { AlmacenSimulado } from "../../core/types/almacen";
 import type { BloqueoSimulado } from "../../core/types/bloqueos";
@@ -10,6 +11,7 @@ import { WarehouseIcon } from "./Icons/WarehouseIcon";
 import React from "react";
 import { VehicleRouteLine } from "./Icons/VehicleRouteLine";
 import type Konva from "konva";
+import { Text } from "react-konva";
 
 const CELL_SIZE = 20; // Tamaño de cada celda
 const GRID_WIDTH = 70; // Número de celdas a lo ancho
@@ -20,6 +22,7 @@ interface MinutoSimulacion {
   vehiculos: VehiculoSimulado[];
   pedidos: PedidoSimulado[];
   almacenes: AlmacenSimulado[];
+  incidencias: IncidenciaSimulado[];
 }
 
 interface SimulacionJson {
@@ -35,14 +38,13 @@ interface MapGridProps {
 
 function calcularAvanceEnRuta(v: VehiculoSimulado): number {
   if (!v.rutaActual || v.rutaActual.length === 0) return 0;
-
-  const actualIndex = v.rutaActual.findIndex(
-      (p) => p.posX === v.posicionX && p.posY === v.posicionY
+          
+    const actualIndex = v.rutaActual.findIndex(
+    (p) => p.posX === v.posicionX && p.posY === v.posicionY
   );
-
+          
   return Math.max(actualIndex, 0);
 }
-
 
 export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
     if (minuto < 0) return null;
@@ -52,15 +54,16 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
     const [position, setPosition] = useState({ x: 0, y: 0 });
 
     const minutoActual = data.simulacion.find((m) => m.minuto === minuto);
-    const minutoSiguiente = data.simulacion.find((m) => m.minuto === minuto + 1);
 
     const vehiculosActuales = minutoActual?.vehiculos || [];
-    const vehiculosSiguientes = minutoSiguiente?.vehiculos || [];
 
     const pedidos = minutoActual?.pedidos || [];
     const almacenes = minutoActual?.almacenes || [];
 
     const vehicleRefs = useRef<Record<number, Konva.Image | null>>({});
+    const [progresoVehiculos, setProgresoVehiculos] = useState<Record<number, number>>({});
+    const [vehiculoSeleccionadoId, setVehiculoSeleccionadoId] = useState<number | null>(null);
+    const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
     const fechaSimulacionInicio = new Date(data.fechaInicio);
     const fechaActual = new Date(fechaSimulacionInicio);
@@ -72,43 +75,12 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
       return fechaActual >= inicio && fechaActual <= fin;
     }) || [];
 
-    // Funciones de animación
+    // Referencias
+    useEffect(() => {
+      vehicleRefs.current = {};
+    }, []);
 
     //const almacenes = minutoData?.almacenes || [];
-
-    // Manejo de zoom
-    const handleWheel = (e: any) => {
-      e.evt.preventDefault();
-      const scaleBy = 1.05;
-      const stage = stageRef.current;
-
-      const oldScale = stage.scaleX();
-      const pointer = stage.getPointerPosition();
-
-      // Punto relativo al stage antes de escalar
-      const mousePointTo = {
-        x: (pointer.x - stage.x()) / oldScale,
-        y: (pointer.y - stage.y()) / oldScale,
-      };
-
-      const direction = e.evt.deltaY > 0 ? -1 : 1;
-      const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
-
-      // Aplica nueva escala
-      stage.scale({ x: newScale, y: newScale });
-
-      // Calcula nueva posición para mantener el puntero "fijo"
-      const newPos = {
-        x: pointer.x - mousePointTo.x * newScale,
-        y: pointer.y - mousePointTo.y * newScale,
-      };
-
-      stage.position(newPos);
-      stage.batchDraw();
-
-      setScale(newScale);
-      setPosition(newPos);
-    };
 
   // Generar líneas de la cuadrícula
     const gridLines = () => {
@@ -139,13 +111,81 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
     return lines;
   };
 
+  const handleVehicleStep = (idVehiculo: number, index: number) => {
+    setProgresoVehiculos((prev) => ({
+      ...prev,
+      [idVehiculo]: index,
+    }));
+
+    const shape = vehicleRefs.current[idVehiculo];
+    if (shape) {
+      const iconX = shape.x();
+      const iconY = shape.y();
+      const tooltipOffset = 10;
+
+      setTooltipPosition({
+        x: iconX + CELL_SIZE / 2,
+        y: iconY - tooltipOffset,
+      });
+    }
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const clickedOnStage = stageRef.current?.getStage().getIntersection({
+        x: e.clientX,
+        y: e.clientY,
+      });
+
+      // Si no hay intersección con elementos Konva (es decir, clic en el fondo o vacío)
+      if (!clickedOnStage) {
+        setVehiculoSeleccionadoId(null);
+      }
+    };
+
+    window.addEventListener("click", handleClickOutside);
+    return () => {
+      window.removeEventListener("click", handleClickOutside);
+    };
+  }, []);
+
+
+
   return (
     <Stage
       width={window.innerWidth}
       height={window.innerHeight}
       draggable
       ref={stageRef}
-      onWheel={handleWheel}
+      onWheel={(e) => {
+        e.evt.preventDefault();
+        const scaleBy = 1.05;
+        const stage = stageRef.current;
+
+        const oldScale = stage.scaleX();
+        const pointer = stage.getPointerPosition();
+
+        const mousePointTo = {
+          x: (pointer.x - stage.x()) / oldScale,
+          y: (pointer.y - stage.y()) / oldScale,
+        };
+
+        const direction = e.evt.deltaY > 0 ? -1 : 1;
+        const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
+
+        stage.scale({ x: newScale, y: newScale });
+
+        const newPos = {
+          x: pointer.x - mousePointTo.x * newScale,
+          y: pointer.y - mousePointTo.y * newScale,
+        };
+
+        stage.position(newPos);
+        stage.batchDraw();
+
+        setScale(newScale);
+        setPosition(newPos);
+      }}
       scaleX={scale}
       scaleY={scale}
       x={position.x}
@@ -160,6 +200,74 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
     >
       <Layer>
         {gridLines()}
+        {vehiculosActuales.map((v) => {
+          const avance = progresoVehiculos[v.idVehiculo] ?? 0;
+          const esSeleccionado = v.idVehiculo === vehiculoSeleccionadoId;
+
+
+          return (
+            <React.Fragment key={v.idVehiculo}>
+              <VehicleRouteLine
+                vehiculo={v}
+                cellSize={CELL_SIZE}
+                gridHeight={GRID_HEIGHT}
+                recorridoHastaAhora={avance}
+              />
+              <VehicleIcon
+                ref={(node) => {
+                  vehicleRefs.current[v.idVehiculo] = node;
+                }}
+                vehiculo={v}
+                cellSize={CELL_SIZE}
+                gridHeight={GRID_HEIGHT}
+                duration={31250}
+                onStep={(index) => handleVehicleStep(v.idVehiculo, index)}
+                onClick={() =>
+                  setVehiculoSeleccionadoId((prev) =>
+                    prev === v.idVehiculo ? null : v.idVehiculo
+                  )
+                }
+              />
+              {esSeleccionado && (() => {
+                const shape = vehicleRefs.current[v.idVehiculo];
+                if (!shape || typeof shape.x !== 'function' || typeof shape.y !== 'function') return null;
+
+                const iconX = shape.x();
+                const iconY = shape.y();
+
+                const tooltipOffset = 10; // espacio entre icono y label
+
+                return (
+                  <Label
+                    x={iconX + CELL_SIZE / 2}
+                    y={iconY - tooltipOffset}
+                    listening={true} // no intercepta clics
+                  >
+                    <Tag
+                      fill="white"
+                      stroke="black"
+                      cornerRadius={4}
+                      pointerDirection="down"
+                      pointerWidth={10}
+                      pointerHeight={8}
+                      shadowColor="black"
+                      shadowBlur={4}
+                      shadowOffset={{ x: 2, y: 2 }}
+                      shadowOpacity={0.2}
+                    />
+                    <Text
+                      text={`🚛 ${v.placa}\n📦 Pedido: ${v.rutaActual?.[0]?.idPedido ?? 'N/A'}`}
+                      fontSize={12}
+                      fill="black"
+                      padding={5}
+                      align="center"
+                    />
+                  </Label>
+                );
+              })()}
+            </React.Fragment>
+          );
+        })}
         {pedidos.map((v) => (
           <OrderIcon
             key={v.idPedido}
@@ -168,6 +276,7 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
             gridHeight={GRID_HEIGHT}
           />
         ))}
+        
         {almacenes.map((v) => (
           <WarehouseIcon
             key={v.idAlmacen}
@@ -176,30 +285,6 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
             gridHeight={GRID_HEIGHT}
           />
         ))}
-        {vehiculosActuales.map((v) => {
-          const next = vehiculosSiguientes.find((n) => n.idVehiculo === v.idVehiculo);
-          const avance = calcularAvanceEnRuta(v);
-
-          return (
-            <React.Fragment key={v.idVehiculo}>
-              <VehicleRouteLine
-                vehiculo={v}
-                shapeRef={vehicleRefs.current[v.idVehiculo]}
-                cellSize={CELL_SIZE}
-                gridHeight={GRID_HEIGHT}
-                recorridoHastaAhora={avance}
-              />
-              <VehicleIcon
-                ref={(node) => { vehicleRefs.current[v.idVehiculo] = node }}
-                vehiculo={v}
-                nextVehiculo={next}
-                cellSize={CELL_SIZE}
-                gridHeight={GRID_HEIGHT}
-                duration={1000}
-              />
-            </React.Fragment>
-          );
-        })}
         {bloqueosVisibles.map((bloqueo) => {
           const puntos = bloqueo.segmentos.map(p => [
             p.posX * CELL_SIZE,

@@ -1,45 +1,44 @@
 import { Arrow } from "react-konva";
 import React from "react";
 import type { VehiculoSimulado } from "../../../core/types/vehiculo";
-import type Konva from "konva";
+
 
 interface Props {
   vehiculo: VehiculoSimulado;
-  shapeRef?: Konva.Image | null;
   cellSize: number;
   gridHeight: number;
-  recorridoHastaAhora: number;
+  recorridoHastaAhora: number; // índice desde el cual empieza la ruta
 }
 
-export const VehicleRouteLine: React.FC<Props> = ({vehiculo,shapeRef,cellSize,gridHeight,recorridoHastaAhora}) => {
-    const ruta = vehiculo.rutaActual ?? [];
+export const VehicleRouteLine: React.FC<Props> = ({
+  vehiculo,
+  cellSize,
+  gridHeight,
+  recorridoHastaAhora,
+}) => {
+  const ruta = vehiculo.rutaActual ?? [];
 
-    // Incluye posición actual como primer punto
-    const currentX = shapeRef?.x() ?? vehiculo.posicionX * cellSize;
-    const currentY = shapeRef?.y() ?? (gridHeight - vehiculo.posicionY) * cellSize;
-
-
-    const puntosRuta = [
-    [currentX, currentY],
+  const puntosRuta = [
+    [vehiculo.posicionX * cellSize, (gridHeight - vehiculo.posicionY) * cellSize],
     ...ruta.map((p) => [p.posX * cellSize, (gridHeight - p.posY) * cellSize]),
-    ];
+  ];
 
-    // Recorta la línea desde el punto actual
-    const puntosRecortados = puntosRuta.slice(recorridoHastaAhora);
-    const flattened = puntosRecortados.flat();
+  // ⚡ Elimina los puntos que ya fueron recorridos
+  const puntosRestantes = puntosRuta.slice(recorridoHastaAhora);
 
-    // Se necesitan al menos 2 puntos para trazar
-    if (flattened.length < 4) return null;
+  if (puntosRestantes.length < 2) return null;
 
-    return (
-        <Arrow
-        points={flattened}
-        stroke="blue"
-        strokeWidth={3}
-        pointerLength={10}
-        pointerWidth={10}
-        fill="blue"
-        lineCap="round"
-        />
-    );
+  const flattened = puntosRestantes.flat();
+
+  return (
+    <Arrow
+      points={flattened}
+      stroke="blue"
+      strokeWidth={3}
+      pointerLength={10}
+      pointerWidth={10}
+      fill="blue"
+      lineCap="round"
+    />
+  );
 };

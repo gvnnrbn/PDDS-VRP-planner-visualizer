@@ -21,6 +21,10 @@ export interface IOrderCard{
 
 export interface PedidoSimulado  {
   idPedido: number;
+  estado: string;
+  glp: number;
+  tiempoLimite: string;
   posX: number;
   posY: number;
+  vehiculosAtendiendo?:{placa: string, eta: string}[]
 }
