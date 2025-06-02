@@ -6,21 +6,17 @@ export interface Pedido {
   posicionY: number;
   cantidadGLP: number;
   tiempoTolerancia: number;
-  // falta vehículos que lo están atendiendo
-}
-export interface IOrderCard{
-  id: string,
-  state: string,
-  glp: number,
-  deadline: string,
-  vehicles: Array<{
-      plaque: string,
-      eta: string
-  }>
 }
 
 export interface PedidoSimulado  {
   idPedido: number;
   posX: number;
   posY: number;
+  estado: string,
+  glp: number,
+  fechaLimite: string,
+  vehiculosAtendiendo: Array<{
+      placa: string,
+      eta: string
+  }>
 }

@@ -1,6 +1,6 @@
 import { MapGrid } from '../../components/common/Map'
 import { useState, useEffect } from 'react';
-import jsonData from "../../data/simulacion.json";
+// import jsonData from "../../data/simulacion.json";
 import BottomLeftControls from '../../components/common/MapActions';
 import {
   Modal,
@@ -13,15 +13,31 @@ import {
   Button
 } from "@chakra-ui/react";
 
-export default function SimulationPhase() {
-  const [minuto, setMinuto] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-  const [speedMs, setSpeedMs] = useState(5000); // valor inicial
+interface PhaseProps {
+  minuto: number
+  data: any 
+  speedMs: number
+  setSpeedMs: (speed: number) => void
+  isPaused: boolean
+  setIsPaused: (paused: boolean) => void
+}
+
+export default function SimulationPhase(
+  { 
+    minuto, 
+    data,
+    speedMs,
+    setSpeedMs,
+    isPaused,
+    setIsPaused 
+  } : PhaseProps) {
+  // const [isPaused, setIsPaused] = useState(false);
+  // const [speedMs, setSpeedMs] = useState(5000); // valor inicial
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [simulacionFinalizada, setSimulacionFinalizada] = useState(false);
 
-  const totalMinutos = jsonData.simulacion.length;
-  const fechaInicio = new Date(jsonData.fechaInicio);
+  const totalMinutos = data.simulacion.length;
+  const fechaInicio = new Date(data.fechaInicio);
 
   // ➕ Cálculo de fecha actual (usado por BottomLeftControls)
   const fechaActual = new Date(fechaInicio);
@@ -44,17 +60,17 @@ export default function SimulationPhase() {
 
   const displayDate = `Día ${minuto + 1} | ${formatDateTime(fechaActual)} | 11:00`;
 
-  // ➕ Simulación automática
-  useEffect(() => {
-    console.log(minuto);
-    if (isPaused || minuto >= totalMinutos - 1) return;
+  // // ➕ Simulación automática
+  // useEffect(() => {
+  //   console.log(minuto);
+  //   if (isPaused || minuto >= totalMinutos - 1) return;
 
-    const interval = setTimeout(() => {
-      setMinuto((prev) => prev + 1);
-    }, speedMs);
+  //   const interval = setTimeout(() => {
+  //     setMinuto((prev) => prev + 1);
+  //   }, speedMs);
 
-    return () => clearTimeout(interval);
-  }, [minuto, speedMs, isPaused]);
+  //   return () => clearTimeout(interval);
+  // }, [minuto, speedMs, isPaused]);
 
   useEffect(() => {
     if (minuto >= totalMinutos - 1 && !isOpen && !simulacionFinalizada) {
@@ -81,7 +97,7 @@ export default function SimulationPhase() {
 
   return (
     <div>
-      <MapGrid minuto={minuto} data={jsonData} />
+      <MapGrid minuto={minuto} data={data} />
       <BottomLeftControls variant="full" date={displayDate} onSpeedChange={handleSpeedChange} onStop={handleStop}/>
 
       {/* ✅ Modal al finalizar */}

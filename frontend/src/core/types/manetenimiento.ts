@@ -1,7 +1,7 @@
 import type { TipoVehiculo } from "./vehiculo";
 
-export interface IMantenimientoCard {
-    id: number;
+export interface MantenimientoSimulado {
+    idMantenimiento: number;
     vehiculo: {
         placa: string;
         tipo: TipoVehiculo

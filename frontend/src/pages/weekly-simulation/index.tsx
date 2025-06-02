@@ -10,12 +10,13 @@ import VehiculosPhase from './VehiculosPhase'
 
 import LegendPanel from '../../components/common/Legend'
 import LoadingOverlay from '../../components/common/LoadingOverlay'
-import { OrderCard } from '../../components/common/cards/PedidoCard'
+import { PedidoCard } from '../../components/common/cards/PedidoCard'
 import { IncidenciaCard } from '../../components/common/cards/IncidenciaCard'
 import { FlotaCard } from '../../components/common/cards/FlotaCard'
 import { PanelSearchBar } from '../../components/common/PanelSearchBar'
-import { MantenimientoCard } from '../../components/common/cards/mantenimientoCard'
+import { MantenimientoCard } from '../../components/common/cards/MantenimientoCard'
 import { FilterSortButtons } from '../../components/common/cards/FilterSortButtons'
+import jsonData from "../../data/simulacion.json";
 
 // mock data
 const ordersOutput = [
@@ -146,104 +147,46 @@ const mantenimientos = [
   },
 ]
 
-const sections = [
-  {
-    title: 'Pedidos',
-    content: (
-      <Box>
-        <VStack spacing={4} align="stretch">
-          <PanelSearchBar onSubmit={()=>console.log('searching...')}/>
-            {/* <FilterSortButtons entity={'Pedidos'}/> */}
-          {ordersOutput.map((order) => (
-            <Box key={order.id}>
-              <OrderCard 
-                orderCard={order} 
-                onClick={() => console.log('Enfocando pedido')}
-              />
-            </Box>
-          ))}
-        </VStack>
-      </Box>
-    )
-  },
-  {
-    title: 'Flota',
-    content: (
-      <Box>
-        <VStack spacing={4} align="stretch">
-        <PanelSearchBar onSubmit={()=>console.log('searching...')}/>
-        {flota.map((vehiculo) => (
-          <Box key={vehiculo.id}>
-            <FlotaCard 
-              flotaCard={vehiculo} 
-              onClick={() => console.log('Enfocando vehiculo')}
-            />
-          </Box>
-      ))}
 
-        </VStack>
-      </Box>
-    )
-  },
-  {
-    title: 'Averias',
-    content: (
-      <Box>
-        <VStack spacing={4} align="stretch">
-        <PanelSearchBar onSubmit={()=>console.log('searching...')}/>
-        {incidencias.map((incidencia) => (
-          <Box key={incidencia.id}>
-            <IncidenciaCard 
-              incidenciaCard={incidencia} 
-              onClick={() => console.log('Enfocando vehiculo')}
-            />
-          </Box>
-      ))}
-
-        </VStack>
-      </Box>
-    )
-  },
-  {
-    title: 'Mantenimiento',
-    content: (
-      <Box>
-        <VStack spacing={4} align="stretch">
-        <PanelSearchBar onSubmit={()=>console.log('searching...')}/>
-        {mantenimientos.map((mantenimiento) => (
-          <Box key={mantenimiento.id}>
-            <MantenimientoCard 
-              mantenimientoCard={mantenimiento} 
-              onClick={() => console.log('Enfocando vehiculo')}
-            />
-          </Box>
-      ))}
-
-        </VStack>
-      </Box>
-    )
-  },
-  {
-    title: 'Indicadores',
-    content: (
-      <Box>
-        <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
-          contenido indicadores
-        </Text>
-      </Box>
-    )
-  },
-]
-
-export default function WeeklySimulation() {
+export default function WeeklySimulation() {  
   const bgColor = useColorModeValue('white', '#1a1a1a')
   const [isCollapsed, setIsCollapsed] = useState(true)
-  const [section, setSection] = useState(sections[0].title)
-
+  
   const currPath = useLocation().pathname.split('/').pop()
-
   const [isLoading, setIsLoading] = useState(false);
-
+  
+  const [minuto, setMinuto] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const [speedMs, setSpeedMs] = useState(5000); // valor inicial
+  const [simulacionFinalizada, setSimulacionFinalizada] = useState(false);
+  
+  const data = jsonData;
+  const fechaInicio = new Date(data.fechaInicio);
+  const planificacion = data.simulacion;
+  const totalMinutos = planificacion.length;
+  
+  // ➕ Cálculo de fecha actual (usado por BottomLeftControls)
+  const fechaActual = new Date(fechaInicio);
+  fechaActual.setDate(fechaInicio.getDate() + minuto);
+  
+  // ➕ Cálculo de fecha fin
+  const fechaFin = new Date(fechaInicio);
+  fechaFin.setDate(fechaInicio.getDate() + totalMinutos - 1);
+  
+  // ➕ Formateador reutilizable
+  const formatDateTime = (fecha: Date) => {
+    const dd = String(fecha.getDate()).padStart(2, "0");
+    const mm = String(fecha.getMonth() + 1).padStart(2, "0");
+    const yyyy = fecha.getFullYear();
+    const hh = String(fecha.getHours()).padStart(2, "0");
+    const min = String(fecha.getMinutes()).padStart(2, "0");
+    const ss = String(fecha.getSeconds()).padStart(2, "0");
+    return `${dd}/${mm}/${yyyy} ${hh}:${min}:${ss}`;
+  };
+  
+  // const displayDate = `Día ${minuto + 1} | ${formatDateTime(fechaActual)} | 11:00`;
+  
+  
   useEffect(() => {
     if (currPath === "simulacion") {
       setIsLoading(true);
@@ -251,7 +194,7 @@ export default function WeeklySimulation() {
       return () => clearTimeout(timer);
     }
   }, [currPath]);
-
+  
   const handleSectionChange = (section: string) => {
     setSection(section)
   }
@@ -260,6 +203,115 @@ export default function WeeklySimulation() {
       setSection('')
     }
   }, [isCollapsed]);
+  
+  // ➕ Simulación automática
+  useEffect(() => {
+    console.log(minuto);
+    if (isPaused || minuto >= totalMinutos - 1) return;
+    
+    const interval = setTimeout(() => {
+      setMinuto((prev) => prev + 1);
+    }, speedMs);
+    
+    return () => clearTimeout(interval);
+  }, [minuto, speedMs, isPaused]);
+  
+  const minutoActual = data.simulacion.find((m) => m.minuto === minuto);
+  const minutoSiguiente = data.simulacion.find((m) => m.minuto === minuto + 1);
+  const pedidos = minutoActual?.pedidos || [];
+  const vehiculos = minutoActual?.vehiculos || [];
+  const incidencias = minutoActual?.incidencias || [];
+  const mantenimientos = minutoActual?.mantenimientos || [];
+  const sections = [
+    {
+      title: 'Pedidos',
+      content: (
+        <Box>
+          <VStack spacing={4} align="stretch">
+            <PanelSearchBar onSubmit={()=>console.log('searching...')}/>
+              {/* <FilterSortButtons entity={'Pedidos'}/> */}
+            {pedidos.map((pedido) => (
+              <Box key={pedido.idPedido}>
+                <PedidoCard 
+                  pedido={pedido} 
+                  onClick={() => console.log('Enfocando pedido')}
+                />
+              </Box>
+            ))}
+          </VStack>
+        </Box>
+      )
+    },
+    {
+      title: 'Flota',
+      content: (
+        <Box>
+          <VStack spacing={4} align="stretch">
+          <PanelSearchBar onSubmit={()=>console.log('searching...')}/>
+          {vehiculos.map((vehiculo) => (
+            <Box key={vehiculo.idVehiculo}>
+              <FlotaCard 
+                vehiculo={vehiculo} 
+                onClick={() => console.log('Enfocando vehiculo')}
+              />
+            </Box>
+        ))}
+  
+          </VStack>
+        </Box>
+      )
+    },
+    {
+      title: 'Averias',
+      content: (
+        <Box>
+          <VStack spacing={4} align="stretch">
+          <PanelSearchBar onSubmit={()=>console.log('searching...')}/>
+          {incidencias.map((incidencia) => (
+            <Box key={incidencia.idIncidencia}>
+              <IncidenciaCard 
+                incidencia={incidencia} 
+                onClick={() => console.log('Enfocando vehiculo')}
+              />
+            </Box>
+        ))}
+  
+          </VStack>
+        </Box>
+      )
+    },
+    {
+      title: 'Mantenimiento',
+      content: (
+        <Box>
+          <VStack spacing={4} align="stretch">
+          <PanelSearchBar onSubmit={()=>console.log('searching...')}/>
+          {mantenimientos.map((mantenimiento) => (
+            <Box key={mantenimiento.idMantenimiento}>
+              <MantenimientoCard 
+                mantenimiento={mantenimiento} 
+                onClick={() => console.log('Enfocando vehiculo')}
+              />
+            </Box>
+        ))}
+  
+          </VStack>
+        </Box>
+      )
+    },
+    {
+      title: 'Indicadores',
+      content: (
+        <Box>
+          <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
+            contenido indicadores
+          </Text>
+        </Box>
+      )
+    },
+  ]
+  const [section, setSection] = useState(sections[0].title)
+
   return (
     <Flex height="full" overflowY="auto" position="relative">
       <Box flex={1} p={4} bg={bgColor} h="full">
@@ -270,7 +322,16 @@ export default function WeeklySimulation() {
           <Route
             path="simulacion"
             element={
-              isLoading ? <></> : <SimulationPhase />
+              isLoading 
+              ? <></> 
+              : <SimulationPhase 
+                minuto={minuto} 
+                data={data} 
+                isPaused={isPaused}
+                setIsPaused={setIsPaused}
+                speedMs={speedMs}
+                setSpeedMs={setSpeedMs}
+                />
             }
           />
         </Routes>
@@ -284,6 +345,7 @@ export default function WeeklySimulation() {
             currentSection={section}
             isCollapsed={isCollapsed}
             onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+
           />
 
           <LegendPanel isSidebarCollapsed={isCollapsed} />
