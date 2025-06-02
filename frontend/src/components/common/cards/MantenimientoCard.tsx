@@ -1,21 +1,21 @@
 import { Box, Button, Flex, Text } from "@chakra-ui/react";
 import { faArrowsToDot } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import type { IMantenimientoCard } from "../../../../core/types/mantenimiento.ts";
+import type { MantenimientoSimulado } from "../../../core/types/manetenimiento";
 
-interface IncidenciaCardProps {
-    mantenimientoCard: IMantenimientoCard,
+interface MantenimientoCardProps {
+    mantenimiento: MantenimientoSimulado,
     onClick: () => void,
 }
 export const MantenimientoCard = ({
-    mantenimientoCard,
+    mantenimiento,
     onClick,
-}:IncidenciaCardProps) => {
+}:MantenimientoCardProps) => {
     let cardColor;
     let isFocus = false;
     let isEnCurso = false;
     const primaryTextSize = 18;
-    switch(mantenimientoCard.estado.toUpperCase()){
+    switch(mantenimiento.estado.toUpperCase()){
             case 'EN CURSO': 
             cardColor = '#FFCFCF';
             isEnCurso = true;
@@ -34,9 +34,9 @@ export const MantenimientoCard = ({
             <Box flex='1'>
                 <Flex gap={1} align='center'>
                     <Text id={"placa"} fontWeight={600} fontSize={primaryTextSize} color='purple.200'>
-                        {mantenimientoCard.vehiculo.placa}
+                        {mantenimiento.vehiculo.placa}
                     </Text>
-                    <Text id='state' variant='outline' pl={4}>{mantenimientoCard.estado}</Text>
+                    <Text id='state' variant='outline' pl={4}>{mantenimiento.estado}</Text>
                 </Flex>
             </Box>
             <Box>
@@ -51,13 +51,13 @@ export const MantenimientoCard = ({
             </Box>
         </Flex>
         <Flex gap={1} color='grey' fontSize={14}>
-            <Text id='tipo'>Tipo Vehículo: {mantenimientoCard.vehiculo.tipo}</Text>
+            <Text id='tipo'>Tipo Vehículo: {mantenimiento.vehiculo.tipo}</Text>
             |
         {isEnCurso 
         ?
-            <Text id='fechaFin'>Fin: {mantenimientoCard.fechaFin}</Text>
+            <Text id='fechaFin'>Fin: {mantenimiento.fechaFin}</Text>
             :
-            <Text id='fechaInicio'>Fecha: {mantenimientoCard.fechaInicio}</Text>
+            <Text id='fechaInicio'>Fecha: {mantenimiento.fechaInicio}</Text>
         }
         </Flex>
     </Flex>

@@ -1,14 +1,14 @@
 import { Box, Button, Flex, Text } from "@chakra-ui/react";
 import { faArrowsToDot } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import type { IFlotaCard } from "../../../core/types/vehiculo";
+import type { VehiculoSimulado } from "../../../core/types/vehiculo";
 
 interface FlotaCardProps {
-    flotaCard: IFlotaCard,
+    vehiculo: VehiculoSimulado,
     onClick: () => void,
 }
 export const FlotaCard = ({
-    flotaCard,
+    vehiculo,
     onClick,
 }:FlotaCardProps) => {
     let cardColor;
@@ -17,7 +17,7 @@ export const FlotaCard = ({
     let combustiblePercentage = 0;
     let isBroken = false;
 
-    switch(flotaCard.estado.toUpperCase()){
+    switch(vehiculo.estado.toUpperCase()){
             case 'AVERIADO': 
             cardColor = '#FFCFCF';
             isBroken = true;
@@ -34,8 +34,8 @@ export const FlotaCard = ({
             cardColor = 'white';
             break;
     }
-    if(flotaCard.estado.toUpperCase() != 'SIN PROGRAMACIÓN'){
-        combustiblePercentage = flotaCard.combustible / flotaCard.maxCombustible * 100;
+    if(vehiculo.estado.toUpperCase() != 'SIN PROGRAMACIÓN'){
+        combustiblePercentage = vehiculo.combustible / vehiculo.maxCombustible * 100;
     }
   return (<>
     <Flex direction='column' bg={cardColor} borderRadius='10px' py={3} px={4} mx={-1} gap={1}>
@@ -43,9 +43,9 @@ export const FlotaCard = ({
             <Box flex='1'>
             <Flex gap={1} align='center'>
                 <Text id={"placa"} fontWeight={600} fontSize={18} color='purple.200'>
-                    {flotaCard.placa}
+                    {vehiculo.placa}
                 </Text>
-                <Text id={'state'} pl={4}>{flotaCard.estado}</Text>
+                <Text id={'state'} pl={4}>{vehiculo.estado}</Text>
             </Flex>
                 
             </Box>
@@ -66,18 +66,18 @@ export const FlotaCard = ({
             <></>
             :
             <>
-                <Text id='pedidoId'>Pedido {flotaCard.pedidoId}</Text>
+                <Text id='pedidoId'>Pedido {vehiculo.pedidoId}</Text>
                 <Flex direction={'row'} gap={1}>
 
                 {isBroken
                 ? <></>
                 :
                     <>
-                    <Text id='eta'>ETA: {flotaCard.eta}</Text>
+                    <Text id='eta'>ETA: {vehiculo.eta}</Text>
                     |
                     </>
                 }
-                <Text id='glp'>GLP: {flotaCard.glp}m³</Text>
+                <Text id='glp'>GLP: {vehiculo.glp}m³</Text>
                 |
                 <Text id='combustible'>Combustible: {combustiblePercentage}%</Text>
                 </Flex>
