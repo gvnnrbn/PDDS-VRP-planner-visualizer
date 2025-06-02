@@ -85,7 +85,7 @@
           "placa": "TA123",
           "rutaActual":[
             {
-              "posX": 1,
+              "posX": 0,
               "posY": 15
             },{
               "posX": 15,
@@ -192,13 +192,13 @@
           "tipo": "TA",
           "combustible": 15,
           "currGLP": 10,
-          "posicionX": 1,
-          "posicionY": 1,
+          "posicionX": 0,
+          "posicionY": 0,
           "estado": "MuevetePo",
           "accion": "moviendose",
           "rutaActual":[
             {
-              "posX": 1,
+              "posX": 0,
               "posY": 15
             },{
               "posX": 15,
@@ -272,7 +272,7 @@
           "tipo": "TA",
           "combustible": 15,
           "currGLP": 10,
-          "posicionX": 1,
+          "posicionX": 0,
           "posicionY": 15,
           "estado": "MuevetePo",
           "accion": "moviendose",
@@ -499,15 +499,7 @@
           "posicionY": 30,
           "estado": "MuevetePo",
           "accion": "moviendose",
-          "rutaActual":[
-            {
-              "posX": 15,
-              "posY": 20
-            },{
-              "posX": 30,
-              "posY": 20
-            }
-          ]
+          "rutaActual":[]
         },{
           "idVehiculo": 2,
           "tipo": "TB",

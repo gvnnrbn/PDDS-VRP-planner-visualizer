@@ -2,30 +2,22 @@ import { faTruck } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import  type { VehiculoSimulado} from "../../../core/types/vehiculo";
 import { Image as KonvaImage } from "react-konva";
-import Konva from "konva";
 import useImage from "use-image";
-import { useEffect, useRef, forwardRef } from "react";
+import { useEffect, useRef, forwardRef, useState } from "react";
+import type Konva from "konva";
 
-// Inyecta CSS para usar FontAwesome en runtime
+// Inyecta ícono
 library.add(faTruck);
 
 const createIconUrl = (icon: any, color: string = "red") => {
-  const svgString = icon.icon[4]; // el raw SVG path data
+  const svgString = icon.icon[4];
   const fullSvg = `
-    <svg width="40" height="40" viewBox="0 0 ${icon.icon[0]} ${icon.icon[1]}" xmlns="http://www.w3.org/2000/svg" fill="black">
+    <svg width="40" height="40" viewBox="0 0 ${icon.icon[0]} ${icon.icon[1]}" xmlns="http://www.w3.org/2000/svg">
       <path d="${svgString}" fill="${color}" />
     </svg>
   `;
   return "data:image/svg+xml;base64," + btoa(fullSvg);
 };
-
-interface Props {
-  vehiculo: VehiculoSimulado;
-  nextVehiculo?: VehiculoSimulado;
-  cellSize: number;
-  gridHeight: number;
-  duration: number
-}
 
 const getColorFromState = (estado: string): string => {
   switch (estado) {
@@ -42,47 +34,109 @@ const getColorFromState = (estado: string): string => {
   }
 };
 
-export const VehicleIcon = forwardRef<Konva.Image, Props>(({
-  vehiculo, nextVehiculo, cellSize, gridHeight, duration
-  }, ref) => {
-  const [image] = useImage(createIconUrl(faTruck, getColorFromState(vehiculo.estado)));
-  const shapeRef = useRef<any>(null);
-
-  const fromX = vehiculo.posicionX * cellSize;
-  const fromY = (gridHeight - vehiculo.posicionY) * cellSize;
-
-  const toX = (nextVehiculo?.posicionX ?? vehiculo.posicionX) * cellSize;
-  const toY = (gridHeight - (nextVehiculo?.posicionY ?? vehiculo.posicionY)) * cellSize;
-
-  useEffect(() => {
-    if (shapeRef.current && (fromX !== toX || fromY !== toY)) {
-      shapeRef.current.to({
-        x: toX - cellSize / 2,
-        y: toY - cellSize / 2,
-        duration: duration / 1000,
-        easing: Konva.Easings.EaseInOut,
-      });
-    }
-
-    // 👉 pasamos shapeRef hacia afuera
-    if (typeof ref === "function") {
-      ref(shapeRef.current);
-    } else if (ref) {
-      (ref as React.MutableRefObject<Konva.Image | null>).current = shapeRef.current;
-    }
-  }, [toX, toY]);
+interface Props {
+  vehiculo: VehiculoSimulado;
+  cellSize: number;
+  gridHeight: number;
+  duration: number;
+  onStep?: (index: number) => void;
+  onClick?: (vehiculo: VehiculoSimulado) => void;
+}
 
 
-  if (!image) return null;
+export const VehicleIcon = forwardRef<Konva.Image, Props>(
+  ({ vehiculo, cellSize, gridHeight, duration, onStep,onClick }, ref) => {
+    const [image] = useImage(
+      createIconUrl(faTruck, getColorFromState("asdas"))
+    );
+    const shapeRef = useRef<Konva.Image | null>(null);
 
-  return (
-    <KonvaImage
-      ref={shapeRef}
-      image={image}
-      x={fromX - cellSize / 2}
-      y={fromY - cellSize / 2}
-      width={cellSize}
-      height={cellSize}
-    />
-  );
-});
+    const ruta = vehiculo.rutaActual ?? [];
+    const puntosRuta = [
+      [vehiculo.posicionX, vehiculo.posicionY],
+      ...ruta.map((p) => [p.posX, p.posY]),
+    ];
+
+    const [pos, setPos] = useState<[number, number]>([
+      vehiculo.posicionX,
+      vehiculo.posicionY,
+    ]);
+
+    useEffect(() => {
+      let index = 0;
+      let startTime: number | null = null;
+      let frameId: number;
+
+      if (puntosRuta.length < 2) return;
+
+      const stepDuration = duration / (puntosRuta.length - 1);
+
+      const animateStep = (timestamp: number) => {
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+
+        const t = Math.min(elapsed / stepDuration, 1);
+        const [fromX, fromY] = puntosRuta[index];
+        const [toX, toY] = puntosRuta[index + 1] || [fromX, fromY];
+
+        const interpX = fromX + (toX - fromX) * t;
+        const interpY = fromY + (toY - fromY) * t;
+
+        setPos([interpX, interpY]);
+        onStep?.(index);
+
+        if (t < 1) {
+          frameId = requestAnimationFrame(animateStep);
+        } else {
+          // ⚠️ el vehículo llegó al punto index + 1
+          index++;
+
+          // ⏹️ Si ya no hay más puntos, terminamos
+          if (index >= puntosRuta.length - 1) return;
+
+          const puntoLlegado = ruta[index - 1]; // llegamos a este punto
+          const isDescarga = puntoLlegado?.accion === "Descarga";
+          const delay = isDescarga ? duration * 0.2 : 0;
+
+          setTimeout(() => {
+            startTime = null;
+            frameId = requestAnimationFrame(animateStep);
+          }, delay);
+        }
+      };
+
+      frameId = requestAnimationFrame(animateStep);
+      return () => cancelAnimationFrame(frameId);
+    }, [JSON.stringify(ruta)]);
+
+    useEffect(() => {
+      if (typeof ref === "function") {
+        ref(shapeRef.current);
+      } else if (ref) {
+        (ref as React.MutableRefObject<Konva.Image | null>).current = shapeRef.current;
+      }
+    }, [ref]);
+
+    if (!image) return null;
+
+    const pixelX = pos[0] * cellSize;
+    const pixelY = (gridHeight - pos[1]) * cellSize;
+
+    VehicleIcon.displayName = "VehicleIcon";
+
+    return (
+      <KonvaImage
+        ref={shapeRef}
+        image={image}
+        x={pixelX - cellSize / 2}
+        y={pixelY - cellSize / 2}
+        width={cellSize}
+        height={cellSize}
+        onClick={() => onClick?.(vehiculo)}
+        onTap={() => onClick?.(vehiculo)}
+        listening={true} // Asegura que escuche eventos
+        hitStrokeWidth={20} // Área de clic expandida
+      />
+    );
+  }
+);

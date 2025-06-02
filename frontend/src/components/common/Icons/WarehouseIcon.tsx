@@ -1,14 +1,11 @@
-import { faWarehouse } from "@fortawesome/free-solid-svg-icons";
-import { faIndustry } from "@fortawesome/free-solid-svg-icons";
+import { faWarehouse, faIndustry } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import type { AlmacenSimulado } from "../../../core/types/almacen";
-import { Image as KonvaImage } from "react-konva";
+import { Image as KonvaImage, Text, Group } from "react-konva";
 import useImage from "use-image";
 import { useEffect, useState } from "react";
 
-// Inyecta CSS para usar FontAwesome en runtime
-library.add(faWarehouse);
-library.add(faIndustry);
+library.add(faWarehouse, faIndustry);
 
 const createIconUrl = (icon: any, color: string = "black") => {
   const svgPath = icon.icon[4];
@@ -20,7 +17,6 @@ const createIconUrl = (icon: any, color: string = "black") => {
       <path d="${svgPath}" fill="${color}" />
     </svg>
   `;
-
   return "data:image/svg+xml;base64," + btoa(fullSvg);
 };
 
@@ -31,41 +27,53 @@ interface Props {
 }
 
 export const WarehouseIcon: React.FC<Props> = ({ almacen, cellSize, gridHeight }) => {
-    if (!almacen.posicion) return null;
+  if (!almacen.posicion) return null;
 
-    const { posX, posY } = almacen.posicion;
-    const x = posX * cellSize;
-    const y = (gridHeight - posY) * cellSize;
+  const { posX, posY } = almacen.posicion;
+  const x = posX * cellSize;
+  const y = (gridHeight - posY) * cellSize;
 
-    const [iconUrl, setIconUrl] = useState<string | null>(null);
-    const [image] = useImage(iconUrl || "");
+  const [iconUrl, setIconUrl] = useState<string | null>(null);
+  const [image] = useImage(iconUrl || "");
+  const [textColor, setTextColor] = useState("gray");
+  const [glpLabel, setGlpLabel] = useState("");
 
-    useEffect(() => {
-        let icon = faWarehouse;
-        let color = "black";
+  useEffect(() => {
+    let icon = faWarehouse;
+    let color = "black";
 
-        if (!almacen.isMain) {
-        icon = faIndustry;
-        if (almacen.currentGLP !== undefined && almacen.maxGLP !== undefined) {
-            color = almacen.currentGLP < almacen.maxGLP / 2 ? "red" : "green";
-        } else {
-            color = "gray";
-        }
-        }
+    if (!almacen.isMain) {
+      icon = faIndustry;
+      if (almacen.currentGLP !== undefined && almacen.maxGLP !== undefined) {
+        color = almacen.currentGLP < almacen.maxGLP / 2 ? "red" : "green";
+        setGlpLabel(`${almacen.currentGLP}/${almacen.maxGLP}`);
+      } else {
+        setGlpLabel("N/A");
+      }
+    }
 
-        setIconUrl(createIconUrl(icon, color));
-    }, [almacen]);
+    setTextColor(color);
+    setIconUrl(createIconUrl(icon, color));
+  }, [almacen]);
 
-    if (!image) return null;
+  if (!image) return null;
 
-    return (
-        <KonvaImage
+  return (
+    <Group>
+      <Text
+        text={glpLabel}
+        x={x - cellSize / 0.5}
+        y={y - cellSize}
+        fontSize={12}
+        fill={textColor}
+      />
+      <KonvaImage
         x={x - cellSize / 2}
         y={y - cellSize / 2}
         width={cellSize}
         height={cellSize}
         image={image}
-        offsetY={cellSize / 2}
-        />
-    );
+      />
+    </Group>
+  );
 };
