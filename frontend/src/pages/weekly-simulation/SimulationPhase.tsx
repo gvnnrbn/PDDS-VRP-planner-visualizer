@@ -1,6 +1,6 @@
 import { MapGrid } from '../../components/common/Map'
 import { useState, useEffect } from 'react';
-import jsonData from "../../data/simulacion.json";
+import jsonData from "../../data/simulacionV2.json";
 import BottomLeftControls from '../../components/common/MapActions';
 import {
   Modal,
@@ -16,7 +16,7 @@ import {
 export default function SimulationPhase() {
   const [minuto, setMinuto] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const [speedMs, setSpeedMs] = useState(5000); // valor inicial
+  const [speedMs, setSpeedMs] = useState(38250); // valor inicial
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [simulacionFinalizada, setSimulacionFinalizada] = useState(false);
   const [fechaVisual, setFechaVisual] = useState(new Date(jsonData.fechaInicio));
@@ -46,7 +46,7 @@ export default function SimulationPhase() {
   // ➕ Simulación automática
   useEffect(() => {
     const totalMinutos = jsonData.simulacion.length;
-    if (minuto >= totalMinutos - 1 || isPaused) return;
+    if (minuto >= totalMinutos || isPaused) return;
 
     // Avanza minuto real
     const interval = setTimeout(() => {
@@ -78,7 +78,8 @@ export default function SimulationPhase() {
   }, [minuto, speedMs, isPaused]);
 
   useEffect(() => {
-    if (minuto >= totalMinutos - 1 && !isOpen && !simulacionFinalizada) {
+    console.log(`Minuto actual ${minuto} y total de minutos ${totalMinutos}`);
+    if (minuto >= totalMinutos  && !isOpen && !simulacionFinalizada) {
       setSimulacionFinalizada(true);
       onOpen(); // solo una vez
     }
@@ -93,9 +94,9 @@ export default function SimulationPhase() {
 
   const handleSpeedChange = (newSpeed: string) => {
     if (newSpeed === "Velocidad x1") {
-      setSpeedMs(5000);
+      setSpeedMs(31250);
     } else if (newSpeed === "Velocidad x2") {
-      setSpeedMs(2500);
+      setSpeedMs(15625);
     }
   };
 

@@ -1,41 +1,34 @@
 import { Arrow } from "react-konva";
 import React from "react";
 import type { VehiculoSimulado } from "../../../core/types/vehiculo";
-import type Konva from "konva";
+
 
 interface Props {
   vehiculo: VehiculoSimulado;
-  shapeRef?: Konva.Image | null;
   cellSize: number;
   gridHeight: number;
-  recorridoHastaAhora: number;
+  recorridoHastaAhora: number; // índice desde el cual empieza la ruta
 }
 
 export const VehicleRouteLine: React.FC<Props> = ({
   vehiculo,
-  shapeRef,
   cellSize,
   gridHeight,
+  recorridoHastaAhora,
 }) => {
   const ruta = vehiculo.rutaActual ?? [];
 
-  // Si shapeRef es válido, usamos su posición interpolada actual
-  const currentX = shapeRef?.x()
-    ? Math.round(shapeRef.x() / cellSize) * cellSize
-    : vehiculo.posicionX * cellSize;
-
-  const currentY = shapeRef?.y()
-    ? Math.round(shapeRef.y() / cellSize) * cellSize
-    : (gridHeight - vehiculo.posicionY) * cellSize;
-
   const puntosRuta = [
-    [currentX, currentY], // posición exacta actual del vehículo
+    [vehiculo.posicionX * cellSize, (gridHeight - vehiculo.posicionY) * cellSize],
     ...ruta.map((p) => [p.posX * cellSize, (gridHeight - p.posY) * cellSize]),
   ];
 
-  const flattened = puntosRuta.flat();
+  // ⚡ Elimina los puntos que ya fueron recorridos
+  const puntosRestantes = puntosRuta.slice(recorridoHastaAhora);
 
-  if (flattened.length < 4) return null;
+  if (puntosRestantes.length < 2) return null;
+
+  const flattened = puntosRestantes.flat();
 
   return (
     <Arrow

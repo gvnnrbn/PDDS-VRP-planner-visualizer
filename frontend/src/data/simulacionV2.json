@@ -42,34 +42,51 @@
         {
           "idAlmacen": 1,
           "posicion":{
-            "posX": 10,
-            "posY": 20
+            "posX": 15,
+            "posY": 15
           },
           "isMain": true,
-          "wasVehicle": false,
-          "eventos": []
+          "wasVehicle": false
         },{
           "idAlmacen": 2,
           "posicion":{
             "posX": 60,
             "posY": 40
           },
-          "currentGLP": 10,
+          "currentGLP": 20,
           "maxGLP": 20,
           "isMain": false,
-          "wasVehicle": false,
-          "eventos": []
+          "wasVehicle": false
         },{
           "idAlmacen": 3,
           "posicion":{
+            "posX": 40,
+            "posY": 10
+          },
+          "currentGLP": 5,
+          "maxGLP": 20,
+          "isMain": false,
+          "wasVehicle": true
+        },{
+          "idAlmacen": 4,
+          "posicion":{
             "posX": 30,
+            "posY": 10
+          },
+          "currentGLP": 20,
+          "maxGLP": 20,
+          "isMain": false,
+          "wasVehicle": true
+        },{
+          "idAlmacen": 5,
+          "posicion":{
+            "posX": 20,
             "posY": 10
           },
           "currentGLP": 10,
           "maxGLP": 20,
           "isMain": false,
-          "wasVehicle": true,
-          "eventos": []
+          "wasVehicle": false
         }
       ],
       "vehiculos":[
@@ -77,83 +94,150 @@
           "idVehiculo": 1,
           "tipo": "TA",
           "combustible": 15,
+          "maxCombustible": 30,
+          "maxGLP": 30,
           "currGLP": 10,
+          "placa": "TA123",
           "posicionX": 0,
           "posicionY": 0,
-          "estado": "MuevetePo",
-          "accion": "moviendose",
           "rutaActual":[
             {
               "posX": 0,
-              "posY": 15
+              "posY": 15,
+              "estado": "Entregando",
+              "accion": "Moviendose",
+              "idPedido": 1
             },{
               "posX": 15,
-              "posY": 15
+              "posY": 15,
+              "estado": "Entregando",
+              "accion": "Recarga",
+              "idPedido": 1
             },{
               "posX": 30,
-              "posY": 15
+              "posY": 15,
+              "estado": "Entregando",
+              "accion": "Moviendose",
+              "idPedido": 1
             },{
               "posX": 30,
-              "posY": 30
+              "posY": 30,
+              "estado": "Entregando",
+              "accion": "Descarga",
+              "idPedido": 1
             }
           ]
         },{
           "idVehiculo": 2,
           "tipo": "TB",
-          "combustible": 5,
+          "combustible": 15,
+          "maxCombustible": 30,
+          "maxGLP": 30,
           "currGLP": 10,
+          "placa": "TA123",
           "posicionX": 13,
           "posicionY": 12,
-          "estado": "averiadoC",
-          "accion": "detenido"
+          "rutaActual":[]
         }
       ],
       "pedidos":[
         {
           "idPedido": 1,
-          "posX": 35,
-          "posY": 35
+          "estado":"Pendiente",
+          "glp": 12,
+          "tiempoLimite": "yyyy-mm-dd hh:mm",
+          "vehiculosAtendiendo": [
+            {
+              "placa": "TA123",
+              "eta": "yyyy-mm-dd hh:mm"
+            },
+            {
+              "placa": "TD301",
+              "eta": "yyyy-mm-dd hh:mm"
+            }
+          ],
+          "posX": 30,
+          "posY": 30
         },{
           "idPedido": 2,
-          "posX": 15,
-          "posY": 15
+          "estado":"Completado",
+          "glp": 12,
+          "tiempoLimite": "yyyy-mm-dd hh:mm",
+          "vehiculosAtendiendo": [],
+          "posX": 20,
+          "posY": 20
+        },{
+          "idPedido": 3,
+          "estado":"Completado",
+          "glp": 20,
+          "tiempoLimite": "yyyy-mm-dd hh:mm",
+          "vehiculosAtendiendo": [],
+          "posX": 20,
+          "posY": 5
+        }
+      ],
+      "incidencias":[
+        {
+          "idIncidencia": 1,
+          "fechaInicio": "yyyy-mm-dd hh:mm",
+          "fechaFin": "yyyy-mm-dd hh:mm",
+          "turno": "T1" ,
+          "tipo": "TI1" ,
+          "placa": "TA12",
+          "estado": "En curso"
         }
       ]
-    },
-    {
+    },{
       "minuto": 1,
       "almacenes":[
         {
           "idAlmacen": 1,
           "posicion":{
-            "posX": 10,
-            "posY": 20
+            "posX": 15,
+            "posY": 15
           },
           "isMain": true,
-          "wasVehicle": false,
-          "eventos": []
+          "wasVehicle": false
         },{
           "idAlmacen": 2,
           "posicion":{
             "posX": 60,
             "posY": 40
           },
-          "currentGLP": 10,
+          "currentGLP": 20,
           "maxGLP": 20,
           "isMain": false,
-          "wasVehicle": false,
-          "eventos": []
+          "wasVehicle": false
         },{
           "idAlmacen": 3,
           "posicion":{
+            "posX": 40,
+            "posY": 10
+          },
+          "currentGLP": 5,
+          "maxGLP": 20,
+          "isMain": false,
+          "wasVehicle": true
+        },{
+          "idAlmacen": 4,
+          "posicion":{
             "posX": 30,
+            "posY": 10
+          },
+          "currentGLP": 20,
+          "maxGLP": 20,
+          "isMain": false,
+          "wasVehicle": true
+        },{
+          "idAlmacen": 5,
+          "posicion":{
+            "posX": 20,
             "posY": 10
           },
           "currentGLP": 10,
           "maxGLP": 20,
           "isMain": false,
-          "wasVehicle": true,
-          "eventos": []
+          "wasVehicle": false
         }
       ],
       "vehiculos":[
@@ -161,350 +245,100 @@
           "idVehiculo": 1,
           "tipo": "TA",
           "combustible": 15,
+          "maxCombustible": 30,
+          "maxGLP": 30,
           "currGLP": 10,
-          "posicionX": 0,
-          "posicionY": 0,
-          "estado": "MuevetePo",
-          "accion": "moviendose",
-          "rutaActual":[
-            {
-              "posX": 0,
-              "posY": 15
-            },{
-              "posX": 15,
-              "posY": 15
-            },{
-              "posX": 30,
-              "posY": 15
-            },{
-              "posX": 30,
-              "posY": 30
-            }
-          ]
-        },{
-          "idVehiculo": 2,
-          "tipo": "TB",
-          "combustible": 5,
-          "currGLP": 10,
-          "posicionX": 13,
-          "posicionY": 12,
-          "estado": "averiadoC",
-          "accion": "detenido"
-        }
-      ],
-      "pedidos":[
-        {
-          "idPedido": 1,
-          "posX": 35,
-          "posY": 35
-        },{
-          "idPedido": 2,
-          "posX": 15,
-          "posY": 15
-        }
-      ]
-    },{
-      "minuto": 2,
-      "almacenes":[
-        {
-          "idAlmacen": 1,
-          "posicion":{
-            "posX": 10,
-            "posY": 20
-          },
-          "isMain": true,
-          "wasVehicle": false,
-          "eventos": []
-        },{
-          "idAlmacen": 2,
-          "posicion":{
-            "posX": 60,
-            "posY": 40
-          },
-          "currentGLP": 10,
-          "maxGLP": 20,
-          "isMain": false,
-          "wasVehicle": false,
-          "eventos": []
-        },{
-          "idAlmacen": 3,
-          "posicion":{
-            "posX": 30,
-            "posY": 10
-          },
-          "currentGLP": 10,
-          "maxGLP": 20,
-          "isMain": false,
-          "wasVehicle": true,
-          "eventos": []
-        }
-      ],
-      "vehiculos":[
-        {
-          "idVehiculo": 1,
-          "tipo": "TA",
-          "combustible": 15,
-          "currGLP": 10,
-          "posicionX": 0,
-          "posicionY": 15,
-          "estado": "MuevetePo",
-          "accion": "moviendose",
-          "rutaActual":[
-            {
-              "posX": 15,
-              "posY": 15
-            },{
-              "posX": 30,
-              "posY": 15
-            },{
-              "posX": 30,
-              "posY": 30
-            }
-          ]
-        },{
-          "idVehiculo": 2,
-          "tipo": "TB",
-          "combustible": 5,
-          "currGLP": 10,
-          "posicionX": 13,
-          "posicionY": 12,
-          "estado": "averiadoC",
-          "accion": "detenido"
-        }
-      ],
-      "pedidos":[
-        {
-          "idPedido": 1,
-          "posX": 35,
-          "posY": 35
-        },{
-          "idPedido": 2,
-          "posX": 15,
-          "posY": 15
-        }
-      ]
-    },{
-      "minuto": 3,
-      "almacenes":[
-        {
-          "idAlmacen": 1,
-          "posicion":{
-            "posX": 10,
-            "posY": 20
-          },
-          "isMain": true,
-          "wasVehicle": false,
-          "eventos": []
-        },{
-          "idAlmacen": 2,
-          "posicion":{
-            "posX": 60,
-            "posY": 40
-          },
-          "currentGLP": 10,
-          "maxGLP": 20,
-          "isMain": false,
-          "wasVehicle": false,
-          "eventos": []
-        },{
-          "idAlmacen": 3,
-          "posicion":{
-            "posX": 30,
-            "posY": 10
-          },
-          "currentGLP": 10,
-          "maxGLP": 20,
-          "isMain": false,
-          "wasVehicle": true,
-          "eventos": []
-        }
-      ],
-      "vehiculos":[
-        {
-          "idVehiculo": 1,
-          "tipo": "TA",
-          "combustible": 15,
-          "currGLP": 10,
-          "posicionX": 15,
-          "posicionY": 15,
-          "estado": "MuevetePo",
-          "accion": "moviendose",
-          "rutaActual":[
-            {
-              "posX": 30,
-              "posY": 15
-            },{
-              "posX": 30,
-              "posY": 30
-            }
-          ]
-        },{
-          "idVehiculo": 2,
-          "tipo": "TB",
-          "combustible": 5,
-          "currGLP": 10,
-          "posicionX": 13,
-          "posicionY": 12,
-          "estado": "averiadoC",
-          "accion": "detenido"
-        }
-      ],
-      "pedidos":[
-        {
-          "idPedido": 1,
-          "posX": 35,
-          "posY": 35
-        },{
-          "idPedido": 2,
-          "posX": 15,
-          "posY": 15
-        }
-      ]
-    },{
-      "minuto": 4,
-      "almacenes":[
-        {
-          "idAlmacen": 1,
-          "posicion":{
-            "posX": 10,
-            "posY": 20
-          },
-          "isMain": true,
-          "wasVehicle": false,
-          "eventos": []
-        },{
-          "idAlmacen": 2,
-          "posicion":{
-            "posX": 60,
-            "posY": 40
-          },
-          "currentGLP": 10,
-          "maxGLP": 20,
-          "isMain": false,
-          "wasVehicle": false,
-          "eventos": []
-        },{
-          "idAlmacen": 3,
-          "posicion":{
-            "posX": 30,
-            "posY": 10
-          },
-          "currentGLP": 10,
-          "maxGLP": 20,
-          "isMain": false,
-          "wasVehicle": true,
-          "eventos": []
-        }
-      ],
-      "vehiculos":[
-        {
-          "idVehiculo": 1,
-          "tipo": "TA",
-          "combustible": 15,
-          "currGLP": 10,
-          "posicionX": 30,
-          "posicionY": 15,
-          "estado": "MuevetePo",
-          "accion": "moviendose",
-          "rutaActual":[
-            {
-              "posX": 30,
-              "posY": 30
-            }
-          ]
-        },{
-          "idVehiculo": 2,
-          "tipo": "TB",
-          "combustible": 5,
-          "currGLP": 10,
-          "posicionX": 13,
-          "posicionY": 12,
-          "estado": "averiadoC",
-          "accion": "detenido"
-        }
-      ],
-      "pedidos":[
-        {
-          "idPedido": 1,
-          "posX": 35,
-          "posY": 35
-        },{
-          "idPedido": 2,
-          "posX": 15,
-          "posY": 15
-        }
-      ]
-    },
-    {
-      "minuto": 5,
-      "almacenes":[
-        {
-          "idAlmacen": 1,
-          "posicion":{
-            "posX": 10,
-            "posY": 20
-          },
-          "isMain": true,
-          "wasVehicle": false,
-          "eventos": []
-        },{
-          "idAlmacen": 2,
-          "posicion":{
-            "posX": 60,
-            "posY": 40
-          },
-          "currentGLP": 10,
-          "maxGLP": 20,
-          "isMain": false,
-          "wasVehicle": false,
-          "eventos": []
-        },{
-          "idAlmacen": 3,
-          "posicion":{
-            "posX": 30,
-            "posY": 10
-          },
-          "currentGLP": 10,
-          "maxGLP": 20,
-          "isMain": false,
-          "wasVehicle": true,
-          "eventos": []
-        }
-      ],
-      "vehiculos":[
-        {
-          "idVehiculo": 1,
-          "tipo": "TA",
-          "combustible": 15,
-          "currGLP": 10,
+          "placa": "TA123",
           "posicionX": 30,
           "posicionY": 30,
-          "estado": "MuevetePo",
-          "accion": "moviendose",
-          "rutaActual":[]
+          "rutaActual":[
+            {
+              "posX": 20,
+              "posY": 30,
+              "estado": "Entregando",
+              "accion": "Moviendose",
+              "idPedido": 2
+            },
+            {
+              "posX": 20,
+              "posY": 20,
+              "estado": "Entregando",
+              "accion": "Descarga",
+              "idPedido": 2
+            },{
+              "posX": 20,
+              "posY": 10,
+              "estado": "Entregando",
+              "accion": "Recarga",
+              "idPedido": 3
+            },{
+              "posX": 20,
+              "posY": 5,
+              "estado": "Entregando",
+              "accion": "Descarga",
+              "idPedido": 1
+            }
+          ]
         },{
           "idVehiculo": 2,
           "tipo": "TB",
-          "combustible": 5,
+          "combustible": 15,
+          "maxCombustible": 30,
+          "maxGLP": 30,
           "currGLP": 10,
+          "placa": "TA123",
           "posicionX": 13,
           "posicionY": 12,
-          "estado": "averiadoC",
-          "accion": "detenido"
+          "rutaActual":[]
         }
       ],
       "pedidos":[
         {
           "idPedido": 1,
-          "posX": 35,
-          "posY": 35
+          "estado":"Pendiente",
+          "glp": 12,
+          "tiempoLimite": "yyyy-mm-dd hh:mm",
+          "vehiculosAtendiendo": [
+            {
+              "placa": "TA123",
+              "eta": "yyyy-mm-dd hh:mm"
+            },
+            {
+              "placa": "TD301",
+              "eta": "yyyy-mm-dd hh:mm"
+            }
+          ],
+          "posX": 30,
+          "posY": 30
         },{
           "idPedido": 2,
-          "posX": 15,
-          "posY": 15
+          "estado":"Completado",
+          "glp": 12,
+          "tiempoLimite": "yyyy-mm-dd hh:mm",
+          "vehiculosAtendiendo": [],
+          "posX": 20,
+          "posY": 20
+        },{
+          "idPedido": 3,
+          "estado":"Completado",
+          "glp": 20,
+          "tiempoLimite": "yyyy-mm-dd hh:mm",
+          "vehiculosAtendiendo": [],
+          "posX": 20,
+          "posY": 5
+        }
+      ],
+      "incidencias":[
+        {
+          "idIncidencia": 1,
+          "fechaInicio": "yyyy-mm-dd hh:mm",
+          "fechaFin": "yyyy-mm-dd hh:mm",
+          "turno": "T1" ,
+          "tipo": "TI1" ,
+          "placa": "TA12",
+          "estado": "En curso"
         }
       ]
     }
   ]
-  
 }

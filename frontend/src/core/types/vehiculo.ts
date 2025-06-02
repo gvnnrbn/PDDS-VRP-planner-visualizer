@@ -23,14 +23,16 @@ export interface IFlotaCard {
   maxCombustible: number;
   pedidoId: string;
 }
+
 export interface VehiculoSimulado  {
   idVehiculo: number;
   tipo: string;
   combustible: number;
+  maxCombustible: number;
+  maxGLP: number;
   currGLP: number;
+  placa: string;
   posicionX: number;
   posicionY: number;
-  estado: string;
-  accion: string;
-  rutaActual?: { posX: number; posY: number }[];
+  rutaActual?: { posX: number; posY: number; estado: string; accion: string; idPedido: number }[];
 }
