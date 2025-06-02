@@ -10,7 +10,6 @@ import {
   Button,
   HStack,
   VStack,
-  Box,
   Text,
   Select,
   useToast
@@ -18,18 +17,17 @@ import {
 import { DeleteIcon, EditIcon } from '@chakra-ui/icons'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { PedidoService } from '../core/services/PedidoService'
-import { format } from 'date-fns'
-import type { Pedido } from '../core/types/pedido'
+import type { Almacen } from '../core/types/almacen'
+import { AlmacenService } from '../core/services/AlmacenService'
 
-const pedidoService = new PedidoService()
+const almacenService = new AlmacenService()
 
-export const PedidoTable = ({ onPedidoSelect }: { onPedidoSelect: (pedido: Pedido) => void }) => {
+export const AlmacenTable = ({ onAlmacenSelect }: { onAlmacenSelect: (a: Almacen) => void }) => {
   const queryClient = useQueryClient()
   const toast = useToast()
-  const { data: pedidos, isLoading, error } = useQuery<Pedido[]>({
-    queryKey: ['pedidos'],
-    queryFn: () => pedidoService.getAllPedidos()
+  const { data: almacenes, isLoading, error } = useQuery<Almacen[]>({
+    queryKey: ['almacenes'],
+    queryFn: () => almacenService.getAllAlmacenes()
   })
 
   const [currentPage, setCurrentPage] = useState(1)
@@ -37,21 +35,21 @@ export const PedidoTable = ({ onPedidoSelect }: { onPedidoSelect: (pedido: Pedid
 
   const indexOfLastRow = currentPage * rowsPerPage
   const indexOfFirstRow = indexOfLastRow - rowsPerPage
-  const currentPedidos = pedidos?.slice(indexOfFirstRow, indexOfLastRow) || []
-  const totalPages = Math.ceil((pedidos?.length || 0) / rowsPerPage)
+  const currentAlmacenes = almacenes?.slice(indexOfFirstRow, indexOfLastRow) || []
+  const totalPages = Math.ceil((almacenes?.length || 0) / rowsPerPage)
 
   const handleDelete = async (id: number) => {
     try {
-      await pedidoService.deletePedido(id)
-      queryClient.invalidateQueries({ queryKey: ['pedidos'] })
-      toast({ title: 'Eliminado', status: 'success', duration: 2000, isClosable: true })
+      await almacenService.deleteAlmacen(id)
+      queryClient.invalidateQueries({ queryKey: ['almacenes'] })
+      toast({ title: 'Almacén eliminado', status: 'success', duration: 2000, isClosable: true })
     } catch {
       toast({ title: 'Error al eliminar', status: 'error', duration: 3000, isClosable: true })
     }
   }
 
-  if (isLoading) return <Text>Cargando pedidos...</Text>
-  if (error) return <Text>Error al cargar pedidos</Text>
+  if (isLoading) return <Text>Cargando almacenes...</Text>
+  if (error) return <Text>Error al cargar almacenes</Text>
 
   return (
     <VStack spacing={4} align="stretch">
@@ -59,26 +57,30 @@ export const PedidoTable = ({ onPedidoSelect }: { onPedidoSelect: (pedido: Pedid
         <Table variant="simple">
           <Thead>
             <Tr>
-              <Th>Código Cliente</Th>
-              <Th>Fecha Registro</Th>
+              <Th>Capacidad</Th>
+              <Th>¿Principal?</Th>
+              <Th>Horario</Th>
               <Th>Posición</Th>
-              <Th>Cantidad GLP</Th>
-              <Th>Tolerancia</Th>
               <Th>Acciones</Th>
             </Tr>
           </Thead>
           <Tbody>
-            {currentPedidos.map((pedido) => (
-              <Tr key={pedido.id}>
-                <Td>{pedido.codigoCliente}</Td>
-                <Td>{format(new Date(pedido.fechaRegistro), 'dd/MM/yyyy HH:mm')}</Td>
-                <Td>{`${pedido.posicionX}, ${pedido.posicionY}`}</Td>
-                <Td>{pedido.cantidadGLP}</Td>
-                <Td>{pedido.tiempoTolerancia}</Td>
+            {currentAlmacenes.map((a) => (
+              <Tr key={a.idAlmacen}>
+                <Td>
+                    {a.esPrincipal
+                        ? '—'
+                        : `${a.capacidadEfectivam3} m3`}
+                </Td>
+
+
+                <Td>{a.esPrincipal ? 'Sí' : 'No'}</Td>
+                <Td>{a.horarioAbastecimiento}</Td>
+                <Td>{`${a.posicionX}, ${a.posicionY}`}</Td>
                 <Td>
                   <HStack spacing={2}>
-                    <IconButton aria-label="Editar" icon={<EditIcon />} onClick={() => onPedidoSelect(pedido)} />
-                    <IconButton aria-label="Eliminar" icon={<DeleteIcon />} colorScheme="red" onClick={() => handleDelete(pedido.id)} />
+                    <IconButton aria-label="Editar" icon={<EditIcon />} onClick={() => onAlmacenSelect(a)} />
+                    <IconButton aria-label="Eliminar" icon={<DeleteIcon />} colorScheme="red" onClick={() => handleDelete(a.idAlmacen)} />
                   </HStack>
                 </Td>
               </Tr>
@@ -87,7 +89,7 @@ export const PedidoTable = ({ onPedidoSelect }: { onPedidoSelect: (pedido: Pedid
         </Table>
       </TableContainer>
 
-      {/* Paginación centrada y control de filas */}
+      {/* Paginación alineada a la derecha con control de filas */}
       <HStack justify="flex-end" mt={4} spacing={6}>
         <HStack>
           <Text>Filas por página:</Text>
@@ -96,7 +98,7 @@ export const PedidoTable = ({ onPedidoSelect }: { onPedidoSelect: (pedido: Pedid
             value={rowsPerPage}
             onChange={(e) => {
               setRowsPerPage(Number(e.target.value))
-              setCurrentPage(1) // Reinicia a página 1 si cambia
+              setCurrentPage(1)
             }}
           >
             <option value={5}>5</option>

@@ -11,6 +11,7 @@ export interface Vehiculo {
   posicionX: number;
   posicionY: number;
   disponible: boolean;
+  placa: string;
 }
 
 export interface IFlotaCard {
