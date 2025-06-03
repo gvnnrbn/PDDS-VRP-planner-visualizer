@@ -11,7 +11,7 @@ import { WarehouseIcon } from "./Icons/WarehouseIcon";
 import React from "react";
 import { VehicleRouteLine } from "./Icons/VehicleRouteLine";
 import type Konva from "konva";
-import { Text } from "react-konva";
+
 
 const CELL_SIZE = 20; // Tamaño de cada celda
 const GRID_WIDTH = 70; // Número de celdas a lo ancho
@@ -36,16 +36,6 @@ interface MapGridProps {
   data: SimulacionJson;
 }
 
-function calcularAvanceEnRuta(v: VehiculoSimulado): number {
-  if (!v.rutaActual || v.rutaActual.length === 0) return 0;
-          
-    const actualIndex = v.rutaActual.findIndex(
-    (p) => p.posX === v.posicionX && p.posY === v.posicionY
-  );
-          
-  return Math.max(actualIndex, 0);
-}
-
 export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
     if (minuto < 0) return null;
 
@@ -62,14 +52,6 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
 
     const vehicleRefs = useRef<Record<number, Konva.Image | null>>({});
     const [progresoVehiculos, setProgresoVehiculos] = useState<Record<number, number>>({});
-    const [vehiculoSeleccionadoId, setVehiculoSeleccionadoId] = useState<number | null>(null);
-    const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-
-    const [tooltipVehiculo, setTooltipVehiculo] = useState<{
-      id: number;
-      x: number;
-      y: number;
-    } | null>(null);
 
     const fechaSimulacionInicio = new Date(data.fechaInicio);
     const fechaActual = new Date(fechaSimulacionInicio);
@@ -116,45 +98,6 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
 
     return lines;
   };
-
-  const handleVehicleStep = (idVehiculo: number, index: number) => {
-    setProgresoVehiculos((prev) => ({
-      ...prev,
-      [idVehiculo]: index,
-    }));
-
-    const shape = vehicleRefs.current[idVehiculo];
-    if (shape) {
-      const iconX = shape.x();
-      const iconY = shape.y();
-      const tooltipOffset = 10;
-
-      setTooltipPosition({
-        x: iconX + CELL_SIZE / 2,
-        y: iconY - tooltipOffset,
-      });
-    }
-  };
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const clickedOnStage = stageRef.current?.getStage().getIntersection({
-        x: e.clientX,
-        y: e.clientY,
-      });
-
-      // Si no hay intersección con elementos Konva (es decir, clic en el fondo o vacío)
-      if (!clickedOnStage) {
-        setVehiculoSeleccionadoId(null);
-      }
-    };
-
-    window.addEventListener("click", handleClickOutside);
-    return () => {
-      window.removeEventListener("click", handleClickOutside);
-    };
-  }, []);
-
 
 
   return (
@@ -226,75 +169,10 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
                 cellSize={CELL_SIZE}
                 gridHeight={GRID_HEIGHT}
                 duration={31250}
-                onStep={() => {
-                  const shape = vehicleRefs.current[v.idVehiculo];
-                  if (shape) {
-                    setTooltipVehiculo((prev) =>
-                      prev?.id === v.idVehiculo
-                        ? {
-                            id: v.idVehiculo,
-                            x: shape.x() + CELL_SIZE / 2,
-                            y: shape.y() - 10,
-                          }
-                        : prev
-                    );
-                  }
-                }}
-                onClick={() => {
-                  const shape = vehicleRefs.current[v.idVehiculo];
-                  if (!shape) return;
-
-                  const x = shape.x() + CELL_SIZE / 2;
-                  const y = shape.y() - 10;
-
-                  setTooltipVehiculo((prev) =>
-                    prev?.id === v.idVehiculo ? null : { id: v.idVehiculo, x, y }
-                  );
-                }}
               />
             </React.Fragment>
           );
         })}
-
-        {/* 🔽 TOOLTIP VEHÍCULO */}
-        {tooltipVehiculo && (() => {
-          const v = vehiculosActuales.find(
-            (veh) => veh.idVehiculo === tooltipVehiculo.id
-          );
-          console.log(`ToolTip ID ${tooltipVehiculo.id} CoordenadasToolTip ${tooltipVehiculo.x} + ${tooltipVehiculo.y}`);
-          if (!v) return null;
-
-          return (
-            <Label
-              x={tooltipVehiculo.x}
-              y={tooltipVehiculo.y}
-              listening={false}
-            >
-              <Tag
-                fill="white"
-                stroke="black"
-                cornerRadius={4}
-                pointerDirection="down"
-                pointerWidth={10}
-                pointerHeight={8}
-                shadowColor="black"
-                shadowBlur={4}
-                shadowOffset={{ x: 2, y: 2 }}
-                shadowOpacity={0.2}
-              />
-              <Text
-                text={`🚛 ${v.placa}\n📦 Pedido: ${
-                  v.rutaActual?.[0]?.idPedido ?? "N/A"
-                }`}
-                fontSize={12}
-                fill="black"
-                padding={5}
-                align="center"
-              />
-            </Label>
-          );
-        })()}
-
         {pedidos.map((v) => (
           <OrderIcon
             key={v.idPedido}
