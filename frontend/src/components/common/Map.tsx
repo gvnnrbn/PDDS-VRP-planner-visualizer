@@ -11,7 +11,7 @@ import { WarehouseIcon } from "./Icons/WarehouseIcon";
 import React from "react";
 import { VehicleRouteLine } from "./Icons/VehicleRouteLine";
 import type Konva from "konva";
-import { Text } from "react-konva";
+
 
 const CELL_SIZE = 20; // Tamaño de cada celda
 const GRID_WIDTH = 70; // Número de celdas a lo ancho
@@ -36,16 +36,6 @@ interface MapGridProps {
   data: SimulacionJson;
 }
 
-function calcularAvanceEnRuta(v: VehiculoSimulado): number {
-  if (!v.rutaActual || v.rutaActual.length === 0) return 0;
-          
-    const actualIndex = v.rutaActual.findIndex(
-    (p) => p.posX === v.posicionX && p.posY === v.posicionY
-  );
-          
-  return Math.max(actualIndex, 0);
-}
-
 export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
     if (minuto < 0) return null;
 
@@ -62,8 +52,6 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
 
     const vehicleRefs = useRef<Record<number, Konva.Image | null>>({});
     const [progresoVehiculos, setProgresoVehiculos] = useState<Record<number, number>>({});
-    const [vehiculoSeleccionadoId, setVehiculoSeleccionadoId] = useState<number | null>(null);
-    const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
     const fechaSimulacionInicio = new Date(data.fechaInicio);
     const fechaActual = new Date(fechaSimulacionInicio);
@@ -111,45 +99,6 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
     return lines;
   };
 
-  const handleVehicleStep = (idVehiculo: number, index: number) => {
-    setProgresoVehiculos((prev) => ({
-      ...prev,
-      [idVehiculo]: index,
-    }));
-
-    const shape = vehicleRefs.current[idVehiculo];
-    if (shape) {
-      const iconX = shape.x();
-      const iconY = shape.y();
-      const tooltipOffset = 10;
-
-      setTooltipPosition({
-        x: iconX + CELL_SIZE / 2,
-        y: iconY - tooltipOffset,
-      });
-    }
-  };
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const clickedOnStage = stageRef.current?.getStage().getIntersection({
-        x: e.clientX,
-        y: e.clientY,
-      });
-
-      // Si no hay intersección con elementos Konva (es decir, clic en el fondo o vacío)
-      if (!clickedOnStage) {
-        setVehiculoSeleccionadoId(null);
-      }
-    };
-
-    window.addEventListener("click", handleClickOutside);
-    return () => {
-      window.removeEventListener("click", handleClickOutside);
-    };
-  }, []);
-
-
 
   return (
     <Stage
@@ -190,21 +139,20 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
       scaleY={scale}
       x={position.x}
       y={position.y}
-      style={{ 
+      style={{
         position: "absolute",
         top: 0,
         left: 0,
-        background: "#f8f8f8", // Color de fondo del contenedor
+        background: "#f8f8f8",
         overflow: "hidden",
-        cursor: "grab" }}
+        cursor: "grab",
+      }}
     >
       <Layer>
         {gridLines()}
         {vehiculosActuales.map((v) => {
           const avance = progresoVehiculos[v.idVehiculo] ?? 0;
-          const esSeleccionado = v.idVehiculo === vehiculoSeleccionadoId;
-
-
+          
           return (
             <React.Fragment key={v.idVehiculo}>
               <VehicleRouteLine
@@ -221,50 +169,7 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
                 cellSize={CELL_SIZE}
                 gridHeight={GRID_HEIGHT}
                 duration={31250}
-                onStep={(index) => handleVehicleStep(v.idVehiculo, index)}
-                onClick={() =>
-                  setVehiculoSeleccionadoId((prev) =>
-                    prev === v.idVehiculo ? null : v.idVehiculo
-                  )
-                }
               />
-              {esSeleccionado && (() => {
-                const shape = vehicleRefs.current[v.idVehiculo];
-                if (!shape || typeof shape.x !== 'function' || typeof shape.y !== 'function') return null;
-
-                const iconX = shape.x();
-                const iconY = shape.y();
-
-                const tooltipOffset = 10; // espacio entre icono y label
-
-                return (
-                  <Label
-                    x={iconX + CELL_SIZE / 2}
-                    y={iconY - tooltipOffset}
-                    listening={true} // no intercepta clics
-                  >
-                    <Tag
-                      fill="white"
-                      stroke="black"
-                      cornerRadius={4}
-                      pointerDirection="down"
-                      pointerWidth={10}
-                      pointerHeight={8}
-                      shadowColor="black"
-                      shadowBlur={4}
-                      shadowOffset={{ x: 2, y: 2 }}
-                      shadowOpacity={0.2}
-                    />
-                    <Text
-                      text={`🚛 ${v.placa}\n📦 Pedido: ${v.rutaActual?.[0]?.idPedido ?? 'N/A'}`}
-                      fontSize={12}
-                      fill="black"
-                      padding={5}
-                      align="center"
-                    />
-                  </Label>
-                );
-              })()}
             </React.Fragment>
           );
         })}
@@ -276,7 +181,7 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
             gridHeight={GRID_HEIGHT}
           />
         ))}
-        
+
         {almacenes.map((v) => (
           <WarehouseIcon
             key={v.idAlmacen}
@@ -285,11 +190,14 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
             gridHeight={GRID_HEIGHT}
           />
         ))}
+
         {bloqueosVisibles.map((bloqueo) => {
-          const puntos = bloqueo.segmentos.map(p => [
-            p.posX * CELL_SIZE,
-            (GRID_HEIGHT - p.posY) * CELL_SIZE
-          ]).flat();
+          const puntos = bloqueo.segmentos
+            .map((p) => [
+              p.posX * CELL_SIZE,
+              (GRID_HEIGHT - p.posY) * CELL_SIZE,
+            ])
+            .flat();
 
           return (
             <Line
@@ -302,9 +210,8 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
             />
           );
         })}
-
-        {/*  */}
       </Layer>
     </Stage>
   );
+
 };
