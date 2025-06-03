@@ -1,8 +1,10 @@
 import {
-  Table, Thead, Tbody, Tr, Th, Td, TableContainer, IconButton, HStack, Text, Box, VStack, useToast
+  Table, Thead, Tbody, Tr, Th, Td, TableContainer,
+  IconButton, HStack, Text, Box, VStack, useToast, Button, Select, Flex
 } from '@chakra-ui/react'
 import { DeleteIcon, EditIcon } from '@chakra-ui/icons'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 import type { Vehiculo } from '../core/types/vehiculo'
 import { VehiculoService } from '../core/services/VehiculoService'
 
@@ -20,6 +22,14 @@ export const VehiculoTable = ({ onVehiculoSelect }: VehiculoTableProps) => {
     queryKey: ['vehiculos'],
     queryFn: () => vehiculoService.getAllVehiculos()
   })
+
+  const [currentPage, setCurrentPage] = useState(1)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
+
+  const indexOfLastRow = currentPage * rowsPerPage
+  const indexOfFirstRow = indexOfLastRow - rowsPerPage
+  const currentVehiculos = vehiculos?.slice(indexOfFirstRow, indexOfLastRow) || []
+  const totalPages = Math.ceil((vehiculos?.length || 0) / rowsPerPage)
 
   const handleDelete = async (id: number) => {
     try {
@@ -42,6 +52,7 @@ export const VehiculoTable = ({ onVehiculoSelect }: VehiculoTableProps) => {
             <Thead>
               <Tr>
                 <Th>Tipo</Th>
+                <Th>Placa</Th>
                 <Th>Peso</Th>
                 <Th>Combustible</Th>
                 <Th>GLP</Th>
@@ -51,9 +62,10 @@ export const VehiculoTable = ({ onVehiculoSelect }: VehiculoTableProps) => {
               </Tr>
             </Thead>
             <Tbody>
-              {vehiculos?.map((v) => (
+              {currentVehiculos.map((v) => (
                 <Tr key={v.id}>
                   <Td>{v.tipo}</Td>
+                  <Td>{v.placa}</Td>
                   <Td>{v.peso}</Td>
                   <Td>{`${v.currCombustible}/${v.maxCombustible}`}</Td>
                   <Td>{`${v.currGlp}/${v.maxGlp}`}</Td>
@@ -70,6 +82,36 @@ export const VehiculoTable = ({ onVehiculoSelect }: VehiculoTableProps) => {
             </Tbody>
           </Table>
         </TableContainer>
+
+        {/* Pagination Controls */}
+        <Flex justify="flex-end" align="center" gap={4} mt={4}>
+          <Text>Filas por página:</Text>
+          <Select
+            width="75px"
+            value={rowsPerPage}
+            onChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value))
+              setCurrentPage(1) // Reset to page 1 when rows per page changes
+            }}
+          >
+            {[5, 10, 15, 20].map(n => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </Select>
+          <Button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            isDisabled={currentPage === 1}
+          >
+            Anterior
+          </Button>
+          <Text>Página {currentPage} de {totalPages}</Text>
+          <Button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            isDisabled={currentPage === totalPages}
+          >
+            Siguiente
+          </Button>
+        </Flex>
       </VStack>
     </Box>
   )

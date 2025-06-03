@@ -1,7 +1,16 @@
 package pucp.pdds.backend.model;
 
-import jakarta.persistence.*;
+import java.util.HashMap;
 import java.util.Map;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "vehiculo")
@@ -42,9 +51,12 @@ public class Vehiculo {
     @Column(name = "disponible")
     private boolean disponible;
 
+    @Column(name = "placa", nullable = true, unique = true)
+    private String placa;
+
     public Vehiculo() {}
     
-    public Vehiculo(TipoVehiculo tipo, int peso, float maxCombustible, float maxGlp) {
+    public Vehiculo(TipoVehiculo tipo, String placa, int peso, float maxCombustible, float maxGlp) {
         this.tipo = tipo;
         this.peso = peso;
         this.maxCombustible = maxCombustible;
@@ -54,6 +66,7 @@ public class Vehiculo {
         this.posicionX = 0.0f; // Start at origin
         this.posicionY = 0.0f; // Start at origin
         this.disponible = true;
+        this.placa = placa;
     }
 
     public Long getId() {
@@ -135,19 +148,28 @@ public class Vehiculo {
     public void setDisponible(boolean disponible) {
         this.disponible = disponible;
     }
+    public String getPlaca() {
+        return placa;
+    }
+
+    public void setPlaca(String placa) {
+        this.placa = placa;
+    }
+
 
     public Map<String, Object> toMap() {
-        return Map.of(
-            "id", id,
-            "tipo", tipo,
-            "peso", peso,
-            "maxCombustible", maxCombustible,
-            "maxGlp", maxGlp,
-            "currCombustible", currCombustible,
-            "currGlp", currGlp,
-            "posicionX", posicionX,
-            "posicionY", posicionY,
-            "disponible", disponible
-        );
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", id);
+        map.put("tipo", tipo);
+        map.put("placa", placa);
+        map.put("peso", peso);
+        map.put("maxCombustible", maxCombustible);
+        map.put("maxGlp", maxGlp);
+        map.put("currCombustible", currCombustible);
+        map.put("currGlp", currGlp);
+        map.put("posicionX", posicionX);
+        map.put("posicionY", posicionY);
+        map.put("disponible", disponible);
+        return map;
     }
 }

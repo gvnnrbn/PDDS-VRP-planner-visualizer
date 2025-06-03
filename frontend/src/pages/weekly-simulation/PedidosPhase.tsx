@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Box, VStack, HStack, Text, Button,useToast } from '@chakra-ui/react'
+import { Box, VStack, HStack, Text, Button, useToast } from '@chakra-ui/react'
 import { PedidoForm } from '../../components/PedidoForm'
 import { PedidoTable } from '../../components/PedidoTable'
 import { PedidoService } from '../../core/services/PedidoService'
 import { useQueryClient } from '@tanstack/react-query'
-import { useRef } from 'react'
+
 export default function PedidosPhase() {
   const [showForm, setShowForm] = useState(false)
   const [selectedPedido, setSelectedPedido] = useState<any>(null)
@@ -46,6 +46,7 @@ export default function PedidosPhase() {
       toast({ title: 'Error', description: error.message, status: 'error', duration: 3000, isClosable: true })
     }
   }
+
   return (
     <Box p={4}>
       <VStack spacing={4} align="stretch">
@@ -67,7 +68,7 @@ export default function PedidosPhase() {
           </Button>
         </HStack>
 
-        <HStack justify="space-between">
+        <HStack justify="flex-end" spacing={4}>
           <Button 
             variant='primary'
             onClick={() => {

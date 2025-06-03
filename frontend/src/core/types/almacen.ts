@@ -6,3 +6,13 @@ export interface AlmacenSimulado  {
   isMain: boolean;
   wasVehicle: boolean
 }
+
+
+export interface Almacen {
+  idAlmacen: number
+  capacidadEfectivam3: number
+  esPrincipal: boolean
+  horarioAbastecimiento: string
+  posicionX: number
+  posicionY: number
+}

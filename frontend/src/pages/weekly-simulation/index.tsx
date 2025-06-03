@@ -16,6 +16,7 @@ import { FlotaCard } from '../../components/common/cards/FlotaCard'
 import { PanelSearchBar } from '../../components/common/PanelSearchBar'
 import { MantenimientoCard } from '../../components/common/cards/mantenimientoCard'
 import { FilterSortButtons } from '../../components/common/cards/FilterSortButtons'
+import AlmacenPhase from './AlmacenPhase'
 
 // mock data
 const ordersOutput = [
@@ -267,6 +268,7 @@ export default function WeeklySimulation() {
           <Route path="pedidos" element={<PedidosPhase />} />
           <Route path="incidencias" element={<IncidenciasPhase />} />
           <Route path="vehiculos" element={<VehiculosPhase />} />
+          <Route path="almacen" element={<AlmacenPhase />} />
           <Route
             path="simulacion"
             element={

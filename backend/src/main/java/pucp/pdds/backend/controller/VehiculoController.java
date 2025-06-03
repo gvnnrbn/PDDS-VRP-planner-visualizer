@@ -60,6 +60,7 @@ public class VehiculoController {
                     vehiculo.setDisponible(vehiculoDetails.isDisponible());
                     vehiculo.setPosicionX(vehiculoDetails.getPosicionX());
                     vehiculo.setPosicionY(vehiculoDetails.getPosicionY());
+                    vehiculo.setPlaca(vehiculoDetails.getPlaca());
 
                     Vehiculo updatedVehiculo = vehiculoRepository.save(vehiculo);
                     return ResponseEntity.ok(updatedVehiculo);
