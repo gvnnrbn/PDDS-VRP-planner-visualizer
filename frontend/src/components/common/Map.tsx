@@ -209,7 +209,7 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
         {gridLines()}
         {vehiculosActuales.map((v) => {
           const avance = progresoVehiculos[v.idVehiculo] ?? 0;
-
+          
           return (
             <React.Fragment key={v.idVehiculo}>
               <VehicleRouteLine
