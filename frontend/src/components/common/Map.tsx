@@ -65,6 +65,12 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
     const [vehiculoSeleccionadoId, setVehiculoSeleccionadoId] = useState<number | null>(null);
     const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
+    const [tooltipVehiculo, setTooltipVehiculo] = useState<{
+      id: number;
+      x: number;
+      y: number;
+    } | null>(null);
+
     const fechaSimulacionInicio = new Date(data.fechaInicio);
     const fechaActual = new Date(fechaSimulacionInicio);
     fechaActual.setDate(fechaSimulacionInicio.getDate() + minuto);
@@ -190,20 +196,19 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
       scaleY={scale}
       x={position.x}
       y={position.y}
-      style={{ 
+      style={{
         position: "absolute",
         top: 0,
         left: 0,
-        background: "#f8f8f8", // Color de fondo del contenedor
+        background: "#f8f8f8",
         overflow: "hidden",
-        cursor: "grab" }}
+        cursor: "grab",
+      }}
     >
       <Layer>
         {gridLines()}
         {vehiculosActuales.map((v) => {
           const avance = progresoVehiculos[v.idVehiculo] ?? 0;
-          const esSeleccionado = v.idVehiculo === vehiculoSeleccionadoId;
-
 
           return (
             <React.Fragment key={v.idVehiculo}>
@@ -221,53 +226,75 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
                 cellSize={CELL_SIZE}
                 gridHeight={GRID_HEIGHT}
                 duration={31250}
-                onStep={(index) => handleVehicleStep(v.idVehiculo, index)}
-                onClick={() =>
-                  setVehiculoSeleccionadoId((prev) =>
-                    prev === v.idVehiculo ? null : v.idVehiculo
-                  )
-                }
+                onStep={() => {
+                  const shape = vehicleRefs.current[v.idVehiculo];
+                  if (shape) {
+                    setTooltipVehiculo((prev) =>
+                      prev?.id === v.idVehiculo
+                        ? {
+                            id: v.idVehiculo,
+                            x: shape.x() + CELL_SIZE / 2,
+                            y: shape.y() - 10,
+                          }
+                        : prev
+                    );
+                  }
+                }}
+                onClick={() => {
+                  const shape = vehicleRefs.current[v.idVehiculo];
+                  if (!shape) return;
+
+                  const x = shape.x() + CELL_SIZE / 2;
+                  const y = shape.y() - 10;
+
+                  setTooltipVehiculo((prev) =>
+                    prev?.id === v.idVehiculo ? null : { id: v.idVehiculo, x, y }
+                  );
+                }}
               />
-              {esSeleccionado && (() => {
-                const shape = vehicleRefs.current[v.idVehiculo];
-                if (!shape || typeof shape.x !== 'function' || typeof shape.y !== 'function') return null;
-
-                const iconX = shape.x();
-                const iconY = shape.y();
-
-                const tooltipOffset = 10; // espacio entre icono y label
-
-                return (
-                  <Label
-                    x={iconX + CELL_SIZE / 2}
-                    y={iconY - tooltipOffset}
-                    listening={true} // no intercepta clics
-                  >
-                    <Tag
-                      fill="white"
-                      stroke="black"
-                      cornerRadius={4}
-                      pointerDirection="down"
-                      pointerWidth={10}
-                      pointerHeight={8}
-                      shadowColor="black"
-                      shadowBlur={4}
-                      shadowOffset={{ x: 2, y: 2 }}
-                      shadowOpacity={0.2}
-                    />
-                    <Text
-                      text={`🚛 ${v.placa}\n📦 Pedido: ${v.rutaActual?.[0]?.idPedido ?? 'N/A'}`}
-                      fontSize={12}
-                      fill="black"
-                      padding={5}
-                      align="center"
-                    />
-                  </Label>
-                );
-              })()}
             </React.Fragment>
           );
         })}
+
+        {/* 🔽 TOOLTIP VEHÍCULO */}
+        {tooltipVehiculo && (() => {
+          const v = vehiculosActuales.find(
+            (veh) => veh.idVehiculo === tooltipVehiculo.id
+          );
+          console.log(`ToolTip ID ${tooltipVehiculo.id} CoordenadasToolTip ${tooltipVehiculo.x} + ${tooltipVehiculo.y}`);
+          if (!v) return null;
+
+          return (
+            <Label
+              x={tooltipVehiculo.x}
+              y={tooltipVehiculo.y}
+              listening={false}
+            >
+              <Tag
+                fill="white"
+                stroke="black"
+                cornerRadius={4}
+                pointerDirection="down"
+                pointerWidth={10}
+                pointerHeight={8}
+                shadowColor="black"
+                shadowBlur={4}
+                shadowOffset={{ x: 2, y: 2 }}
+                shadowOpacity={0.2}
+              />
+              <Text
+                text={`🚛 ${v.placa}\n📦 Pedido: ${
+                  v.rutaActual?.[0]?.idPedido ?? "N/A"
+                }`}
+                fontSize={12}
+                fill="black"
+                padding={5}
+                align="center"
+              />
+            </Label>
+          );
+        })()}
+
         {pedidos.map((v) => (
           <OrderIcon
             key={v.idPedido}
@@ -276,7 +303,7 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
             gridHeight={GRID_HEIGHT}
           />
         ))}
-        
+
         {almacenes.map((v) => (
           <WarehouseIcon
             key={v.idAlmacen}
@@ -285,11 +312,14 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
             gridHeight={GRID_HEIGHT}
           />
         ))}
+
         {bloqueosVisibles.map((bloqueo) => {
-          const puntos = bloqueo.segmentos.map(p => [
-            p.posX * CELL_SIZE,
-            (GRID_HEIGHT - p.posY) * CELL_SIZE
-          ]).flat();
+          const puntos = bloqueo.segmentos
+            .map((p) => [
+              p.posX * CELL_SIZE,
+              (GRID_HEIGHT - p.posY) * CELL_SIZE,
+            ])
+            .flat();
 
           return (
             <Line
@@ -302,9 +332,8 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
             />
           );
         })}
-
-        {/*  */}
       </Layer>
     </Stage>
   );
+
 };

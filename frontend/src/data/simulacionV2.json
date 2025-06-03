@@ -112,6 +112,7 @@
               "posY": 15,
               "estado": "Entregando",
               "accion": "Recarga",
+              "traspasoGLP": 20,
               "idPedido": 1
             },{
               "posX": 30,
@@ -124,6 +125,7 @@
               "posY": 30,
               "estado": "Entregando",
               "accion": "Descarga",
+              "traspasoGLP": 12,
               "idPedido": 1
             }
           ]
@@ -234,7 +236,7 @@
             "posX": 20,
             "posY": 10
           },
-          "currentGLP": 10,
+          "currentGLP": 15,
           "maxGLP": 20,
           "isMain": false,
           "wasVehicle": false
@@ -264,18 +266,21 @@
               "posY": 20,
               "estado": "Entregando",
               "accion": "Descarga",
+              "traspasoGLP": 12,
               "idPedido": 2
             },{
               "posX": 20,
               "posY": 10,
               "estado": "Entregando",
               "accion": "Recarga",
+              "traspasoGLP": 14,
               "idPedido": 3
             },{
               "posX": 20,
               "posY": 5,
               "estado": "Entregando",
               "accion": "Descarga",
+              "traspasoGLP": 20,
               "idPedido": 1
             }
           ]
@@ -294,23 +299,6 @@
       ],
       "pedidos":[
         {
-          "idPedido": 1,
-          "estado":"Pendiente",
-          "glp": 12,
-          "tiempoLimite": "yyyy-mm-dd hh:mm",
-          "vehiculosAtendiendo": [
-            {
-              "placa": "TA123",
-              "eta": "yyyy-mm-dd hh:mm"
-            },
-            {
-              "placa": "TD301",
-              "eta": "yyyy-mm-dd hh:mm"
-            }
-          ],
-          "posX": 30,
-          "posY": 30
-        },{
           "idPedido": 2,
           "estado":"Completado",
           "glp": 12,

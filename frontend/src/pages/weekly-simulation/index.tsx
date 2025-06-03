@@ -247,7 +247,7 @@ export default function WeeklySimulation() {
   useEffect(() => {
     if (currPath === "simulacion") {
       setIsLoading(true);
-      const timer = setTimeout(() => setIsLoading(false), 100); // 10s simulado
+      const timer = setTimeout(() => setIsLoading(false), 10000); // 10s simulado
       return () => clearTimeout(timer);
     }
   }, [currPath]);
