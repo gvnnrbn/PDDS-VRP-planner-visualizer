@@ -29,7 +29,7 @@ public class Solution implements Cloneable {
     private double totalFuelCost = 0;
 
     private long imaginaryGLPConsumed = 0;
-    private long totalGLPCost = 0;
+    private long projectedGLPConsumption = 0;
 
     private int deliveredOrders = 0;
     private int deliveredOrdersOnTime = 0;
@@ -157,7 +157,6 @@ public class Solution implements Cloneable {
                     } else {
                         // Consume GLP and track the cost
                         vehicle.currentGLP -= GLPToDeliver;
-                        totalGLPCost += GLPToDeliver; // Track successful GLP delivery cost
                     }
 
                     if (currentTime.isBefore(order.deadline)) {
@@ -179,9 +178,15 @@ public class Solution implements Cloneable {
                         // Update the order amount
                         order.amountGLP -= GLPToDeliver;
                     }
+                    
+                    // If destination node breaks an order chain (changes order or goes from order to non-order node), wait the corresponding time
+                    boolean breaksOrderChain = (originNode instanceof OrderDeliverNode && !(destinationNode instanceof OrderDeliverNode)) ||
+                    (originNode instanceof OrderDeliverNode && destinationNode instanceof OrderDeliverNode && ((OrderDeliverNode) originNode).order.id != ((OrderDeliverNode) destinationNode).order.id);
 
-                    // Pass time
-                    currentTime = currentTime.addMinutes(SimulationProperties.timeAfterDelivery);
+                    if (breaksOrderChain) {
+                        currentTime = currentTime.addMinutes(SimulationProperties.timeAfterDelivery);
+                    }
+
                 }
 
                 if (destinationNode instanceof ProductRefillNode) {
@@ -190,20 +195,27 @@ public class Solution implements Cloneable {
                     // Refill the vehicle with GLP and full fuel
                     vehicle.currentGLP += refillNode.amountGLP;
 
-                    // Pass time
-                    currentTime = currentTime.addMinutes(SimulationProperties.timeAfterRefill);
+                    // If destination node breaks a refill chain (changes warehouse or goes from warehouse to non-warehouse node), wait the corresponding time
+                    boolean breaksRefillChain = (originNode instanceof ProductRefillNode && !(destinationNode instanceof ProductRefillNode)) ||
+                    (originNode instanceof ProductRefillNode && destinationNode instanceof ProductRefillNode && ((ProductRefillNode) originNode).warehouse.id != ((ProductRefillNode) destinationNode).warehouse.id);
+
+                    if (breaksRefillChain) {
+                        currentTime = currentTime.addMinutes(SimulationProperties.timeAfterRefill);
+                    }
                 }
             }
         }
 
         deliveredOrders = environment.orders.size() - orderMap.size();
 
+        projectedGLPConsumption = vehicleMap.size() * 30;
+
         double timePointsProportion = totalPossibleTimePoints > 0 ? 
             (totalTimePoints * 1.0 / totalPossibleTimePoints) : 0.0;
         double imaginaryFuelConsumedProportion = totalFuelCost > 0 ? 
             (imaginaryFuelConsumed * 1.0 / totalFuelCost) : 0.0;
-        double imaginaryGLPConsumedProportion = totalGLPCost > 0 ? 
-            (imaginaryGLPConsumed * 1.0 / totalGLPCost) : 0.0;
+        double imaginaryGLPConsumedProportion = projectedGLPConsumption > 0 ? 
+            (imaginaryGLPConsumed * 1.0 / projectedGLPConsumption) : 0.0;
 		double ordersNotDeliveredProportion = totalOrders > 0 ? 
             (orderMap.size() * 1.0 / totalOrders) : 0.0;
 		double ordersNotDeliveredOnTimeProportion = totalOrders > 0 ? 
@@ -257,14 +269,28 @@ public class Solution implements Cloneable {
 
     @Override
     public String toString() {
-        return "PlannerSolution{" +
-            "fitness=" + fitness +
-            ", isFeasible=" + isFeasible +
-            ", deliveredOrders=" + deliveredOrders +
-            ", deliveredOrdersOnTime=" + deliveredOrdersOnTime +
-            ", totalOrders=" + totalOrders +
-            ", errors=" + errors +
-            '}';
+        StringBuilder sb = new StringBuilder();
+        sb.append("PlannerSolution{\n");
+        sb.append("  fitness=").append(fitness).append("\n");
+        sb.append("  isFeasible=").append(isFeasible).append("\n");
+        sb.append("  deliveredOrders=").append(deliveredOrders).append("\n");
+        sb.append("  deliveredOrdersOnTime=").append(deliveredOrdersOnTime).append("\n");
+        sb.append("  totalOrders=").append(totalOrders).append("\n");
+        sb.append("  errors=").append(errors).append("\n");
+        sb.append("  routes={\n");
+        if (routes != null) {
+            for (Map.Entry<Integer, List<Node>> entry : routes.entrySet()) {
+                sb.append("    Vehicle ").append(entry.getKey()).append(": ");
+                List<Node> route = entry.getValue();
+                for (Node node : route) {
+                    sb.append("Node").append(node).append(" ");
+                }
+                sb.append("\n");
+            }
+        }
+        sb.append("  }\n");
+        sb.append("}");
+        return sb.toString();
     }
 
     public String getReport() {
@@ -285,8 +311,8 @@ public class Solution implements Cloneable {
             imaginaryFuelConsumed, totalFuelCost, 
             totalFuelCost > 0 ? imaginaryFuelConsumed * 1.0 / totalFuelCost : 0.0));
         report.append(String.format("  Imaginary GLP Consumed: %d/%d (%.4f)\n", 
-            imaginaryGLPConsumed, totalGLPCost, 
-            totalGLPCost > 0 ? imaginaryGLPConsumed * 1.0 / totalGLPCost : 0.0));
+            imaginaryGLPConsumed, projectedGLPConsumption, 
+            projectedGLPConsumption > 0 ? imaginaryGLPConsumed * 1.0 / projectedGLPConsumption : 0.0));
         report.append(String.format("  Orders Not Delivered: %d/%d (%.4f)\n", 
             totalOrders - deliveredOrders, totalOrders, 
             totalOrders > 0 ? (totalOrders - deliveredOrders) * 1.0 / totalOrders : 0.0));

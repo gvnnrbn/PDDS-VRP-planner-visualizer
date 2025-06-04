@@ -15,7 +15,7 @@ public class Algorithm {
     private static int tabuListSize = 400;
     private static double aspirationCriteria = 0.05; // 5% improvement over best solution
 
-    private static final boolean isDebug = true;
+    private static final boolean isDebug = false;
 
     public Algorithm() {
     }
@@ -25,12 +25,12 @@ public class Algorithm {
         int attempts = 0;
         do {
             solution = _run(environment, minutes);
-            solution.compress();
             attempts++;
-            if (attempts >= 10) {
+            if (attempts >= 25) {
                 break;
             }
         } while (!solution.isFeasible(environment));
+        solution.compress();
         return solution;
     }
 
@@ -132,24 +132,12 @@ public class Algorithm {
 
     public static class Movement {
         public enum MovementType {
-            INTRA_ROUTE_MOVE,
-            INTRA_ROUTE_SWAP,
-            INTRA_ROUTE_TWO_OPT,
-            INTER_ROUTE_MOVE,
-            INTER_ROUTE_SWAP,
-            INTER_ROUTE_CROSS_EXCHANGE,
-            VEHICLE_SWAP,
-            INTRA_ROUTE_REVERSE,
-            INTER_ROUTE_REVERSE,
-            ROUTE_SPLIT,
-            ROUTE_MERGE,
-            ROUTE_REVERSE,
-            ROUTE_SHUFFLE,
-            MULTI_ROUTE_MERGE,
-            ROUTE_SPLIT_MULTI,
-            NODE_RELOCATION,
-            ROUTE_EXCHANGE,
-            ROUTE_ROTATION
+            INTRA_ROUTE_MOVE,    // Essential - relocate within route
+            INTRA_ROUTE_SWAP,    // Essential - exchange within route
+            INTRA_ROUTE_TWO_OPT, // Essential - local route optimization
+            INTER_ROUTE_MOVE,    // Essential - relocate between routes
+            INTER_ROUTE_SWAP,    // Essential - exchange between routes
+            INTER_ROUTE_CROSS_EXCHANGE  // Essential - complex multi-point exchange
         }
 
         public MovementType movementType;
@@ -161,8 +149,8 @@ public class Algorithm {
         public Movement() {
         }
 
-        public Movement(MovementType movementType) {
-            this.movementType = movementType;
+        public Movement(MovementType type) {
+            this.movementType = type;
         }
 
         @Override
@@ -188,7 +176,6 @@ public class Algorithm {
                 case INTRA_ROUTE_MOVE:
                 case INTRA_ROUTE_SWAP:
                 case INTRA_ROUTE_TWO_OPT:
-                case INTRA_ROUTE_REVERSE:
                     reverse.vehicle1 = this.vehicle1;
                     reverse.nodeIdxFrom = this.nodeIdxTo;
                     reverse.nodeIdxTo = this.nodeIdxFrom;
@@ -196,17 +183,10 @@ public class Algorithm {
                 case INTER_ROUTE_MOVE:
                 case INTER_ROUTE_SWAP:
                 case INTER_ROUTE_CROSS_EXCHANGE:
-                case INTER_ROUTE_REVERSE:
-                case ROUTE_SPLIT:
-                case ROUTE_MERGE:
                     reverse.vehicle1 = this.vehicle2;
                     reverse.vehicle2 = this.vehicle1;
                     reverse.nodeIdxFrom = this.nodeIdxTo;
                     reverse.nodeIdxTo = this.nodeIdxFrom;
-                    break;
-                case VEHICLE_SWAP:
-                    reverse.vehicle1 = this.vehicle2;
-                    reverse.vehicle2 = this.vehicle1;
                     break;
                 default:
                     return null;
@@ -266,42 +246,6 @@ public class Algorithm {
                                 break;
                             case INTER_ROUTE_CROSS_EXCHANGE:
                                 neighbor = interRouteCrossExchange(trimmedSolution);
-                                break;
-                            case VEHICLE_SWAP:
-                                neighbor = vehicleSwap(trimmedSolution);
-                                break;
-                            case INTRA_ROUTE_REVERSE:
-                                neighbor = intraRouteReverse(trimmedSolution);
-                                break;
-                            case INTER_ROUTE_REVERSE:
-                                neighbor = interRouteReverse(trimmedSolution);
-                                break;
-                            case ROUTE_SPLIT:
-                                neighbor = routeSplit(trimmedSolution);
-                                break;
-                            case ROUTE_MERGE:
-                                neighbor = routeMerge(trimmedSolution);
-                                break;
-                            case ROUTE_REVERSE:
-                                neighbor = routeReverse(trimmedSolution);
-                                break;
-                            case ROUTE_SHUFFLE:
-                                neighbor = routeShuffle(trimmedSolution);
-                                break;
-                            case MULTI_ROUTE_MERGE:
-                                neighbor = multiRouteMerge(trimmedSolution);
-                                break;
-                            case ROUTE_SPLIT_MULTI:
-                                neighbor = routeSplitMulti(trimmedSolution);
-                                break;
-                            case NODE_RELOCATION:
-                                neighbor = nodeRelocation(trimmedSolution);
-                                break;
-                            case ROUTE_EXCHANGE:
-                                neighbor = routeExchange(trimmedSolution);
-                                break;
-                            case ROUTE_ROTATION:
-                                neighbor = routeRotation(trimmedSolution);
                                 break;
                         }
                         attempts++;
@@ -487,291 +431,6 @@ public class Algorithm {
             movement.vehicle2 = vehicleId2;
             movement.nodeIdxFrom = i;
             movement.nodeIdxTo = j;
-
-            return new Neighbor(newSolution, movement);
-        }
-
-        private static Neighbor vehicleSwap(Solution solution) {
-            Solution newSolution = solution.clone();
-            int[] vehicleIds = getTwoDistinctRandomVehiclesWithRoutes(newSolution);
-            if (vehicleIds == null) return null;
-
-            int vehicleId1 = vehicleIds[0];
-            int vehicleId2 = vehicleIds[1];
-
-            List<Node> route1 = newSolution.routes.get(vehicleId1);
-            List<Node> route2 = newSolution.routes.get(vehicleId2);
-
-            newSolution.routes.put(vehicleId1, route2);
-            newSolution.routes.put(vehicleId2, route1);
-
-            Movement movement = new Movement(Movement.MovementType.VEHICLE_SWAP);
-            movement.vehicle1 = vehicleId1;
-            movement.vehicle2 = vehicleId2;
-
-            return new Neighbor(newSolution, movement);
-        }
-
-        private static Neighbor intraRouteReverse(Solution solution) {
-            Solution newSolution = solution.clone();
-            int vehicleId = getRandomVehicleWithRoute(newSolution);
-            if (vehicleId == -1) return null;
-
-            List<Node> route = newSolution.routes.get(vehicleId);
-            if (route.size() < 3) return null;
-
-            java.util.Collections.reverse(route);
-
-            Movement movement = new Movement(Movement.MovementType.INTRA_ROUTE_REVERSE);
-            movement.vehicle1 = vehicleId;
-
-            return new Neighbor(newSolution, movement);
-        }
-
-        private static Neighbor interRouteReverse(Solution solution) {
-            Solution newSolution = solution.clone();
-            int[] vehicleIds = getTwoDistinctRandomVehiclesWithRoutes(newSolution);
-            if (vehicleIds == null) return null;
-
-            List<Node> route1 = newSolution.routes.get(vehicleIds[0]);
-            List<Node> route2 = newSolution.routes.get(vehicleIds[1]);
-
-            if (route1.isEmpty() || route2.isEmpty()) return null;
-
-            java.util.Collections.reverse(route1);
-            java.util.Collections.reverse(route2);
-
-            Movement movement = new Movement(Movement.MovementType.INTER_ROUTE_REVERSE);
-            movement.vehicle1 = vehicleIds[0];
-            movement.vehicle2 = vehicleIds[1];
-
-            return new Neighbor(newSolution, movement);
-        }
-
-        private static Neighbor routeSplit(Solution solution) {
-            Solution newSolution = solution.clone();
-            int vehicleId = getRandomVehicleWithRoute(newSolution);
-            if (vehicleId == -1) return null;
-
-            List<Node> route = newSolution.routes.get(vehicleId);
-            if (route.size() < 2) return null;
-
-            // Find an empty vehicle
-            int emptyVehicleId = -1;
-            for (Map.Entry<Integer, List<Node>> entry : newSolution.routes.entrySet()) {
-                if (entry.getValue().isEmpty()) {
-                    emptyVehicleId = entry.getKey();
-                    break;
-                }
-            }
-            if (emptyVehicleId == -1) return null;
-
-            int splitPoint = random.nextInt(route.size() - 1) + 1;
-            List<Node> secondPart = new ArrayList<>(route.subList(splitPoint, route.size()));
-            route.subList(splitPoint, route.size()).clear();
-            newSolution.routes.put(emptyVehicleId, secondPart);
-
-            Movement movement = new Movement(Movement.MovementType.ROUTE_SPLIT);
-            movement.vehicle1 = vehicleId;
-            movement.vehicle2 = emptyVehicleId;
-            movement.nodeIdxFrom = splitPoint;
-
-            return new Neighbor(newSolution, movement);
-        }
-
-        private static Neighbor routeMerge(Solution solution) {
-            Solution newSolution = solution.clone();
-            int[] vehicleIds = getTwoDistinctRandomVehiclesWithRoutes(newSolution);
-            if (vehicleIds == null) return null;
-
-            List<Node> route1 = newSolution.routes.get(vehicleIds[0]);
-            List<Node> route2 = newSolution.routes.get(vehicleIds[1]);
-
-            if (route1.isEmpty() || route2.isEmpty()) return null;
-
-            route1.addAll(route2);
-            newSolution.routes.put(vehicleIds[1], new ArrayList<>());
-
-            Movement movement = new Movement(Movement.MovementType.ROUTE_MERGE);
-            movement.vehicle1 = vehicleIds[0];
-            movement.vehicle2 = vehicleIds[1];
-
-            return new Neighbor(newSolution, movement);
-        }
-
-        private static Neighbor routeReverse(Solution solution) {
-            Solution newSolution = solution.clone();
-            int vehicleId = getRandomVehicleWithRoute(newSolution);
-            if (vehicleId == -1) return null;
-
-            List<Node> route = newSolution.routes.get(vehicleId);
-            if (route.size() < 2) return null;
-
-            java.util.Collections.reverse(route);
-
-            Movement movement = new Movement(Movement.MovementType.ROUTE_REVERSE);
-            movement.vehicle1 = vehicleId;
-
-            return new Neighbor(newSolution, movement);
-        }
-
-        private static Neighbor routeShuffle(Solution solution) {
-            Solution newSolution = solution.clone();
-            int vehicleId = getRandomVehicleWithRoute(newSolution);
-            if (vehicleId == -1) return null;
-
-            List<Node> route = newSolution.routes.get(vehicleId);
-            if (route.size() < 3) return null;
-
-            List<Node> nodesToShuffle = new ArrayList<>(route.subList(1, route.size() - 1));
-            java.util.Collections.shuffle(nodesToShuffle);
-            route.subList(1, route.size() - 1).clear();
-            route.addAll(1, nodesToShuffle);
-
-            Movement movement = new Movement(Movement.MovementType.ROUTE_SHUFFLE);
-            movement.vehicle1 = vehicleId;
-
-            return new Neighbor(newSolution, movement);
-        }
-
-        private static Neighbor multiRouteMerge(Solution solution) {
-            Solution newSolution = solution.clone();
-            int[] vehicleIds = getTwoDistinctRandomVehiclesWithRoutes(newSolution);
-            if (vehicleIds == null) return null;
-
-            List<Node> route1 = newSolution.routes.get(vehicleIds[0]);
-            List<Node> route2 = newSolution.routes.get(vehicleIds[1]);
-
-            if (route1.isEmpty() || route2.isEmpty()) return null;
-
-            // Randomly choose merge point for both routes
-            int mergePoint1 = random.nextInt(route1.size() + 1);
-            int mergePoint2 = random.nextInt(route2.size() + 1);
-
-            List<Node> newRoute = new ArrayList<>(route1.subList(0, mergePoint1));
-            newRoute.addAll(route2.subList(mergePoint2, route2.size()));
-            newRoute.addAll(route1.subList(mergePoint1, route1.size()));
-            newRoute.addAll(route2.subList(0, mergePoint2));
-
-            newSolution.routes.put(vehicleIds[0], newRoute);
-            newSolution.routes.put(vehicleIds[1], new ArrayList<>());
-
-            Movement movement = new Movement(Movement.MovementType.MULTI_ROUTE_MERGE);
-            movement.vehicle1 = vehicleIds[0];
-            movement.vehicle2 = vehicleIds[1];
-            movement.nodeIdxFrom = mergePoint1;
-            movement.nodeIdxTo = mergePoint2;
-
-            return new Neighbor(newSolution, movement);
-        }
-
-        private static Neighbor routeSplitMulti(Solution solution) {
-            Solution newSolution = solution.clone();
-            int vehicleId = getRandomVehicleWithRoute(newSolution);
-            if (vehicleId == -1) return null;
-
-            List<Node> route = newSolution.routes.get(vehicleId);
-            if (route.size() < 3) return null;
-
-            // Find two empty vehicles
-            List<Integer> emptyVehicleIds = new ArrayList<>();
-            for (Map.Entry<Integer, List<Node>> entry : newSolution.routes.entrySet()) {
-                if (entry.getValue().isEmpty()) {
-                    emptyVehicleIds.add(entry.getKey());
-                    if (emptyVehicleIds.size() == 2) break;
-                }
-            }
-            if (emptyVehicleIds.size() < 2) return null;
-
-            int splitPoint1 = random.nextInt(route.size() - 2) + 1;
-            int splitPoint2 = random.nextInt(route.size() - splitPoint1) + splitPoint1 + 1;
-
-            List<Node> secondPart = new ArrayList<>(route.subList(splitPoint1, splitPoint2));
-            List<Node> thirdPart = new ArrayList<>(route.subList(splitPoint2, route.size()));
-            
-            route.subList(splitPoint1, route.size()).clear();
-            newSolution.routes.put(emptyVehicleIds.get(0), secondPart);
-            newSolution.routes.put(emptyVehicleIds.get(1), thirdPart);
-
-            Movement movement = new Movement(Movement.MovementType.ROUTE_SPLIT_MULTI);
-            movement.vehicle1 = vehicleId;
-            movement.nodeIdxFrom = splitPoint1;
-            movement.nodeIdxTo = splitPoint2;
-
-            return new Neighbor(newSolution, movement);
-        }
-
-        private static Neighbor nodeRelocation(Solution solution) {
-            Solution newSolution = solution.clone();
-            int vehicleId = getRandomVehicleWithRoute(newSolution);
-            if (vehicleId == -1) return null;
-
-            List<Node> route = newSolution.routes.get(vehicleId);
-            if (route.size() < 3) return null;
-
-            int segmentSize = random.nextInt(Math.min(3, route.size() - 1)) + 1;
-            int startIndex = random.nextInt(route.size() - segmentSize);
-            int targetIndex = random.nextInt(route.size() - segmentSize + 1);
-
-            List<Node> segment = new ArrayList<>(route.subList(startIndex, startIndex + segmentSize));
-            route.subList(startIndex, startIndex + segmentSize).clear();
-            route.addAll(targetIndex, segment);
-
-            Movement movement = new Movement(Movement.MovementType.NODE_RELOCATION);
-            movement.vehicle1 = vehicleId;
-            movement.nodeIdxFrom = startIndex;
-            movement.nodeIdxTo = targetIndex;
-
-            return new Neighbor(newSolution, movement);
-        }
-
-        private static Neighbor routeExchange(Solution solution) {
-            Solution newSolution = solution.clone();
-            int[] vehicleIds = getTwoDistinctRandomVehiclesWithRoutes(newSolution);
-            if (vehicleIds == null) return null;
-
-            List<Node> route1 = newSolution.routes.get(vehicleIds[0]);
-            List<Node> route2 = newSolution.routes.get(vehicleIds[1]);
-            if (route1.isEmpty() || route2.isEmpty()) return null;
-
-            int index1 = random.nextInt(route1.size());
-            int index2 = random.nextInt(route2.size());
-
-            Node node1 = route1.get(index1);
-            Node node2 = route2.get(index2);
-
-            route1.set(index1, node2);
-            route2.set(index2, node1);
-
-            Movement movement = new Movement(Movement.MovementType.ROUTE_EXCHANGE);
-            movement.vehicle1 = vehicleIds[0];
-            movement.vehicle2 = vehicleIds[1];
-            movement.nodeIdxFrom = index1;
-            movement.nodeIdxTo = index2;
-
-            return new Neighbor(newSolution, movement);
-        }
-
-        private static Neighbor routeRotation(Solution solution) {
-            Solution newSolution = solution.clone();
-            int vehicleId = getRandomVehicleWithRoute(newSolution);
-            if (vehicleId == -1) return null;
-
-            List<Node> route = newSolution.routes.get(vehicleId);
-            if (route.size() < 3) return null;
-
-            int segmentSize = random.nextInt(Math.min(3, route.size() - 1)) + 1;
-            int startIndex = random.nextInt(route.size() - segmentSize);
-            int targetIndex = random.nextInt(route.size() - segmentSize + 1);
-
-            List<Node> segment = new ArrayList<>(route.subList(startIndex, startIndex + segmentSize));
-            route.subList(startIndex, startIndex + segmentSize).clear();
-            route.addAll(targetIndex, segment);
-
-            Movement movement = new Movement(Movement.MovementType.ROUTE_ROTATION);
-            movement.vehicle1 = vehicleId;
-            movement.nodeIdxFrom = startIndex;
-            movement.nodeIdxTo = targetIndex;
 
             return new Neighbor(newSolution, movement);
         }

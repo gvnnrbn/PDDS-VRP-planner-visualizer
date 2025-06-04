@@ -7,6 +7,14 @@ public class Time implements Comparable<Time>, Cloneable {
     private int hour;
     private int min;
 
+    public Time(Time other) {   
+        this.year = other.year;
+        this.month = other.month;
+        this.day = other.day;
+        this.hour = other.hour;
+        this.min = other.min;
+    }
+
     public Time(int year,int month, int day, int hour, int min) {
         this.year = year;
         this.month = month;

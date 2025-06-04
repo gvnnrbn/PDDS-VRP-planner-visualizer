@@ -125,7 +125,7 @@ public class Environment {
         }
 
         int totalGLPToRefill = totalGLP - totalGLPInVehicles;
-        int totalAssignableGLP = (int) (totalGLPToRefill * 1.5);
+        int totalAssignableGLP = (int) (totalGLPToRefill * 2.5);
 
         // Round robin to assign GLP from the warehouses
         int currentWarehouseIndex = 0;
