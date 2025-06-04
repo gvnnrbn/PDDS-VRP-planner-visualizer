@@ -11,5 +11,8 @@ export default defineConfig({
         changeOrigin: true
       }
     }
+  },
+  define: {
+    global: 'window', // 👈 esto soluciona el error
   }
 })
