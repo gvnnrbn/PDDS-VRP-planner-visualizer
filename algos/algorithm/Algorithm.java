@@ -11,153 +11,131 @@ public class Algorithm {
     // Hyperparameters
     private static final int maxIterations = 100_000;
     private static final int maxTimeMs = 55 * 10000;
-    private static final int maxNoImprovement = 1_000;
-    private static final int maxNoImprovementFeasible = 400;
-    private static final double baseAcceptanceProbability = 0.5;
-    private static final double maxAcceptanceProbability = 0.9;
-    private static final double minAcceptanceProbability = 0.1;
-    private static final double temperatureDecay = 0.99;
-    private static final double minImprovementThreshold = 0.0001; // Threshold for considering an improvement "significant"
+    private static final int maxNoImprovement = 50;
+    private static final int maxNoImprovementFeasible = 25;
+    private static final int tabuListSize = 50;
+    private static final double aspirationCriteria = 0.05; // 5% improvement over best solution
+    private static final int resetThreshold = 10;
 
     private static final boolean isDebug = true;
 
-    private static final Random random = new Random();
-
-    // Default constructor with default values
     public Algorithm() {
     }
 
     public static Solution run(Environment environment, int minutes) {
-        Solution currBestSolution = environment.getRandomSolution();
-        Solution currSolution = currBestSolution.clone();
+        Solution currSolution = environment.getRandomSolution();
+        Solution bestSolution = currSolution.clone();
+        
+        currSolution.simulate(environment, minutes);
+        bestSolution.simulate(environment, minutes);
+        
+        double bestFitness = bestSolution.fitness(environment);
+        double currFitness = bestFitness;
 
+        List<Movement> tabuList = new ArrayList<>();
+        Map<Movement, Integer> tabuTenure = new HashMap<>();
+        
         long startTime = System.currentTimeMillis();
         int iterations = 0;
         int noImprovementCount = 0;
-        double lastBestFitness = Double.NEGATIVE_INFINITY;
         int resetCount = 0;
-        final int MAX_RESETS = 3;
-        double temperature = 1.0;
-
-        currBestSolution.simulate(environment, minutes);
-        currSolution.simulate(environment, minutes);
-        double bestFitness = currBestSolution.fitness(environment);
-        lastBestFitness = bestFitness;
-        double initialFitness = bestFitness;
 
         while (iterations < maxIterations && 
                (System.currentTimeMillis() - startTime) < maxTimeMs) {
             
-            currBestSolution.simulate(environment, minutes);
-            boolean isFeasible = currBestSolution.isFeasible(environment);
+            bestSolution.simulate(environment, minutes);
+            boolean isFeasible = bestSolution.isFeasible(environment);
             
             // Check termination or reset conditions
             if (isFeasible && noImprovementCount >= maxNoImprovementFeasible) {
                 break;
             } else if (!isFeasible && noImprovementCount >= maxNoImprovement) {
-                if (resetCount < MAX_RESETS) {
+                if (resetCount < resetThreshold) {
                     if (isDebug) {
-                        System.out.println("Performing random reset " + (resetCount + 1) + " of " + MAX_RESETS + " after " + noImprovementCount + " iterations without improvement");
+                        System.out.println("Performing random reset " + (resetCount + 1) + " after " + noImprovementCount + " iterations without improvement");
                     }
-                    Solution newSolution = environment.getRandomSolution();
-                    newSolution.simulate(environment, minutes);
+                    currSolution = environment.getRandomSolution();
+                    currSolution.simulate(environment, minutes);
                     
-                    if (isDebug) {
-                        System.out.println("Reset accepted with fitness: " + newSolution.fitness(environment));
-                    }
+                    // Clear tabu list on reset
+                    tabuList.clear();
+                    tabuTenure.clear();
                     
-                    currSolution = newSolution;
                     noImprovementCount = 0;
                     resetCount++;
-                    temperature = 1.0; // Reset temperature after each reset
+                    currFitness = currSolution.fitness(environment);
                 } else {
                     break;
                 }
             }
-
-            // Calculate dynamic acceptance probability based on stagnation and temperature
-            double stagnationFactor = Math.min(1.0, noImprovementCount / 1000.0);
-            double acceptanceProbability = Math.max(
-                minAcceptanceProbability,
-                Math.min(
-                    maxAcceptanceProbability,
-                    baseAcceptanceProbability + (baseAcceptanceProbability * stagnationFactor)
-                ) * temperature
-            );
 
             List<Neighbor> neighborhood = NeighborhoodGenerator.generateNeighborhood(currSolution, environment);
             for (Neighbor neighbor : neighborhood) {
                 neighbor.solution.simulate(environment, minutes);
             }
             
-            // Sort neighbors by fitness and try top 3
-            Collections.sort(neighborhood, 
-                (n1, n2) -> Double.compare(n2.solution.fitness(environment), n1.solution.fitness(environment)));
-            
-            boolean improved = false;
-            double currFitness = currSolution.fitness(environment);
-            
-            // Try top 3 neighbors
-            for (int i = 0; i < Math.min(3, neighborhood.size()); i++) {
-                Neighbor candidate = neighborhood.get(i);
-                double newFitness = candidate.solution.fitness(environment);
-                
-                if (newFitness > currFitness) {
-                    currSolution = candidate.solution;
-                    if (newFitness > bestFitness) {
-                        double improvement = (newFitness - lastBestFitness) / Math.abs(lastBestFitness);
-                        if (improvement > minImprovementThreshold) {
-                            noImprovementCount = 0;
-                            lastBestFitness = newFitness;
-                        } else {
-                            noImprovementCount++;
-                        }
-                        currBestSolution = candidate.solution.clone();
-                        bestFitness = newFitness;
-                    } else {
-                        noImprovementCount++;
-                    }
-                    improved = true;
-                    break;
+            Neighbor bestNeighbor = null;
+            double bestNeighborFitness = Double.NEGATIVE_INFINITY;
+
+            // Find best non-tabu neighbor or one that satisfies aspiration criteria
+            for (Neighbor neighbor : neighborhood) {
+                double neighborFitness = neighbor.solution.fitness(environment);
+
+                // Check if movement is in tabu list
+                boolean isTabu = tabuList.contains(neighbor.movement);
+
+                // Aspiration criteria: accept tabu move if it improves the best solution significantly
+                boolean satisfiesAspiration = neighborFitness > bestFitness * (1 + aspirationCriteria);
+
+                if ((!isTabu || satisfiesAspiration) && neighborFitness > bestNeighborFitness) {
+                    bestNeighbor = neighbor;
+                    bestNeighborFitness = neighborFitness;
                 }
-            }
-            
-            // If no improvement found, consider accepting a worse solution
-            if (!improved) {
-                Neighbor bestNeighbor = neighborhood.get(0);
-                double newFitness = bestNeighbor.solution.fitness(environment);
-                
-                // Calculate acceptance probability based on fitness difference
-                double fitnessDiff = (newFitness - currFitness) / Math.abs(initialFitness);
-                double acceptanceProb = acceptanceProbability * Math.exp(fitnessDiff / temperature);
-                
-                if (random.nextDouble() < acceptanceProb) {
-                    currSolution = bestNeighbor.solution;
-                }
-                noImprovementCount++;
             }
 
-            // Update temperature
-            temperature *= temperatureDecay;
+            if (bestNeighbor != null) {
+                currSolution = bestNeighbor.solution;
+                currFitness = bestNeighborFitness;
+
+                // Update tabu list
+                tabuList.add(bestNeighbor.movement);
+                tabuTenure.put(bestNeighbor.movement, iterations);
+
+                // Remove old tabu moves
+                while (tabuList.size() > tabuListSize) {
+                    Movement oldestMove = tabuList.remove(0);
+                    tabuTenure.remove(oldestMove);
+                }
+
+                // Update best solution
+                if (currFitness > bestFitness) {
+                    bestSolution = currSolution.clone();
+                    bestFitness = currFitness;
+                    noImprovementCount = 0;
+                } else {
+                    noImprovementCount++;
+                }
+            } else {
+                noImprovementCount++;
+            }
 
             if (isDebug && iterations % 100 == 0) {
                 long timePassed = System.currentTimeMillis() - startTime;
                 System.out.println("Iteration " + iterations + 
-                    ": Current fitness: " + currFitness + 
-                    ", Best fitness: " + bestFitness + 
+                    ": Current fitness: " + String.format("%.4f", currFitness) + 
+                    ", Best fitness: " + String.format("%.4f", bestFitness) + 
                     ", Feasible: " + currSolution.isFeasible(environment) + 
-                    ", No improvement count: " + noImprovementCount +
-                    ", Temperature: " + String.format("%.4f", temperature) +
-                    ", Accept prob: " + String.format("%.4f", acceptanceProbability) +
-                    ", Time passed: " + timePassed + "ms");
+                    ", No improvement: " + noImprovementCount +
+                    ", Tabu size: " + tabuList.size() +
+                    ", Resets: " + resetCount +
+                    ", Time: " + timePassed + "ms");
             }
 
             iterations++;
         }
 
-        currBestSolution.compress();
-
-        return currBestSolution;
+        bestSolution.compress();
+        return bestSolution;
     }
 
     public static class Movement {
@@ -195,6 +173,23 @@ public class Algorithm {
             this.movementType = movementType;
         }
 
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (obj == null || getClass() != obj.getClass()) return false;
+            Movement movement = (Movement) obj;
+            return vehicle1 == movement.vehicle1 &&
+                   vehicle2 == movement.vehicle2 &&
+                   nodeIdxFrom == movement.nodeIdxFrom &&
+                   nodeIdxTo == movement.nodeIdxTo &&
+                   movementType == movement.movementType;
+        }
+
+        @Override
+        public int hashCode() {
+            return java.util.Objects.hash(movementType, vehicle1, vehicle2, nodeIdxFrom, nodeIdxTo);
+        }
+
         public Movement getReverseMovement() {
             Movement reverse = new Movement(this.movementType);
             switch (this.movementType) {
@@ -226,46 +221,22 @@ public class Algorithm {
             }
             return reverse;
         }
+    }
 
-        public boolean isReverseMovement(Movement movement) {
-            if (this.movementType != movement.movementType) {
-                return false;
-            }
+    private static class Neighbor {
+        public Solution solution;
+        public Movement movement;
 
-            switch (this.movementType) {
-                case INTRA_ROUTE_MOVE:
-                case INTRA_ROUTE_SWAP:
-                case INTRA_ROUTE_TWO_OPT:
-                case INTRA_ROUTE_REVERSE:
-                    return this.vehicle1 == movement.vehicle1 && 
-                           this.nodeIdxFrom == movement.nodeIdxTo && 
-                           this.nodeIdxTo == movement.nodeIdxFrom;
-                case INTER_ROUTE_MOVE:
-                case INTER_ROUTE_SWAP:
-                case INTER_ROUTE_CROSS_EXCHANGE:
-                case INTER_ROUTE_REVERSE:
-                case ROUTE_SPLIT:
-                case ROUTE_MERGE:
-                    return this.vehicle1 == movement.vehicle2 && 
-                           this.vehicle2 == movement.vehicle1 && 
-                           this.nodeIdxFrom == movement.nodeIdxTo && 
-                           this.nodeIdxTo == movement.nodeIdxFrom;
-                case VEHICLE_SWAP:
-                    return this.vehicle1 == movement.vehicle2 && 
-                           this.vehicle2 == movement.vehicle1;
-                default:
-                    return false;
-            }
+        public Neighbor(Solution solution, Movement movement) {
+            this.solution = solution;
+            this.movement = movement;
         }
     }
 
     private static class NeighborhoodGenerator {
-
         private static final Random random = new Random();
-
-        // Auxiliary parameters
         private static final int attemptsPerOperation = 10;
-        private static final int neighborsPerOperator = 10;
+        private static final int neighborsPerOperator = 3;
 
         public static List<Neighbor> generateNeighborhood(Solution solution, Environment environment) {
             List<Neighbor> neighbors = new ArrayList<>();
@@ -351,7 +322,6 @@ public class Algorithm {
                         for (Map.Entry<Integer, Node> entry : finalNodes.entrySet()) {
                             neighbor.solution.routes.get(entry.getKey()).add(entry.getValue());
                         }
-
                         neighbors.add(neighbor);
                     }
                 }
@@ -377,7 +347,12 @@ public class Algorithm {
                 route.add(indexTo, nodeToMove);
             }
 
-            return new Neighbor(newSolution);
+            Movement movement = new Movement(Movement.MovementType.INTRA_ROUTE_MOVE);
+            movement.vehicle1 = vehicleId;
+            movement.nodeIdxFrom = indexFrom;
+            movement.nodeIdxTo = indexTo;
+
+            return new Neighbor(newSolution, movement);
         }
 
         private static Neighbor intraRouteSwap(Solution solution) {
@@ -397,7 +372,12 @@ public class Algorithm {
 
             java.util.Collections.swap(route, index1, index2);
 
-            return new Neighbor(newSolution);
+            Movement movement = new Movement(Movement.MovementType.INTRA_ROUTE_SWAP);
+            movement.vehicle1 = vehicleId;
+            movement.nodeIdxFrom = index1;
+            movement.nodeIdxTo = index2;
+
+            return new Neighbor(newSolution, movement);
         }
 
         private static Neighbor intraRouteTwoOpt(Solution solution) {
@@ -415,7 +395,12 @@ public class Algorithm {
             List<Node> segmentToReverse = route.subList(i + 1, j + 1);
             java.util.Collections.reverse(segmentToReverse);
 
-            return new Neighbor(newSolution);
+            Movement movement = new Movement(Movement.MovementType.INTRA_ROUTE_TWO_OPT);
+            movement.vehicle1 = vehicleId;
+            movement.nodeIdxFrom = i + 1;
+            movement.nodeIdxTo = j + 1;
+
+            return new Neighbor(newSolution, movement);
         }
 
         private static Neighbor interRouteMove(Solution solution) {
@@ -437,7 +422,13 @@ public class Algorithm {
             Node nodeToMove = routeFrom.remove(indexFrom);
             routeTo.add(indexTo, nodeToMove);
 
-            return new Neighbor(newSolution);
+            Movement movement = new Movement(Movement.MovementType.INTER_ROUTE_MOVE);
+            movement.vehicle1 = vehicleIdFrom;
+            movement.vehicle2 = vehicleIdTo;
+            movement.nodeIdxFrom = indexFrom;
+            movement.nodeIdxTo = indexTo;
+
+            return new Neighbor(newSolution, movement);
         }
 
         private static Neighbor interRouteSwap(Solution solution) {
@@ -462,7 +453,13 @@ public class Algorithm {
             route1.set(index1, node2);
             route2.set(index2, node1);
 
-            return new Neighbor(newSolution);
+            Movement movement = new Movement(Movement.MovementType.INTER_ROUTE_SWAP);
+            movement.vehicle1 = vehicleId1;
+            movement.vehicle2 = vehicleId2;
+            movement.nodeIdxFrom = index1;
+            movement.nodeIdxTo = index2;
+
+            return new Neighbor(newSolution, movement);
         }
 
         private static Neighbor interRouteCrossExchange(Solution solution) {
@@ -493,7 +490,13 @@ public class Algorithm {
             newSolution.routes.put(vehicleId1, newRoute1);
             newSolution.routes.put(vehicleId2, newRoute2);
 
-            return new Neighbor(newSolution);
+            Movement movement = new Movement(Movement.MovementType.INTER_ROUTE_CROSS_EXCHANGE);
+            movement.vehicle1 = vehicleId1;
+            movement.vehicle2 = vehicleId2;
+            movement.nodeIdxFrom = i;
+            movement.nodeIdxTo = j;
+
+            return new Neighbor(newSolution, movement);
         }
 
         private static Neighbor vehicleSwap(Solution solution) {
@@ -510,7 +513,11 @@ public class Algorithm {
             newSolution.routes.put(vehicleId1, route2);
             newSolution.routes.put(vehicleId2, route1);
 
-            return new Neighbor(newSolution);
+            Movement movement = new Movement(Movement.MovementType.VEHICLE_SWAP);
+            movement.vehicle1 = vehicleId1;
+            movement.vehicle2 = vehicleId2;
+
+            return new Neighbor(newSolution, movement);
         }
 
         private static Neighbor intraRouteReverse(Solution solution) {
@@ -523,7 +530,10 @@ public class Algorithm {
 
             java.util.Collections.reverse(route);
 
-            return new Neighbor(newSolution);
+            Movement movement = new Movement(Movement.MovementType.INTRA_ROUTE_REVERSE);
+            movement.vehicle1 = vehicleId;
+
+            return new Neighbor(newSolution, movement);
         }
 
         private static Neighbor interRouteReverse(Solution solution) {
@@ -539,7 +549,11 @@ public class Algorithm {
             java.util.Collections.reverse(route1);
             java.util.Collections.reverse(route2);
 
-            return new Neighbor(newSolution);
+            Movement movement = new Movement(Movement.MovementType.INTER_ROUTE_REVERSE);
+            movement.vehicle1 = vehicleIds[0];
+            movement.vehicle2 = vehicleIds[1];
+
+            return new Neighbor(newSolution, movement);
         }
 
         private static Neighbor routeSplit(Solution solution) {
@@ -565,7 +579,12 @@ public class Algorithm {
             route.subList(splitPoint, route.size()).clear();
             newSolution.routes.put(emptyVehicleId, secondPart);
 
-            return new Neighbor(newSolution);
+            Movement movement = new Movement(Movement.MovementType.ROUTE_SPLIT);
+            movement.vehicle1 = vehicleId;
+            movement.vehicle2 = emptyVehicleId;
+            movement.nodeIdxFrom = splitPoint;
+
+            return new Neighbor(newSolution, movement);
         }
 
         private static Neighbor routeMerge(Solution solution) {
@@ -581,7 +600,11 @@ public class Algorithm {
             route1.addAll(route2);
             newSolution.routes.put(vehicleIds[1], new ArrayList<>());
 
-            return new Neighbor(newSolution);
+            Movement movement = new Movement(Movement.MovementType.ROUTE_MERGE);
+            movement.vehicle1 = vehicleIds[0];
+            movement.vehicle2 = vehicleIds[1];
+
+            return new Neighbor(newSolution, movement);
         }
 
         private static Neighbor routeReverse(Solution solution) {
@@ -594,7 +617,10 @@ public class Algorithm {
 
             java.util.Collections.reverse(route);
 
-            return new Neighbor(newSolution);
+            Movement movement = new Movement(Movement.MovementType.ROUTE_REVERSE);
+            movement.vehicle1 = vehicleId;
+
+            return new Neighbor(newSolution, movement);
         }
 
         private static Neighbor routeShuffle(Solution solution) {
@@ -610,7 +636,10 @@ public class Algorithm {
             route.subList(1, route.size() - 1).clear();
             route.addAll(1, nodesToShuffle);
 
-            return new Neighbor(newSolution);
+            Movement movement = new Movement(Movement.MovementType.ROUTE_SHUFFLE);
+            movement.vehicle1 = vehicleId;
+
+            return new Neighbor(newSolution, movement);
         }
 
         private static Neighbor multiRouteMerge(Solution solution) {
@@ -635,7 +664,13 @@ public class Algorithm {
             newSolution.routes.put(vehicleIds[0], newRoute);
             newSolution.routes.put(vehicleIds[1], new ArrayList<>());
 
-            return new Neighbor(newSolution);
+            Movement movement = new Movement(Movement.MovementType.MULTI_ROUTE_MERGE);
+            movement.vehicle1 = vehicleIds[0];
+            movement.vehicle2 = vehicleIds[1];
+            movement.nodeIdxFrom = mergePoint1;
+            movement.nodeIdxTo = mergePoint2;
+
+            return new Neighbor(newSolution, movement);
         }
 
         private static Neighbor routeSplitMulti(Solution solution) {
@@ -666,7 +701,12 @@ public class Algorithm {
             newSolution.routes.put(emptyVehicleIds.get(0), secondPart);
             newSolution.routes.put(emptyVehicleIds.get(1), thirdPart);
 
-            return new Neighbor(newSolution);
+            Movement movement = new Movement(Movement.MovementType.ROUTE_SPLIT_MULTI);
+            movement.vehicle1 = vehicleId;
+            movement.nodeIdxFrom = splitPoint1;
+            movement.nodeIdxTo = splitPoint2;
+
+            return new Neighbor(newSolution, movement);
         }
 
         private static Neighbor nodeRelocation(Solution solution) {
@@ -685,7 +725,12 @@ public class Algorithm {
             route.subList(startIndex, startIndex + segmentSize).clear();
             route.addAll(targetIndex, segment);
 
-            return new Neighbor(newSolution);
+            Movement movement = new Movement(Movement.MovementType.NODE_RELOCATION);
+            movement.vehicle1 = vehicleId;
+            movement.nodeIdxFrom = startIndex;
+            movement.nodeIdxTo = targetIndex;
+
+            return new Neighbor(newSolution, movement);
         }
 
         private static Neighbor routeExchange(Solution solution) {
@@ -706,7 +751,13 @@ public class Algorithm {
             route1.set(index1, node2);
             route2.set(index2, node1);
 
-            return new Neighbor(newSolution);
+            Movement movement = new Movement(Movement.MovementType.ROUTE_EXCHANGE);
+            movement.vehicle1 = vehicleIds[0];
+            movement.vehicle2 = vehicleIds[1];
+            movement.nodeIdxFrom = index1;
+            movement.nodeIdxTo = index2;
+
+            return new Neighbor(newSolution, movement);
         }
 
         private static Neighbor routeRotation(Solution solution) {
@@ -725,7 +776,12 @@ public class Algorithm {
             route.subList(startIndex, startIndex + segmentSize).clear();
             route.addAll(targetIndex, segment);
 
-            return new Neighbor(newSolution);
+            Movement movement = new Movement(Movement.MovementType.ROUTE_ROTATION);
+            movement.vehicle1 = vehicleId;
+            movement.nodeIdxFrom = startIndex;
+            movement.nodeIdxTo = targetIndex;
+
+            return new Neighbor(newSolution, movement);
         }
 
         private static int getRandomVehicleWithRoute(Solution solution) {
@@ -754,14 +810,6 @@ public class Algorithm {
 
             java.util.Collections.shuffle(vehicleIds, random);
             return new int[]{vehicleIds.get(0), vehicleIds.get(1)};
-        }
-    }
-
-    private static class Neighbor {
-        public Solution solution;
-
-        public Neighbor(Solution solution) {
-            this.solution = solution;
         }
     }
 }
