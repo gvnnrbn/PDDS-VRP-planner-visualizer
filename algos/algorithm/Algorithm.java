@@ -1,7 +1,6 @@
 package algorithm;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,13 +8,12 @@ import java.util.Random;
 
 public class Algorithm {
     // Hyperparameters
-    private static final int maxIterations = 100_000;
-    private static final int maxTimeMs = 55 * 10000;
-    private static final int maxNoImprovement = 50;
-    private static final int maxNoImprovementFeasible = 25;
-    private static final int tabuListSize = 50;
-    private static final double aspirationCriteria = 0.05; // 5% improvement over best solution
-    private static final int resetThreshold = 10;
+    private static int maxIterations = 10_000;
+    private static int maxTimeMs = 10 * 1000;
+    private static int maxNoImprovement = 250;
+    private static int maxNoImprovementFeasible = 125; 
+    private static int tabuListSize = 400;
+    private static double aspirationCriteria = 0.05; // 5% improvement over best solution
 
     private static final boolean isDebug = true;
 
@@ -23,6 +21,20 @@ public class Algorithm {
     }
 
     public static Solution run(Environment environment, int minutes) {
+        Solution solution = null;
+        int attempts = 0;
+        do {
+            solution = _run(environment, minutes);
+            solution.compress();
+            attempts++;
+            if (attempts >= 10) {
+                break;
+            }
+        } while (!solution.isFeasible(environment));
+        return solution;
+    }
+
+    private static Solution _run(Environment environment, int minutes) {
         Solution currSolution = environment.getRandomSolution();
         Solution bestSolution = currSolution.clone();
         
@@ -38,7 +50,6 @@ public class Algorithm {
         long startTime = System.currentTimeMillis();
         int iterations = 0;
         int noImprovementCount = 0;
-        int resetCount = 0;
 
         while (iterations < maxIterations && 
                (System.currentTimeMillis() - startTime) < maxTimeMs) {
@@ -46,27 +57,10 @@ public class Algorithm {
             bestSolution.simulate(environment, minutes);
             boolean isFeasible = bestSolution.isFeasible(environment);
             
-            // Check termination or reset conditions
-            if (isFeasible && noImprovementCount >= maxNoImprovementFeasible) {
+            // Check termination conditions
+            if ((isFeasible && noImprovementCount >= maxNoImprovementFeasible) ||
+                (!isFeasible && noImprovementCount >= maxNoImprovement)) {
                 break;
-            } else if (!isFeasible && noImprovementCount >= maxNoImprovement) {
-                if (resetCount < resetThreshold) {
-                    if (isDebug) {
-                        System.out.println("Performing random reset " + (resetCount + 1) + " after " + noImprovementCount + " iterations without improvement");
-                    }
-                    currSolution = environment.getRandomSolution();
-                    currSolution.simulate(environment, minutes);
-                    
-                    // Clear tabu list on reset
-                    tabuList.clear();
-                    tabuTenure.clear();
-                    
-                    noImprovementCount = 0;
-                    resetCount++;
-                    currFitness = currSolution.fitness(environment);
-                } else {
-                    break;
-                }
             }
 
             List<Neighbor> neighborhood = NeighborhoodGenerator.generateNeighborhood(currSolution, environment);
@@ -127,14 +121,12 @@ public class Algorithm {
                     ", Feasible: " + currSolution.isFeasible(environment) + 
                     ", No improvement: " + noImprovementCount +
                     ", Tabu size: " + tabuList.size() +
-                    ", Resets: " + resetCount +
                     ", Time: " + timePassed + "ms");
             }
 
             iterations++;
         }
 
-        bestSolution.compress();
         return bestSolution;
     }
 

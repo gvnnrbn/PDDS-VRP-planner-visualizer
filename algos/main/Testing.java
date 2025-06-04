@@ -5,10 +5,8 @@ import java.util.stream.Collectors;
 
 import algorithm.Algorithm;
 import algorithm.Environment;
-import algorithm.Node;
 import algorithm.Solution;
 import utils.DataParser;
-import utils.PathBuilder;
 import utils.Time;
 import entities.PlannerVehicle;
 import entities.PlannerOrder;
@@ -69,6 +67,7 @@ public class Testing {
         for (PlannerWarehouse warehouse : warehouses) {
             System.out.println(warehouse);
         }
+
 
         Environment environment = new Environment(activeVehicles, activeOrders, warehouses, activeBlockages, failures, activeMaintenances, currTime);
         System.out.println(environment);
