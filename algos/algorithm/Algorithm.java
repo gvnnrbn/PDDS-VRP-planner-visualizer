@@ -11,8 +11,13 @@ public class Algorithm {
     // Hyperparameters
     private static final int maxIterations = 100_000;
     private static final int maxTimeMs = 55 * 10000;
-    private static final int maxNoImprovement = 10_000;
-    private static final double acceptanceProbability = 0.1;
+    private static final int maxNoImprovement = 1_000;
+    private static final int maxNoImprovementFeasible = 400;
+    private static final double baseAcceptanceProbability = 0.5;
+    private static final double maxAcceptanceProbability = 0.9;
+    private static final double minAcceptanceProbability = 0.1;
+    private static final double temperatureDecay = 0.99;
+    private static final double minImprovementThreshold = 0.0001; // Threshold for considering an improvement "significant"
 
     private static final boolean isDebug = true;
 
@@ -24,47 +29,116 @@ public class Algorithm {
 
     public static Solution run(Environment environment, int minutes) {
         Solution currBestSolution = environment.getRandomSolution();
-        Solution currSolution = currBestSolution.clone(); // Track current solution separately
+        Solution currSolution = currBestSolution.clone();
 
         long startTime = System.currentTimeMillis();
         int iterations = 0;
         int noImprovementCount = 0;
+        double lastBestFitness = Double.NEGATIVE_INFINITY;
+        int resetCount = 0;
+        final int MAX_RESETS = 3;
+        double temperature = 1.0;
 
         currBestSolution.simulate(environment, minutes);
-        currSolution.simulate(environment, minutes); // Ensure currSolution is also simulated
+        currSolution.simulate(environment, minutes);
         double bestFitness = currBestSolution.fitness(environment);
+        lastBestFitness = bestFitness;
+        double initialFitness = bestFitness;
 
         while (iterations < maxIterations && 
-               (System.currentTimeMillis() - startTime) < maxTimeMs &&
-               noImprovementCount < maxNoImprovement) {
+               (System.currentTimeMillis() - startTime) < maxTimeMs) {
             
+            currBestSolution.simulate(environment, minutes);
+            boolean isFeasible = currBestSolution.isFeasible(environment);
+            
+            // Check termination or reset conditions
+            if (isFeasible && noImprovementCount >= maxNoImprovementFeasible) {
+                break;
+            } else if (!isFeasible && noImprovementCount >= maxNoImprovement) {
+                if (resetCount < MAX_RESETS) {
+                    if (isDebug) {
+                        System.out.println("Performing random reset " + (resetCount + 1) + " of " + MAX_RESETS + " after " + noImprovementCount + " iterations without improvement");
+                    }
+                    Solution newSolution = environment.getRandomSolution();
+                    newSolution.simulate(environment, minutes);
+                    
+                    if (isDebug) {
+                        System.out.println("Reset accepted with fitness: " + newSolution.fitness(environment));
+                    }
+                    
+                    currSolution = newSolution;
+                    noImprovementCount = 0;
+                    resetCount++;
+                    temperature = 1.0; // Reset temperature after each reset
+                } else {
+                    break;
+                }
+            }
+
+            // Calculate dynamic acceptance probability based on stagnation and temperature
+            double stagnationFactor = Math.min(1.0, noImprovementCount / 1000.0);
+            double acceptanceProbability = Math.max(
+                minAcceptanceProbability,
+                Math.min(
+                    maxAcceptanceProbability,
+                    baseAcceptanceProbability + (baseAcceptanceProbability * stagnationFactor)
+                ) * temperature
+            );
+
             List<Neighbor> neighborhood = NeighborhoodGenerator.generateNeighborhood(currSolution, environment);
             for (Neighbor neighbor : neighborhood) {
                 neighbor.solution.simulate(environment, minutes);
             }
-            Neighbor bestNeighbor = Collections.max(neighborhood, 
-                (n1, n2) -> Double.compare(n1.solution.fitness(environment), n2.solution.fitness(environment)));
-
+            
+            // Sort neighbors by fitness and try top 3
+            Collections.sort(neighborhood, 
+                (n1, n2) -> Double.compare(n2.solution.fitness(environment), n1.solution.fitness(environment)));
+            
+            boolean improved = false;
             double currFitness = currSolution.fitness(environment);
-            double newFitness = bestNeighbor.solution.fitness(environment);
-
-            // Accept better solution
-            if (newFitness > currFitness) {
-                currSolution = bestNeighbor.solution;
-                // Note: bestNeighbor.solution is already simulated above
-                noImprovementCount = 0;
+            
+            // Try top 3 neighbors
+            for (int i = 0; i < Math.min(3, neighborhood.size()); i++) {
+                Neighbor candidate = neighborhood.get(i);
+                double newFitness = candidate.solution.fitness(environment);
                 
-                // Update best solution if better
-                if (newFitness > bestFitness) {
-                    currBestSolution = bestNeighbor.solution.clone();
-                    bestFitness = newFitness;
+                if (newFitness > currFitness) {
+                    currSolution = candidate.solution;
+                    if (newFitness > bestFitness) {
+                        double improvement = (newFitness - lastBestFitness) / Math.abs(lastBestFitness);
+                        if (improvement > minImprovementThreshold) {
+                            noImprovementCount = 0;
+                            lastBestFitness = newFitness;
+                        } else {
+                            noImprovementCount++;
+                        }
+                        currBestSolution = candidate.solution.clone();
+                        bestFitness = newFitness;
+                    } else {
+                        noImprovementCount++;
+                    }
+                    improved = true;
+                    break;
                 }
-            } 
-            // Accept worse solution with some probability (simulated annealing-like)
-            else if (random.nextDouble() < acceptanceProbability) {
-                currSolution = bestNeighbor.solution;
-                // Note: bestNeighbor.solution is already simulated above
             }
+            
+            // If no improvement found, consider accepting a worse solution
+            if (!improved) {
+                Neighbor bestNeighbor = neighborhood.get(0);
+                double newFitness = bestNeighbor.solution.fitness(environment);
+                
+                // Calculate acceptance probability based on fitness difference
+                double fitnessDiff = (newFitness - currFitness) / Math.abs(initialFitness);
+                double acceptanceProb = acceptanceProbability * Math.exp(fitnessDiff / temperature);
+                
+                if (random.nextDouble() < acceptanceProb) {
+                    currSolution = bestNeighbor.solution;
+                }
+                noImprovementCount++;
+            }
+
+            // Update temperature
+            temperature *= temperatureDecay;
 
             if (isDebug && iterations % 100 == 0) {
                 long timePassed = System.currentTimeMillis() - startTime;
@@ -72,11 +146,13 @@ public class Algorithm {
                     ": Current fitness: " + currFitness + 
                     ", Best fitness: " + bestFitness + 
                     ", Feasible: " + currSolution.isFeasible(environment) + 
+                    ", No improvement count: " + noImprovementCount +
+                    ", Temperature: " + String.format("%.4f", temperature) +
+                    ", Accept prob: " + String.format("%.4f", acceptanceProbability) +
                     ", Time passed: " + timePassed + "ms");
             }
 
             iterations++;
-            noImprovementCount++;
         }
 
         currBestSolution.compress();
