@@ -12,7 +12,7 @@ const MyComponent = () => {
     const handleSimulacion = (message: any) => {
       const payload = JSON.parse(message.body);
       const minuto = payload.simulacion?.[0]?.minuto ?? '?';
-      setLog(prev => [...prev, `📦 Recibido minuto ${minuto}`]);
+      setLog(prev => [...prev, `📦 Recibido plan en minuto ${minuto}`]);
     };
 
     subscribe('/topic/simulacion', handleSimulacion);
@@ -23,7 +23,7 @@ const MyComponent = () => {
 
   const iniciarSimulacion = () => {
     const fechaActual = new Date().toISOString();
-    publish('/app/simulacion-start', JSON.stringify({ timestamp: fechaActual }));
+    publish('/app/simulacion-test', JSON.stringify({ timestamp: fechaActual }));
     setLog(prev => [...prev, `🚀 Enviada solicitud de simulación: ${fechaActual}`]);
   };
 

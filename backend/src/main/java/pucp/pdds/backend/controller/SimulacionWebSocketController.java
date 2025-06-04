@@ -39,9 +39,10 @@ public class SimulacionWebSocketController {
         // Llamar al método que empieza la simulación por WebSocket
         simulacionSenderService.enviarSimulacionPorBatches();
     }
-    @MessageMapping("/simulacion-start")
-    public void test()  {
-        simulacionSenderService.enviarTest();
+
+    @MessageMapping("/simulacion-test")
+    public void testSimulacion() {
+        simulacionSenderService.enviarTest(); // Empieza a enviar la simulación falsa
     }
 
 }

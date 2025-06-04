@@ -30,7 +30,7 @@ interface SimulacionJson {
 
 interface MapGridProps {
   minuto: number;
-  data: SimulacionJson;
+  data: any;
 }
 
 function calcularAvanceEnRuta(v: VehiculoSimulado): number {
@@ -51,8 +51,8 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
     const [scale, setScale] = useState(1);
     const [position, setPosition] = useState({ x: 0, y: 0 });
 
-    const minutoActual = data.simulacion.find((m) => m.minuto === minuto);
-    const minutoSiguiente = data.simulacion.find((m) => m.minuto === minuto + 1);
+    const minutoActual = data.simulacion?.find((m) => m.minuto === minuto);
+    const minutoSiguiente = data.simulacion?.find((m) => m.minuto === minuto + 1);
 
     const vehiculosActuales = minutoActual?.vehiculos || [];
     const vehiculosSiguientes = minutoSiguiente?.vehiculos || [];
