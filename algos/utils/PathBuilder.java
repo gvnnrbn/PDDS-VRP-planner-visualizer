@@ -16,21 +16,60 @@ public class PathBuilder {
             return null;
         }
 
-        // Try A* first as it's more reliable with blockages
-        List<Position> path = buildAstarPath(from, to, blockages);
-        if (path != null) {
+        if (from.equals(to)) {
+            return new ArrayList<>();
+        }
+
+        List<Position> path = new ArrayList<>();
+        Position fromPos = from;
+        Position toPos = to;
+
+        // Handle non-integer start position
+        if (!from.isInteger()) {
+            Position roundedFrom = from.round();
+            // Check if direct path to rounded position is blocked
+            if (isPathBlocked(from, roundedFrom, blockages)) {
+                return null;
+            }
+            path.add(from);
+            fromPos = roundedFrom;
+        }
+
+        // Handle non-integer end position
+        if (!to.isInteger()) {
+            Position roundedTo = to.round();
+            // Check if direct path from rounded position is blocked
+            if (isPathBlocked(roundedTo, to, blockages)) {
+                return null;
+            }
+            toPos = roundedTo;
+        }
+
+        // Try Manhattan path first with integer positions
+        List<Position> mainPath = buildManhattanPath(fromPos, toPos, blockages);
+        if (mainPath != null) {
             // Verify the path doesn't cross any blockages
-            if (isPathValid(path, blockages)) {
-                return path;
+            if (isPathValid(mainPath, blockages)) {
+                path.addAll(mainPath);
+                // Add final non-integer position if needed
+                if (!to.isInteger()) {
+                    path.add(to);
+                }
+                return compressPath(path);
             }
         }
 
-        // Only try Manhattan path if A* fails
-        path = buildManhattanPath(from, to, blockages);
-        if (path != null) {
+        // Try A* as a fallback with integer positions
+        mainPath = buildAstarPath(fromPos, toPos, blockages);
+        if (mainPath != null) {
             // Verify the path doesn't cross any blockages
-            if (isPathValid(path, blockages)) {
-                return path;
+            if (isPathValid(mainPath, blockages)) {
+                path.addAll(mainPath);
+                // Add final non-integer position if needed
+                if (!to.isInteger()) {
+                    path.add(to);
+                }
+                return compressPath(path);
             }
         }
 
@@ -236,5 +275,52 @@ public class PathBuilder {
     // Convention is that empty is for from = to, null is for no possible path
     private static List<Position> buildAstarPath(Position from, Position to, List<PlannerBlockage> blockages) {
         return AStarPathfinder.findPath(from, to, blockages);
+    }
+
+    private static List<Position> compressPath(List<Position> path) {
+        if (path.size() < 3) {
+            return path;
+        }
+
+        List<Position> compressedPath = new ArrayList<>();
+        compressedPath.add(path.get(0));
+
+        Position prev = path.get(0);
+        Position current;
+        Position next;
+
+        for (int i = 1; i < path.size() - 1; i++) {
+            current = path.get(i);
+            next = path.get(i + 1);
+
+            // Skip if current point is same as previous or next point
+            if (Math.abs(current.x - prev.x) < EPSILON && Math.abs(current.y - prev.y) < EPSILON ||
+                Math.abs(current.x - next.x) < EPSILON && Math.abs(current.y - next.y) < EPSILON) {
+                continue;
+            }
+
+            // Check if current point represents a direction change
+            boolean isDirectionChange = 
+                !((Math.abs((current.x - prev.x) - (next.x - current.x)) < EPSILON && 
+                   Math.abs((current.y - prev.y) - (next.y - current.y)) < EPSILON) || // Same direction
+                  (Math.abs(current.x - prev.x) < EPSILON && Math.abs(current.x - next.x) < EPSILON) || // Vertical line
+                  (Math.abs(current.y - prev.y) < EPSILON && Math.abs(current.y - next.y) < EPSILON));  // Horizontal line
+
+            if (isDirectionChange) {
+                compressedPath.add(current);
+                prev = current;
+            }
+        }
+
+        Position lastPoint = path.get(path.size() - 1);
+        Position lastCompressed = compressedPath.get(compressedPath.size() - 1);
+        
+        // Only add last point if it's different from the last compressed point
+        if (Math.abs(lastPoint.x - lastCompressed.x) > EPSILON || 
+            Math.abs(lastPoint.y - lastCompressed.y) > EPSILON) {
+            compressedPath.add(lastPoint);
+        }
+
+        return compressedPath;
     }
 }

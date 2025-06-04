@@ -46,6 +46,18 @@ public class Pathing {
         CaseI();
         System.out.println("\n" + "=".repeat(50) + "\n");
         CaseJ();
+        System.out.println("\n==================================================\n");
+        CaseK();
+        System.out.println("\n==================================================\n");
+        CaseL();
+        System.out.println("\n==================================================\n");
+        CaseM();
+        System.out.println("\n==================================================\n");
+        CaseN();
+        System.out.println("\n==================================================\n");
+        CaseO();
+        System.out.println("\n==================================================\n");
+        CaseP();
     }
 
     private static void printPathInfo(String caseName, Position start, Position end, List<Position> path) {
@@ -386,5 +398,239 @@ public class Pathing {
         PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
         
         System.out.println("Ended Case J Simulation");
+    }
+
+    public static void CaseK() {
+        // Test case with decimal coordinates
+        Position start = new Position(5.5, 5); // Start with decimal x
+        Position end = new Position(20, 15.7); // End with decimal y
+
+        List<PlannerBlockage> blockages = new ArrayList<>();
+        
+        // Add some blockages to make the path more interesting
+        blockages.add(new PlannerBlockage(0, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(10, 0),
+                new Position(10, 10)
+            ))
+        ));
+
+        List<Position> path = PathBuilder.buildPath(start, end, blockages);
+        printPathInfo("Case K - Decimal Coordinate Path", start, end, path);
+
+        // Visualize the path with null handling
+        List<Position> visualPath = (path != null) ? path : new ArrayList<>();
+        PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
+        
+        System.out.println("Ended Case K Simulation");
+    }
+
+    public static void CaseL() {
+        // Test case with decimal coordinates and multiple path options
+        Position start = new Position(3, 4.2); // Start with decimal y
+        Position end = new Position(25.8, 30); // End with decimal x
+
+        List<PlannerBlockage> blockages = new ArrayList<>();
+        
+        // Create a more complex scenario with multiple possible paths
+        blockages.add(new PlannerBlockage(0, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(15, 10),
+                new Position(15, 20)
+            ))
+        ));
+        
+        blockages.add(new PlannerBlockage(1, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(20, 15),
+                new Position(20, 25)
+            ))
+        ));
+
+        List<Position> path = PathBuilder.buildPath(start, end, blockages);
+        printPathInfo("Case L - Complex Decimal Coordinate Path", start, end, path);
+
+        // Visualize the path with null handling
+        List<Position> visualPath = (path != null) ? path : new ArrayList<>();
+        PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
+        
+        System.out.println("Ended Case L Simulation");
+    }
+
+    public static void CaseM() {
+        // Zigzag maze requiring A* to find optimal path
+        Position start = new Position(5.9, 5);
+        Position end = new Position(35, 35);
+
+        List<PlannerBlockage> blockages = new ArrayList<>();
+        
+        // Create a zigzag pattern of walls forcing an optimal path
+        blockages.add(new PlannerBlockage(0, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(10, 0),
+                new Position(10, 25)
+            ))
+        ));
+        
+        blockages.add(new PlannerBlockage(1, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(20, 15),
+                new Position(20, 40)
+            ))
+        ));
+        
+        blockages.add(new PlannerBlockage(2, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(30, 0),
+                new Position(30, 25)
+            ))
+        ));
+
+        List<Position> path = PathBuilder.buildPath(start, end, blockages);
+        printPathInfo("Case M - Zigzag Maze (A* Optimal Path)", start, end, path);
+
+        // Visualize the path with null handling
+        List<Position> visualPath = (path != null) ? path : new ArrayList<>();
+        PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
+        
+        System.out.println("Ended Case M Simulation");
+    }
+
+    public static void CaseN() {
+        // Complex maze with multiple dead ends
+        Position start = new Position(2.4, 2);
+        Position end = new Position(38, 38);
+
+        List<PlannerBlockage> blockages = new ArrayList<>();
+        
+        // Create a complex maze pattern with dead ends
+        blockages.add(new PlannerBlockage(0, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(10, 0),
+                new Position(10, 30)
+            ))
+        ));
+        
+        blockages.add(new PlannerBlockage(1, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(10, 10),
+                new Position(30, 10)
+            ))
+        ));
+        
+        blockages.add(new PlannerBlockage(2, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(20, 10),
+                new Position(20, 30)
+            ))
+        ));
+        
+        blockages.add(new PlannerBlockage(3, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(30, 20),
+                new Position(30, 40)
+            ))
+        ));
+
+        List<Position> path = PathBuilder.buildPath(start, end, blockages);
+        printPathInfo("Case N - Complex Maze with Dead Ends (A* Navigation)", start, end, path);
+
+        // Visualize the path with null handling
+        List<Position> visualPath = (path != null) ? path : new ArrayList<>();
+        PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
+        
+        System.out.println("Ended Case N Simulation");
+    }
+
+    public static void CaseO() {
+        // Spiral pattern requiring A* to navigate efficiently
+        Position start = new Position(20, 20.5);
+        Position end = new Position(5, 5);
+
+        List<PlannerBlockage> blockages = new ArrayList<>();
+        
+        // Create a spiral pattern of blockages
+        blockages.add(new PlannerBlockage(0, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(10, 10),
+                new Position(30, 10)
+            ))
+        ));
+        
+        blockages.add(new PlannerBlockage(1, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(30, 10),
+                new Position(30, 30)
+            ))
+        ));
+        
+        blockages.add(new PlannerBlockage(2, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(15, 30),
+                new Position(30, 30)
+            ))
+        ));
+        
+        blockages.add(new PlannerBlockage(3, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(15, 15),
+                new Position(15, 30)
+            ))
+        ));
+
+        List<Position> path = PathBuilder.buildPath(start, end, blockages);
+        printPathInfo("Case O - Spiral Pattern (A* Efficiency Test)", start, end, path);
+
+        // Visualize the path with null handling
+        List<Position> visualPath = (path != null) ? path : new ArrayList<>();
+        PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
+        
+        System.out.println("Ended Case O Simulation");
+    }
+
+    public static void CaseP() {
+        // Multiple equivalent paths requiring A* to choose optimal one
+        Position start = new Position(5.8, 25);
+        Position end = new Position(35, 25);
+
+        List<PlannerBlockage> blockages = new ArrayList<>();
+        
+        // Create a pattern with multiple possible paths
+        blockages.add(new PlannerBlockage(0, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(15, 15),
+                new Position(15, 23)
+            ))
+        ));
+        
+        blockages.add(new PlannerBlockage(1, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(15, 27),
+                new Position(15, 35)
+            ))
+        ));
+        
+        blockages.add(new PlannerBlockage(2, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(25, 15),
+                new Position(25, 23)
+            ))
+        ));
+        
+        blockages.add(new PlannerBlockage(3, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(25, 27),
+                new Position(25, 35)
+            ))
+        ));
+
+        List<Position> path = PathBuilder.buildPath(start, end, blockages);
+        printPathInfo("Case P - Multiple Equivalent Paths (A* Optimal Choice)", start, end, path);
+
+        // Visualize the path with null handling
+        List<Position> visualPath = (path != null) ? path : new ArrayList<>();
+        PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
+        
+        System.out.println("Ended Case P Simulation");
     }
 }

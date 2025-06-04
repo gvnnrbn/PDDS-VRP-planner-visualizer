@@ -17,6 +17,12 @@ public class Position implements Cloneable {
         return new Position(Math.round(x), Math.round(y));
     }
 
+    public boolean isPossible() {
+        boolean firstGuard = x >= 0 && x <= SimulationProperties.gridLength && y >= 0 && y <= SimulationProperties.gridWidth;
+        boolean secondGuard = (isInteger() && y % 1 != 0) || (!isInteger() && y % 1 == 0);
+        return firstGuard && secondGuard;
+    }
+
     @Override
     public String toString() {
         return "Position{" + "x=" + x + ", y=" + y + '}';
