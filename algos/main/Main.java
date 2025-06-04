@@ -23,7 +23,7 @@ import scheduler.SchedulerOrder;
 import scheduler.SchedulerVehicle;
 import scheduler.SchedulerWarehouse;
 import utils.EnvironmentBuilder;
-import utils.EnvironmentParser;
+import utils.DataParser;
 import utils.SimulationEngine;
 import utils.Time;
 

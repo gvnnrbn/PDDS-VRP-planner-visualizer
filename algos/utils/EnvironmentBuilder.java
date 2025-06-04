@@ -1,6 +1,12 @@
 package utils;
 
-import domain.*;
+import algorithm.Environment;
+import entities.PlannerBlockage;
+import entities.PlannerOrder;
+import entities.PlannerVehicle;
+import entities.PlannerWarehouse;
+import entities.PlannerFailure;
+import entities.PlannerMaintenance;
 import scheduler.EnumVehicleState;
 import scheduler.ScheduleState;
 import scheduler.SchedulerBlockage;

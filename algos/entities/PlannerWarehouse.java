@@ -25,41 +25,6 @@ public class PlannerWarehouse implements Cloneable {
         this.wasVehicle = wasVehicle;
     }
 
-    public static List<PlannerWarehouse> parseWarehouses(String filePath) {
-        List<PlannerWarehouse> warehouses = new ArrayList<>();
-        
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-            String line;
-            int id = 1; // Starting ID for warehouses
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",");
-                if (parts.length < 3 || parts.length > 4) continue;
-                
-                // Parse warehouse details
-                int x = Integer.parseInt(parts[0]);
-                int y = Integer.parseInt(parts[1]);
-                int maxGLP = Integer.parseInt(parts[2]);
-                boolean isMain = parts.length == 4 && parts[3].equals("main");
-                
-                // Create warehouse with parsed values
-                PlannerWarehouse warehouse = new PlannerWarehouse(
-                    id,
-                    new Position(x, y),
-                    maxGLP,
-                    maxGLP, // Start with full GLP
-                    isMain,
-                    false
-                );
-                warehouses.add(warehouse);
-                id++;
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        
-        return warehouses;
-    }
-
     @Override
     public String toString() {
         return "PlannerWarehouse{" +

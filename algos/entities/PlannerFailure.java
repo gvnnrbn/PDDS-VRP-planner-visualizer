@@ -49,30 +49,6 @@ public class PlannerFailure implements Cloneable{
         }
     }
 
-    public static List<PlannerFailure> parseFailures(String filePath) {
-        List<PlannerFailure> failures = new ArrayList<>();
-        
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-            String line;
-            int id = 1; // Starting ID for failures
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split("_");
-                if (parts.length != 3) continue;
-                
-                int shiftOccurredOn = Integer.parseInt(parts[0].trim());
-                String vehiclePlaque = parts[1].trim();
-                int type = Integer.parseInt(parts[2].trim());
-
-                PlannerFailure failure = new PlannerFailure(id++, FailureType.values()[type], Shift.values()[shiftOccurredOn], vehiclePlaque, null, null);
-                failures.add(failure);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        
-        return failures;
-    }
-
     public PlannerFailure register(Time currTime, int minutesToMainWarehouse) {
         Time endStuckTime = currTime.addMinutes(this.minutesStuck); // until this time is available as WAREHOUSE
         Time endRepairTime = endStuckTime.addMinutes(minutesToMainWarehouse).addTime(this.timeTillRepaired);

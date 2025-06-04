@@ -132,7 +132,7 @@ public class Time implements Comparable<Time>, Cloneable {
     }
 
     public int minutesSince(Time other) {
-        return -other.minutesUntil(this);
+        return -this.minutesUntil(other);
     }
 
     public Time copy() {

@@ -78,6 +78,10 @@ public class Solution implements Cloneable {
     }
 
     public void simulate(Environment environment, int minutes) {
+        if (hasRunSimulation) {
+            return;
+        }
+
         totalOrders = environment.orders.size();
 
         // Clone orders
@@ -109,6 +113,11 @@ public class Solution implements Cloneable {
         for (PlannerVehicle vehicle : vehicleMap.values()) {
             List<Node> route = routes.get(vehicle.id);
             Time currentTime = environment.currentTime;
+
+            if (vehicle.waitTransition > 0){
+                currentTime = currentTime.addMinutes(vehicle.waitTransition);
+            }
+
 
             for (int i = 0; i < route.size() - 1 && currentTime.minutesSince(environment.currentTime) < minutes; i++) {
                 Node originNode = route.get(i);
@@ -146,8 +155,9 @@ public class Solution implements Cloneable {
                         errors.add("Vehicle " + vehicle.id + " has not enough GLP to deliver order " + order.id + ".");
                         break;
                     } else {
-                        // Consume GLP
+                        // Consume GLP and track the cost
                         vehicle.currentGLP -= GLPToDeliver;
+                        totalGLPCost += GLPToDeliver; // Track successful GLP delivery cost
                     }
 
                     if (currentTime.isBefore(order.deadline)) {
@@ -188,11 +198,16 @@ public class Solution implements Cloneable {
 
         deliveredOrders = environment.orders.size() - orderMap.size();
 
-        double timePointsProportion = (totalTimePoints * 1.0 / totalPossibleTimePoints);
-        double imaginaryFuelConsumedProportion = (imaginaryFuelConsumed * 1.0 / totalFuelCost);
-        double imaginaryGLPConsumedProportion = (imaginaryGLPConsumed * 1.0 / totalGLPCost);
-		double ordersNotDeliveredProportion = (orderMap.size() * 1.0 / totalOrders);
-		double ordersNotDeliveredOnTimeProportion = (1 - deliveredOrdersOnTime * 1.0 / totalOrders);
+        double timePointsProportion = totalPossibleTimePoints > 0 ? 
+            (totalTimePoints * 1.0 / totalPossibleTimePoints) : 0.0;
+        double imaginaryFuelConsumedProportion = totalFuelCost > 0 ? 
+            (imaginaryFuelConsumed * 1.0 / totalFuelCost) : 0.0;
+        double imaginaryGLPConsumedProportion = totalGLPCost > 0 ? 
+            (imaginaryGLPConsumed * 1.0 / totalGLPCost) : 0.0;
+		double ordersNotDeliveredProportion = totalOrders > 0 ? 
+            (orderMap.size() * 1.0 / totalOrders) : 0.0;
+		double ordersNotDeliveredOnTimeProportion = totalOrders > 0 ? 
+            (1 - deliveredOrdersOnTime * 1.0 / totalOrders) : 0.0;
 
 		fitness = Solution.weightTimePoints * timePointsProportion -
 			Solution.weightImaginaryFuelConsumed * imaginaryFuelConsumedProportion -
@@ -250,5 +265,42 @@ public class Solution implements Cloneable {
             ", totalOrders=" + totalOrders +
             ", errors=" + errors +
             '}';
+    }
+
+    public String getReport() {
+        StringBuilder report = new StringBuilder();
+        
+        if (!hasRunSimulation) {
+            return "No simulation has been run yet.";
+        }
+
+        report.append("Feasibility: ").append(isFeasible ? "Is Feasible" : "Is Not Feasible").append("\n");
+        report.append("Fitness: ").append(String.format("%.4f", fitness)).append("\n\n");
+        
+        report.append("Fitness Components:\n");
+        report.append(String.format("  Time Points: %d/%d (%.4f)\n", 
+            totalTimePoints, totalPossibleTimePoints, 
+            totalPossibleTimePoints > 0 ? totalTimePoints * 1.0 / totalPossibleTimePoints : 0.0));
+        report.append(String.format("  Imaginary Fuel Consumed: %.4f/%.4f (%.4f)\n", 
+            imaginaryFuelConsumed, totalFuelCost, 
+            totalFuelCost > 0 ? imaginaryFuelConsumed * 1.0 / totalFuelCost : 0.0));
+        report.append(String.format("  Imaginary GLP Consumed: %d/%d (%.4f)\n", 
+            imaginaryGLPConsumed, totalGLPCost, 
+            totalGLPCost > 0 ? imaginaryGLPConsumed * 1.0 / totalGLPCost : 0.0));
+        report.append(String.format("  Orders Not Delivered: %d/%d (%.4f)\n", 
+            totalOrders - deliveredOrders, totalOrders, 
+            totalOrders > 0 ? (totalOrders - deliveredOrders) * 1.0 / totalOrders : 0.0));
+        report.append(String.format("  Orders Not Delivered On Time: %d/%d (%.4f)\n", 
+            totalOrders - deliveredOrdersOnTime, totalOrders, 
+            totalOrders > 0 ? (totalOrders - deliveredOrdersOnTime) * 1.0 / totalOrders : 0.0));
+
+        if (!errors.isEmpty()) {
+            report.append("\nErrors:\n");
+            report.append(errors.stream().collect(Collectors.joining("\n")));
+        } else {
+            report.append("\nNo errors found.");
+        }
+
+        return report.toString();
     }
 }

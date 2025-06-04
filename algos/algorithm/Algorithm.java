@@ -9,9 +9,9 @@ import java.util.Random;
 
 public class Algorithm {
     // Hyperparameters
-    private static final int maxIterations = 10_000;
-    private static final int maxTimeMs = 55 * 1000;
-    private static final int maxNoImprovement = 1000;
+    private static final int maxIterations = 100_000;
+    private static final int maxTimeMs = 55 * 10000;
+    private static final int maxNoImprovement = 10_000;
     private static final double acceptanceProbability = 0.1;
 
     private static final boolean isDebug = true;
@@ -31,6 +31,7 @@ public class Algorithm {
         int noImprovementCount = 0;
 
         currBestSolution.simulate(environment, minutes);
+        currSolution.simulate(environment, minutes); // Ensure currSolution is also simulated
         double bestFitness = currBestSolution.fitness(environment);
 
         while (iterations < maxIterations && 
@@ -50,6 +51,7 @@ public class Algorithm {
             // Accept better solution
             if (newFitness > currFitness) {
                 currSolution = bestNeighbor.solution;
+                // Note: bestNeighbor.solution is already simulated above
                 noImprovementCount = 0;
                 
                 // Update best solution if better
@@ -61,6 +63,7 @@ public class Algorithm {
             // Accept worse solution with some probability (simulated annealing-like)
             else if (random.nextDouble() < acceptanceProbability) {
                 currSolution = bestNeighbor.solution;
+                // Note: bestNeighbor.solution is already simulated above
             }
 
             if (isDebug && iterations % 100 == 0) {

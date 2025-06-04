@@ -4,31 +4,23 @@ import entities.PlannerBlockage;
 import entities.PlannerOrder;
 import entities.PlannerVehicle;
 import entities.PlannerWarehouse;
-import algorithm.Environment;
+import entities.PlannerFailure.FailureType;
+import entities.PlannerFailure.Shift;
+import entities.PlannerFailure;
+import entities.PlannerMaintenance;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.NumberFormatException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EnvironmentParser {
-    private Time currentTime;
+public class DataParser {
+    private static int currentYear = 2025; 
+    private static int currentMonth = 1;
 
-    public EnvironmentParser(Time currentTime) {
-        this.currentTime = currentTime;
-    }
-
-    public Environment parseEnvironment(String vehiclesFilePath, String ordersFilePath, String blockagesFilePath, String warehousesFilePath) {
-        List<PlannerVehicle> vehicles = parseVehicles(vehiclesFilePath);
-        List<PlannerOrder> orders = parseOrders(ordersFilePath);
-        List<PlannerBlockage> blockages = parseBlockages(blockagesFilePath);
-        List<PlannerWarehouse> warehouses = parseWarehouses(warehousesFilePath);
-
-        return new Environment(vehicles, orders, warehouses, blockages, currentTime);
-    }
-
-    public List<PlannerOrder> parseOrders(String filePath) {
+    public static List<PlannerOrder> parseOrders(String filePath) {
         List<PlannerOrder> orders = new ArrayList<>();
         int orderId = 1;
     
@@ -55,7 +47,7 @@ public class EnvironmentParser {
                     int day = Integer.parseInt(timeParts[0]);
                     int hour = Integer.parseInt(timeParts[1]);
                     int minute = Integer.parseInt(timeParts[2]);
-                    Time creationTime = new Time(0, 1, day, hour, minute);
+                    Time creationTime = new Time(currentYear, currentMonth, day, hour, minute);
     
                     // Parse order data (x,y,c-idClient,m3,h)
                     String[] orderParts = parts[1].split(",");
@@ -93,7 +85,7 @@ public class EnvironmentParser {
     }
     
 
-    public List<PlannerVehicle> parseVehicles(String filePath) {
+    public static List<PlannerVehicle> parseVehicles(String filePath) {
         List<PlannerVehicle> vehicles = new ArrayList<>();
         int id = 1;
         
@@ -135,11 +127,11 @@ public class EnvironmentParser {
                             type,
                             PlannerVehicle.VehicleState.IDLE,
                             (int) grossWeight,
-                            25,  // Fixed fuel capacity
-                            25,  // Current fuel
+                            1000,  // Increased fuel capacity to 1000 gallons
+                            1000,  // Current fuel to 1000 gallons
                             maxGLP,
-                            maxGLP,  // Start with full GLP
-                            new Position(0, 0)
+                            0,  // Start with empty GLP to force refilling
+                            new Position(12, 8)  // Start at main warehouse position
                         );
                         vehicles.add(vehicle);
                     }
@@ -155,7 +147,7 @@ public class EnvironmentParser {
         return vehicles;
     }
 
-    public List<PlannerBlockage> parseBlockages(String filePath) {
+    public static List<PlannerBlockage> parseBlockages(String filePath) {
         List<PlannerBlockage> blockages = new ArrayList<>();
         int id = 1;
         
@@ -188,7 +180,7 @@ public class EnvironmentParser {
                     int startDay = Integer.parseInt(startTimeComponents[0]);
                     int startHour = Integer.parseInt(startTimeComponents[1]);
                     int startMinute = Integer.parseInt(startTimeComponents[2]);
-                    Time startTime = new Time(0, 1, startDay, startHour, startMinute);
+                    Time startTime = new Time(currentYear, currentMonth, startDay, startHour, startMinute);
 
                     // Parse end time
                     String[] endTimeComponents = timeParts[1].split("[dhm]");
@@ -199,7 +191,7 @@ public class EnvironmentParser {
                     int endDay = Integer.parseInt(endTimeComponents[0]);
                     int endHour = Integer.parseInt(endTimeComponents[1]);
                     int endMinute = Integer.parseInt(endTimeComponents[2]);
-                    Time endTime = new Time(0, 1, endDay, endHour, endMinute);
+                    Time endTime = new Time(currentYear, currentMonth, endDay, endHour, endMinute);
 
                     // Parse vertices
                     String[] coordinates = parts[1].split(",");
@@ -231,7 +223,7 @@ public class EnvironmentParser {
         return blockages;
     }
 
-    public List<PlannerWarehouse> parseWarehouses(String filePath) {
+    public static List<PlannerWarehouse> parseWarehouses(String filePath) {
         List<PlannerWarehouse> warehouses = new ArrayList<>();
         
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
@@ -280,5 +272,100 @@ public class EnvironmentParser {
         }
         
         return warehouses;
+    }
+
+    public static List<PlannerFailure> parseFailures(String filePath) {
+        List<PlannerFailure> failures = new ArrayList<>();
+        
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            int id = 1; // Starting ID for failures
+            while ((line = reader.readLine()) != null) {
+                if (line.trim().isEmpty()) continue;
+
+                String[] parts = line.split("_");
+                if (parts.length != 3) {
+                    System.err.println("Invalid failure format: " + line);
+                    continue;
+                }
+
+                try {
+                    // Parse shift (1=00:00-08:00, 2=08:00-16:00, 3=16:00-24:00)
+                    int shift = Integer.parseInt(parts[0].trim());
+                    Shift shiftOccurredOn = switch (shift) {
+                        case 1 -> Shift.T1;
+                        case 2 -> Shift.T2;
+                        case 3 -> Shift.T3;
+                        default -> throw new IllegalArgumentException("Invalid shift: " + shift);
+                    };
+
+                    // Parse vehicle plaque
+                    String vehiclePlaque = parts[1].trim();
+
+                    // Parse failure type (1, 2, or 3)
+                    int typeInt = Integer.parseInt(parts[2].trim());
+                    FailureType type = switch (typeInt) {
+                        case 1 -> FailureType.Ti1;
+                        case 2 -> FailureType.Ti2;
+                        case 3 -> FailureType.Ti3;
+                        default -> throw new IllegalArgumentException("Invalid failure type: " + typeInt);
+                    };
+
+                    // Create failure with null times (they will be set when registered)
+                    PlannerFailure failure = new PlannerFailure(
+                        id++,
+                        type,
+                        shiftOccurredOn,
+                        vehiclePlaque,
+                        null,  // endStuckTime will be set when registered
+                        null   // endRepairTime will be set when registered
+                    );
+                    failures.add(failure);
+                } catch (NumberFormatException e) {
+                    System.err.println("Invalid number format in line: " + line);
+                    continue;
+                } catch (IllegalArgumentException e) {
+                    System.err.println("Invalid failure format: " + line + " - " + e.getMessage());
+                    continue;
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error reading failures file: " + e.getMessage());
+        }
+        
+        return failures;
+    }
+
+    public static List<PlannerMaintenance> parseMaintenances(String filePath) {
+        List<PlannerMaintenance> maintenances = new ArrayList<>();
+        
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            int id = 1; // Starting ID 
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(":");
+                if (parts.length != 2) {
+                    System.err.println("Invalid maintenance format in line: " + line);
+                    continue;
+                }
+                
+                try {
+                    int startDate = Integer.parseInt(parts[0].trim());
+                    String vehiclePlaque = parts[1].trim();
+                    // 20250503:TD06
+                    Time start = new Time(startDate/10000, startDate%10000/100, startDate%100, 0, 0);
+                    Time end = start.addTime(new Time(0, 0, 0, 23, 59));
+                    PlannerMaintenance maintenance = new PlannerMaintenance(id++, vehiclePlaque, start, end);
+                    maintenances.add(maintenance);
+                } catch (NumberFormatException e) {
+                    System.err.println("Invalid number format in line: " + line);
+                    continue;
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error reading maintenances file: " + e.getMessage());
+        }
+        
+        return maintenances;
     }
 }

@@ -10,11 +10,13 @@ import java.util.Random;
 import utils.PathBuilder;
 import utils.Time;
 import utils.Position;
-
+import utils.SimulationProperties;
 import entities.PlannerVehicle;
 import entities.PlannerOrder;
 import entities.PlannerWarehouse;
 import entities.PlannerBlockage;
+import entities.PlannerFailure;
+import entities.PlannerMaintenance;
 
 public class Environment {
     public Time currentTime;
@@ -23,6 +25,8 @@ public class Environment {
     public List<PlannerOrder> orders;
     public List<PlannerWarehouse> warehouses;
     public List<PlannerBlockage> blockages;
+    public List<PlannerFailure> failures;
+    public List<PlannerMaintenance> maintenances;
 
     private List<Node> nodes;
     private boolean areNodesGenerated = false;
@@ -46,16 +50,18 @@ public class Environment {
     }
 
     public Environment(List<PlannerVehicle> vehicles, List<PlannerOrder> orders, List<PlannerWarehouse> warehouses, List<PlannerBlockage> blockages,
-            Time currentTime) {
+            List<PlannerFailure> failures, List<PlannerMaintenance> maintenances, Time currentTime) {
         this.vehicles = vehicles;
         this.orders = orders;
         this.warehouses = warehouses;
         this.blockages = blockages;
+        this.failures = failures;
+        this.maintenances = maintenances;
         this.currentTime = currentTime;
     }
 
     public Environment() {
-        this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new Time(0,0, 0, 0, 0));
+        this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new Time(1, 1, 1, 0, 0));
     }
 
     @Override
@@ -72,6 +78,12 @@ public class Environment {
         }
         for (PlannerBlockage blockage : blockages) {
             sb.append("  ").append(blockage).append("\n");
+        }
+        for (PlannerFailure failure : failures) {
+            sb.append("  ").append(failure).append("\n");
+        }
+        for (PlannerMaintenance maintenance : maintenances) {
+            sb.append("  ").append(maintenance).append("\n");
         }
         sb.append("}");
         return sb.toString();
