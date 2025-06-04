@@ -249,7 +249,7 @@
           "combustible": 15,
           "maxCombustible": 30,
           "maxGLP": 30,
-          "currGLP": 10,
+          "currGLP": 18,
           "placa": "TA123",
           "posicionX": 30,
           "posicionY": 30,
@@ -281,7 +281,7 @@
               "estado": "Entregando",
               "accion": "Descarga",
               "traspasoGLP": 20,
-              "idPedido": 1
+              "idPedido": 3
             }
           ]
         },{

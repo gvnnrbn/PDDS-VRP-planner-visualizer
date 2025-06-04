@@ -4,6 +4,7 @@ import type { AlmacenSimulado } from "../../../core/types/almacen";
 import { Image as KonvaImage, Text, Group } from "react-konva";
 import useImage from "use-image";
 import { useEffect, useState } from "react";
+import { useSimulacion } from "../SimulacionContext";
 
 library.add(faWarehouse, faIndustry);
 
@@ -27,34 +28,35 @@ interface Props {
 }
 
 export const WarehouseIcon: React.FC<Props> = ({ almacen, cellSize, gridHeight }) => {
-  if (!almacen.posicion) return null;
+  const { almacenes } = useSimulacion();
+  const almacenActual = almacenes.find(a => a.idAlmacen === almacen.idAlmacen);
 
-  const { posX, posY } = almacen.posicion;
+  if (!almacenActual?.posicion) return null;
+
+  const { posX, posY } = almacenActual.posicion;
   const x = posX * cellSize;
   const y = (gridHeight - posY) * cellSize;
 
   const [iconUrl, setIconUrl] = useState<string | null>(null);
   const [image] = useImage(iconUrl || "");
-  const [textColor, setTextColor] = useState("gray");
-  const [glpLabel, setGlpLabel] = useState("");
+  const [textColor, setTextColor] = useState("black");
+  const [glpLabel, setGlpLabel] = useState("Principal");
 
   useEffect(() => {
     let icon = faWarehouse;
     let color = "black";
 
-    if (!almacen.isMain) {
+    if (!almacenActual.isMain) {
       icon = faIndustry;
-      if (almacen.currentGLP !== undefined && almacen.maxGLP !== undefined) {
-        color = almacen.currentGLP < almacen.maxGLP / 2 ? "red" : "green";
-        setGlpLabel(`${almacen.currentGLP}/${almacen.maxGLP}`);
-      } else {
-        setGlpLabel("N/A");
-      }
+      const curr = almacenActual.currentGLP ?? 0;
+      const max = almacenActual.maxGLP ?? 100;
+      color = curr < max / 2 ? "red" : "green";
+      setGlpLabel(`${curr}/${max}`);
+      setTextColor(color);
     }
 
-    setTextColor(color);
     setIconUrl(createIconUrl(icon, color));
-  }, [almacen]);
+  }, [almacenActual]);
 
   if (!image) return null;
 

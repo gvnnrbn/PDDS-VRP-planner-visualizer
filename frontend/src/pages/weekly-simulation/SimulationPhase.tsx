@@ -13,6 +13,8 @@ import {
   Button
 } from "@chakra-ui/react";
 
+import { SimulacionProvider } from '../../components/common/SimulacionContext';
+
 export default function SimulationPhase() {
   const [minuto, setMinuto] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -108,49 +110,53 @@ export default function SimulationPhase() {
 
   return (
     <div>
-      <MapGrid minuto={minuto} data={jsonData} />
-      <BottomLeftControls variant="full" date={displayDate} onSpeedChange={handleSpeedChange} onStop={handleStop}/>
-
-      {/* ✅ Modal al finalizar */}
-      <Modal isOpen={isOpen} onClose={onClose} isCentered size="xl">
-        <ModalOverlay bg="blackAlpha.700" />
-        <ModalContent bg="white" textAlign="center" p={8}>
-          <ModalHeader>
-            <Text fontSize="2xl" fontWeight="extrabold">
-              ✅ Simulación completada
-            </Text>
-          </ModalHeader>
-          <hr />
-          <ModalBody>
-            <VStack align="start" spacing={3} fontSize="md">
-              <Text>
-                <strong>Fecha y Hora de inicio:</strong> {formatDateTime(fechaInicio)}
+       <SimulacionProvider
+        initialVehiculos={jsonData.simulacion[0]?.vehiculos ?? []}
+        initialPedidos={jsonData.simulacion[0]?.pedidos ?? []}
+        initialAlmacenes={jsonData.simulacion[0]?.almacenes ?? []}
+      >
+        <MapGrid minuto={minuto} data={jsonData} />
+        <BottomLeftControls variant="full" date={displayDate} onSpeedChange={handleSpeedChange} onStop={handleStop}/>
+        {/* ✅ Modal al finalizar */}
+        <Modal isOpen={isOpen} onClose={onClose} isCentered size="xl">
+          <ModalOverlay bg="blackAlpha.700" />
+          <ModalContent bg="white" textAlign="center" p={8}>
+            <ModalHeader>
+              <Text fontSize="2xl" fontWeight="extrabold">
+                ✅ Simulación completada
               </Text>
-              <Text>
-                <strong>Fecha y Hora de fin:</strong> {formatDateTime(fechaFin)}
-              </Text>
-              <Text>
-                <strong>Duración:</strong> {totalMinutos} días
-              </Text>
-              <Text>
-                <strong>Pedidos entregados:</strong> 504 {/* reemplazar dinámico si deseas */}
-              </Text>
-              <Text>
-                <strong>Consumo en petróleo:</strong> 456 {/* reemplazar dinámico si deseas */}
-              </Text>
-              <Text>
-                <strong>Tiempo de planificación:</strong> 00:25:35 {/* opcional */}
-              </Text>
-            </VStack>
-
-            <Flex justify="flex-end" mt={6}>
-              <Button colorScheme="purple" onClick={onClose}>
-                Aceptar
-              </Button>
-            </Flex>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
+            </ModalHeader>
+            <hr />
+            <ModalBody>
+              <VStack align="start" spacing={3} fontSize="md">
+                <Text>
+                  <strong>Fecha y Hora de inicio:</strong> {formatDateTime(fechaInicio)}
+                </Text>
+                <Text>
+                  <strong>Fecha y Hora de fin:</strong> {formatDateTime(fechaFin)}
+                </Text>
+                <Text>
+                  <strong>Duración:</strong> {totalMinutos} días
+                </Text>
+                <Text>
+                  <strong>Pedidos entregados:</strong> 504 {/* reemplazar dinámico si deseas */}
+                </Text>
+                <Text>
+                  <strong>Consumo en petróleo:</strong> 456 {/* reemplazar dinámico si deseas */}
+                </Text>
+                <Text>
+                  <strong>Tiempo de planificación:</strong> 00:25:35 {/* opcional */}
+                </Text>
+              </VStack>
+              <Flex justify="flex-end" mt={6}>
+                <Button colorScheme="purple" onClick={onClose}>
+                  Aceptar
+                </Button>
+              </Flex>
+            </ModalBody>
+          </ModalContent>
+        </Modal>
+      </SimulacionProvider>
     </div>
   );
 }

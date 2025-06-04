@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Stage, Layer, Line, Label, Tag } from "react-konva";
+import { Stage, Layer, Line} from "react-konva";
 import { VehicleIcon } from "./Icons/VehicleIcon";
 import type {VehiculoSimulado} from "../../core/types/vehiculo";
 import type { PedidoSimulado } from "../../core/types/pedido";
@@ -9,7 +9,6 @@ import type { AlmacenSimulado } from "../../core/types/almacen";
 import type { BloqueoSimulado } from "../../core/types/bloqueos";
 import { WarehouseIcon } from "./Icons/WarehouseIcon";
 import React from "react";
-import { VehicleRouteLine } from "./Icons/VehicleRouteLine";
 import type Konva from "konva";
 
 
@@ -99,38 +98,54 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
     return lines;
   };
 
+  useEffect(() => {
+    const layer = stageRef.current?.getLayers?.()[0];
+    if (layer) {
+      layer.batchDraw();
+    }
+  }, [vehiculosActuales, pedidos, almacenes, bloqueosVisibles]);
+
+  useEffect(() => {
+    const container = stageRef.current?.container();
+    if (container) {
+      container.tabIndex = 1; // asegura que pueda recibir foco
+    }
+  }, []);
+
 
   return (
     <Stage
       width={window.innerWidth}
       height={window.innerHeight}
       draggable
+      onDragMove={(e) => {
+        const stage = e.target;
+        setPosition({
+          x: stage.x(),
+          y: stage.y(),
+        });
+      }}
       ref={stageRef}
       onWheel={(e) => {
         e.evt.preventDefault();
         const scaleBy = 1.05;
         const stage = stageRef.current;
 
-        const oldScale = stage.scaleX();
+        const oldScale = scale;
         const pointer = stage.getPointerPosition();
 
         const mousePointTo = {
-          x: (pointer.x - stage.x()) / oldScale,
-          y: (pointer.y - stage.y()) / oldScale,
+          x: (pointer.x - position.x) / oldScale,
+          y: (pointer.y - position.y) / oldScale,
         };
 
         const direction = e.evt.deltaY > 0 ? -1 : 1;
         const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
 
-        stage.scale({ x: newScale, y: newScale });
-
         const newPos = {
           x: pointer.x - mousePointTo.x * newScale,
           y: pointer.y - mousePointTo.y * newScale,
         };
-
-        stage.position(newPos);
-        stage.batchDraw();
 
         setScale(newScale);
         setPosition(newPos);
@@ -152,25 +167,19 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
         {gridLines()}
         {vehiculosActuales.map((v) => {
           const avance = progresoVehiculos[v.idVehiculo] ?? 0;
-          
+
           return (
-            <React.Fragment key={v.idVehiculo}>
-              <VehicleRouteLine
-                vehiculo={v}
-                cellSize={CELL_SIZE}
-                gridHeight={GRID_HEIGHT}
-                recorridoHastaAhora={avance}
-              />
-              <VehicleIcon
-                ref={(node) => {
-                  vehicleRefs.current[v.idVehiculo] = node;
-                }}
-                vehiculo={v}
-                cellSize={CELL_SIZE}
-                gridHeight={GRID_HEIGHT}
-                duration={31250}
-              />
-            </React.Fragment>
+            <VehicleIcon
+              key={v.idVehiculo}
+              ref={(node) => {
+                vehicleRefs.current[v.idVehiculo] = node;
+              }}
+              vehiculo={v}
+              cellSize={CELL_SIZE}
+              gridHeight={GRID_HEIGHT}
+              duration={31250}
+              recorridoHastaAhora={avance}
+            />
           );
         })}
         {pedidos.map((v) => (
@@ -213,5 +222,6 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
       </Layer>
     </Stage>
   );
+  
 
 };

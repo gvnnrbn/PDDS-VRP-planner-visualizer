@@ -4,23 +4,10 @@ import type { PedidoSimulado } from "../../../core/types/pedido";
 import { Image as KonvaImage } from "react-konva";
 import useImage from "use-image";
 import { useEffect, useState } from "react";
+import { useSimulacion } from "../SimulacionContext";
 
 // Inyecta CSS para usar FontAwesome en runtime
 library.add(faLocationDot);
-
-const createIconUrl = (icon: any, color: string = "red") => {
-  const svgPath = icon.icon[4];
-  const width = icon.icon[0];
-  const height = icon.icon[1];
-
-  const fullSvg = `
-    <svg width="40" height="40" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
-      <path d="${svgPath}" fill="${color}" />
-    </svg>
-  `;
-
-  return "data:image/svg+xml;base64," + btoa(fullSvg);
-};
 
 interface Props {
   pedido: PedidoSimulado;
@@ -29,7 +16,12 @@ interface Props {
 }
 
 export const OrderIcon: React.FC<Props> = ({ pedido, cellSize, gridHeight }) => {
-  const { posX, posY } = pedido;
+  const { pedidos } = useSimulacion();
+  const pedidoActual = pedidos.find(p => p.idPedido === pedido.idPedido);
+
+  if (!pedidoActual || (pedidoActual.glp ?? 1) <= 0) return null;
+
+  const { posX, posY } = pedidoActual;
   const x = posX * cellSize;
   const y = (gridHeight - posY) * cellSize;
 
@@ -37,8 +29,17 @@ export const OrderIcon: React.FC<Props> = ({ pedido, cellSize, gridHeight }) => 
   const [image] = useImage(iconUrl || "");
 
   useEffect(() => {
-    setIconUrl(createIconUrl(faLocationDot));
+    const svg = faLocationDot.icon[4];
+    const fullSvg = `
+      <svg width="40" height="40" viewBox="0 0 ${faLocationDot.icon[0]} ${faLocationDot.icon[1]}" xmlns="http://www.w3.org/2000/svg">
+        <path d="${svg}" fill="red"/>
+      </svg>
+    `;
+    setIconUrl("data:image/svg+xml;base64," + btoa(fullSvg));
   }, []);
+  // Verificar si el pedido aún existe
+  const pedidoExistente = pedidos.find((p) => p.idPedido === pedido.idPedido);
+  if (!pedidoExistente) return null;
 
   if (!image) return null;
 
@@ -49,7 +50,7 @@ export const OrderIcon: React.FC<Props> = ({ pedido, cellSize, gridHeight }) => 
       width={cellSize}
       height={cellSize}
       image={image}
-      offsetY={cellSize/2}
+      offsetY={cellSize / 2}
     />
   );
 };
