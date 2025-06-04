@@ -30,19 +30,41 @@ public class PlannerBlockage implements Cloneable {
             throw new IllegalArgumentException("Route points must be colinear (horizontal or vertical)");
         }
 
-        // Check if either point is exactly on a vertex (allowed)
+        // Check if either point is exactly on a vertex
+        boolean aOnVertex = false;
+        boolean bOnVertex = false;
+        Position aVertex = null;
+        Position bVertex = null;
+        
         for (Position vertex : vertices) {
-            if (isPointEqual(a, vertex) || isPointEqual(b, vertex)) {
-                return false;
+            if (isPointEqual(a, vertex)) {
+                aOnVertex = true;
+                aVertex = vertex;
+            }
+            if (isPointEqual(b, vertex)) {
+                bOnVertex = true;
+                bVertex = vertex;
             }
         }
+
+        // If both points are on vertices, check if they're connected by a blockage line
+        if (aOnVertex && bOnVertex) {
+            for (int i = 0; i < vertices.size() - 1; i++) {
+                Position v1 = vertices.get(i);
+                Position v2 = vertices.get(i + 1);
+                if ((isPointEqual(aVertex, v1) && isPointEqual(bVertex, v2)) ||
+                    (isPointEqual(aVertex, v2) && isPointEqual(bVertex, v1))) {
+                    return true; // Movement along blockage line between vertices
+                }
+            }
+            return false; // Movement between vertices not connected by blockage
+        }
         
-        // Check if the movement intersects with any blockage segment
+        // Check if movement is along the blockage line
         for (int i = 0; i < vertices.size() - 1; i++) {
             Position v1 = vertices.get(i);
             Position v2 = vertices.get(i + 1);
             
-            // Check if movement is along the blockage line
             if (isPointOnLine(a, v1, v2) && isPointOnLine(b, v1, v2)) {
                 return true; // Moving along the blockage line is not allowed
             }

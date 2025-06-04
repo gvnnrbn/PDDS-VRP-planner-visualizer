@@ -36,6 +36,16 @@ public class Pathing {
         CaseD();
         System.out.println("\n" + "=".repeat(50) + "\n");
         CaseE();
+        System.out.println("\n" + "=".repeat(50) + "\n");
+        CaseF();
+        System.out.println("\n" + "=".repeat(50) + "\n");
+        CaseG();
+        System.out.println("\n" + "=".repeat(50) + "\n");
+        CaseH();
+        System.out.println("\n" + "=".repeat(50) + "\n");
+        CaseI();
+        System.out.println("\n" + "=".repeat(50) + "\n");
+        CaseJ();
     }
 
     private static void printPathInfo(String caseName, Position start, Position end, List<Position> path) {
@@ -197,5 +207,184 @@ public class Pathing {
         PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
         
         System.out.println("Ended Case E Simulation");
+    }
+
+    public static void CaseF() {
+        // Maze-like scenario with multiple valid paths
+        Position start = new Position(5, 5);
+        Position end = new Position(35, 35);
+
+        List<PlannerBlockage> blockages = new ArrayList<>();
+        
+        // Create a maze pattern
+        blockages.add(new PlannerBlockage(0, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(15, 0),
+                new Position(15, 25)
+            ))
+        ));
+        
+        blockages.add(new PlannerBlockage(1, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(25, 15),
+                new Position(25, 40)
+            ))
+        ));
+        
+        blockages.add(new PlannerBlockage(2, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(15, 25),
+                new Position(35, 25)
+            ))
+        ));
+
+        List<Position> path = PathBuilder.buildPath(start, end, blockages);
+        printPathInfo("Case F - Maze Navigation", start, end, path);
+
+        // Visualize the path with null handling
+        List<Position> visualPath = (path != null) ? path : new ArrayList<>();
+        PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
+        
+        System.out.println("Ended Case F Simulation");
+    }
+
+    public static void CaseG() {
+        // Narrow corridor scenario
+        Position start = new Position(10, 20);
+        Position end = new Position(40, 20);
+
+        List<PlannerBlockage> blockages = new ArrayList<>();
+        
+        // Create parallel walls forming a narrow corridor
+        blockages.add(new PlannerBlockage(0, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(20, 15),
+                new Position(30, 15)
+            ))
+        ));
+        
+        blockages.add(new PlannerBlockage(1, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(20, 25),
+                new Position(30, 25)
+            ))
+        ));
+        
+        // Add some obstacles in the corridor
+        blockages.add(new PlannerBlockage(2, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(25, 15),
+                new Position(25, 19)
+            ))
+        ));
+
+        List<Position> path = PathBuilder.buildPath(start, end, blockages);
+        printPathInfo("Case G - Narrow Corridor Navigation", start, end, path);
+
+        // Visualize the path with null handling
+        List<Position> visualPath = (path != null) ? path : new ArrayList<>();
+        PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
+        
+        System.out.println("Ended Case G Simulation");
+    }
+
+    public static void CaseH() {
+        // Vertex-to-vertex movement scenario
+        Position start = new Position(10, 10);
+        Position end = new Position(30, 30);
+
+        List<PlannerBlockage> blockages = new ArrayList<>();
+        
+        // Create a pattern where the optimal path should use blockage vertices
+        blockages.add(new PlannerBlockage(0, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(20, 10),
+                new Position(20, 20)
+            ))
+        ));
+        
+        blockages.add(new PlannerBlockage(1, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(20, 20),
+                new Position(30, 20)
+            ))
+        ));
+        
+        blockages.add(new PlannerBlockage(2, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(30, 20),
+                new Position(30, 30)
+            ))
+        ));
+
+        List<Position> path = PathBuilder.buildPath(start, end, blockages);
+        printPathInfo("Case H - Vertex-to-Vertex Path", start, end, path);
+
+        // Visualize the path with null handling
+        List<Position> visualPath = (path != null) ? path : new ArrayList<>();
+        PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
+        
+        System.out.println("Ended Case H Simulation");
+    }
+
+    public static void CaseI() {
+        // Edge case: Path along grid boundaries
+        Position start = new Position(0, 0);
+        Position end = new Position(SimulationProperties.gridLength, SimulationProperties.gridWidth);
+
+        List<PlannerBlockage> blockages = new ArrayList<>();
+        
+        // Create blockages that force path along grid boundaries
+        blockages.add(new PlannerBlockage(0, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(0, 5),
+                new Position(5, 5),
+                new Position(5, 0)
+            ))
+        ));
+        
+        blockages.add(new PlannerBlockage(1, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(0, SimulationProperties.gridWidth - 5),
+                new Position(SimulationProperties.gridLength - 5, SimulationProperties.gridWidth - 5)
+            ))
+        ));
+
+        List<Position> path = PathBuilder.buildPath(start, end, blockages);
+        printPathInfo("Case I - Grid Boundary Path", start, end, path);
+
+        // Visualize the path with null handling
+        List<Position> visualPath = (path != null) ? path : new ArrayList<>();
+        PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
+        
+        System.out.println("Ended Case I Simulation");
+    }
+
+    public static void CaseJ() {
+        // End point caged inside a square blockage
+        Position start = new Position(0, 0);
+        Position end = new Position(30, 30);
+
+        List<PlannerBlockage> blockages = new ArrayList<>();
+        
+        // Create a square blockage around the end point
+        blockages.add(new PlannerBlockage(0, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(25, 25), // Top left
+                new Position(35, 25), // Top right 
+                new Position(35, 35), // Bottom right
+                new Position(25, 35), // Bottom left
+                new Position(25, 25)  // Back to start to close the square
+            ))
+        ));
+
+        List<Position> path = PathBuilder.buildPath(start, end, blockages);
+        printPathInfo("Case J - End Point Caged in Square", start, end, path);
+
+        // Visualize the path with null handling
+        List<Position> visualPath = (path != null) ? path : new ArrayList<>();
+        PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
+        
+        System.out.println("Ended Case J Simulation");
     }
 }

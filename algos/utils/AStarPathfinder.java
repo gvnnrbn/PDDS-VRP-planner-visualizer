@@ -150,16 +150,67 @@ class AStarPathfinder {
     }
     
     private static boolean isBlocked(Position from, Position to, List<PlannerBlockage> blockages) {
-        // Check each blockage
+        // First check if either point is on a vertex
         for (PlannerBlockage blockage : blockages) {
             List<Position> vertices = blockage.vertices;
             if (vertices.size() < 2) continue;
             
-            // Check each line segment of the blockage
+            boolean fromOnVertex = false;
+            boolean toOnVertex = false;
+            Position fromVertex = null;
+            Position toVertex = null;
+            
+            for (Position vertex : vertices) {
+                if (isPointEqual(from, vertex)) {
+                    fromOnVertex = true;
+                    fromVertex = vertex;
+                }
+                if (isPointEqual(to, vertex)) {
+                    toOnVertex = true;
+                    toVertex = vertex;
+                }
+            }
+            
+            // If both points are on vertices of the same blockage
+            if (fromOnVertex && toOnVertex) {
+                // Check if these vertices are connected by a blockage line
+                for (int i = 0; i < vertices.size() - 1; i++) {
+                    Position v1 = vertices.get(i);
+                    Position v2 = vertices.get(i + 1);
+                    if ((isPointEqual(fromVertex, v1) && isPointEqual(toVertex, v2)) ||
+                        (isPointEqual(fromVertex, v2) && isPointEqual(toVertex, v1))) {
+                        return true; // Movement along blockage line between vertices
+                    }
+                }
+            }
+            
+            // If one point is on a vertex, check if the movement is along a blockage line
+            if (fromOnVertex || toOnVertex) {
+                for (int i = 0; i < vertices.size() - 1; i++) {
+                    Position v1 = vertices.get(i);
+                    Position v2 = vertices.get(i + 1);
+                    if (isPointOnLine(from, v1, v2) && isPointOnLine(to, v1, v2)) {
+                        return true; // Moving along the blockage line
+                    }
+                }
+            }
+        }
+
+        // Check for line segment intersections
+        for (PlannerBlockage blockage : blockages) {
+            List<Position> vertices = blockage.vertices;
+            if (vertices.size() < 2) continue;
+            
             for (int i = 0; i < vertices.size() - 1; i++) {
                 Position v1 = vertices.get(i);
                 Position v2 = vertices.get(i + 1);
                 
+                // Check if movement is along the blockage line
+                if (isPointOnLine(from, v1, v2) && isPointOnLine(to, v1, v2)) {
+                    return true;
+                }
+                
+                // Check for intersection
                 if (linesIntersect(from, to, v1, v2)) {
                     return true;
                 }

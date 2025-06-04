@@ -19,16 +19,38 @@ public class PathBuilder {
         // Try A* first as it's more reliable with blockages
         List<Position> path = buildAstarPath(from, to, blockages);
         if (path != null) {
-            return path;
+            // Verify the path doesn't cross any blockages
+            if (isPathValid(path, blockages)) {
+                return path;
+            }
         }
 
         // Only try Manhattan path if A* fails
         path = buildManhattanPath(from, to, blockages);
         if (path != null) {
-            return path;
+            // Verify the path doesn't cross any blockages
+            if (isPathValid(path, blockages)) {
+                return path;
+            }
         }
 
         return null;
+    }
+
+    private static boolean isPathValid(List<Position> path, List<PlannerBlockage> blockages) {
+        if (path == null || path.size() < 2) return true;
+        
+        // Check each segment of the path
+        for (int i = 0; i < path.size() - 1; i++) {
+            Position current = path.get(i);
+            Position next = path.get(i + 1);
+            
+            // Check if this segment is blocked
+            if (isPathBlocked(current, next, blockages)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static boolean isInsideBlockage(Position pos, List<PlannerBlockage> blockages) {
@@ -78,6 +100,52 @@ public class PathBuilder {
             return false;
         }
 
+        // First check if either point is on a vertex
+        for (PlannerBlockage blockage : blockages) {
+            List<Position> vertices = blockage.vertices;
+            if (vertices.size() < 2) continue;
+            
+            boolean fromOnVertex = false;
+            boolean toOnVertex = false;
+            Position fromVertex = null;
+            Position toVertex = null;
+            
+            for (Position vertex : vertices) {
+                if (isPointEqual(from, vertex)) {
+                    fromOnVertex = true;
+                    fromVertex = vertex;
+                }
+                if (isPointEqual(to, vertex)) {
+                    toOnVertex = true;
+                    toVertex = vertex;
+                }
+            }
+            
+            // If both points are on vertices of the same blockage
+            if (fromOnVertex && toOnVertex) {
+                // Check if these vertices are connected by a blockage line
+                for (int i = 0; i < vertices.size() - 1; i++) {
+                    Position v1 = vertices.get(i);
+                    Position v2 = vertices.get(i + 1);
+                    if ((isPointEqual(fromVertex, v1) && isPointEqual(toVertex, v2)) ||
+                        (isPointEqual(fromVertex, v2) && isPointEqual(toVertex, v1))) {
+                        return true; // Movement along blockage line between vertices
+                    }
+                }
+            }
+            
+            // If one point is on a vertex, check if the movement is along a blockage line
+            if (fromOnVertex || toOnVertex) {
+                for (int i = 0; i < vertices.size() - 1; i++) {
+                    Position v1 = vertices.get(i);
+                    Position v2 = vertices.get(i + 1);
+                    if (isPointOnLine(from, v1, v2) && isPointOnLine(to, v1, v2)) {
+                        return true; // Moving along the blockage line
+                    }
+                }
+            }
+        }
+
         // Check if any point along the path is inside a blockage
         if (Math.abs(from.x - to.x) < EPSILON) {
             // Vertical movement
@@ -108,6 +176,21 @@ public class PathBuilder {
             }
         }
         return false;
+    }
+
+    private static boolean isPointOnLine(Position p, Position lineStart, Position lineEnd) {
+        // Check if point p lies on the line segment between lineStart and lineEnd
+        if (Math.abs(lineStart.x - lineEnd.x) < EPSILON) {
+            // Vertical line
+            return Math.abs(p.x - lineStart.x) < EPSILON &&
+                   p.y >= Math.min(lineStart.y, lineEnd.y) - EPSILON &&
+                   p.y <= Math.max(lineStart.y, lineEnd.y) + EPSILON;
+        } else {
+            // Horizontal line
+            return Math.abs(p.y - lineStart.y) < EPSILON &&
+                   p.x >= Math.min(lineStart.x, lineEnd.x) - EPSILON &&
+                   p.x <= Math.max(lineStart.x, lineEnd.x) + EPSILON;
+        }
     }
 
     // Convention is that empty is for from = to, null is for no possible path
@@ -148,21 +231,6 @@ public class PathBuilder {
     private static boolean isWithinBounds(Position pos) {
         return pos.x >= 0 && pos.x <= SimulationProperties.gridLength &&
                pos.y >= 0 && pos.y <= SimulationProperties.gridWidth;
-    }
-
-    private static boolean isPointOnLine(Position p, Position lineStart, Position lineEnd) {
-        // Check if point p lies on the line segment between lineStart and lineEnd
-        if (Math.abs(lineStart.x - lineEnd.x) < EPSILON) {
-            // Vertical line
-            return Math.abs(p.x - lineStart.x) < EPSILON &&
-                   p.y >= Math.min(lineStart.y, lineEnd.y) - EPSILON &&
-                   p.y <= Math.max(lineStart.y, lineEnd.y) + EPSILON;
-        } else {
-            // Horizontal line
-            return Math.abs(p.y - lineStart.y) < EPSILON &&
-                   p.x >= Math.min(lineStart.x, lineEnd.x) - EPSILON &&
-                   p.x <= Math.max(lineStart.x, lineEnd.x) + EPSILON;
-        }
     }
 
     // Convention is that empty is for from = to, null is for no possible path
