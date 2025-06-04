@@ -5,6 +5,7 @@ import { Image as KonvaImage } from "react-konva";
 import useImage from "use-image";
 import { useEffect, useRef, forwardRef, useState } from "react";
 import type Konva from "konva";
+import { Text, Label, Tag } from "react-konva";
 
 // Inyecta ícono
 library.add(faTruck);
@@ -40,15 +41,12 @@ interface Props {
   gridHeight: number;
   duration: number;
   onStep?: (index: number) => void;
-  onClick?: (vehiculo: VehiculoSimulado) => void;
 }
 
 
 export const VehicleIcon = forwardRef<Konva.Image, Props>(
-  ({ vehiculo, cellSize, gridHeight, duration, onStep,onClick }, ref) => {
-    const [image] = useImage(
-      createIconUrl(faTruck, getColorFromState("asdas"))
-    );
+  ({ vehiculo, cellSize, gridHeight, duration, onStep }, ref) => {
+    const [image] = useImage(createIconUrl(faTruck, getColorFromState("asdas")));
     const shapeRef = useRef<Konva.Image | null>(null);
 
     const ruta = vehiculo.rutaActual ?? [];
@@ -61,6 +59,7 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
       vehiculo.posicionX,
       vehiculo.posicionY,
     ]);
+    const [isTooltipVisible, setIsTooltipVisible] = useState(false);
 
     useEffect(() => {
       let index = 0;
@@ -88,13 +87,10 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
         if (t < 1) {
           frameId = requestAnimationFrame(animateStep);
         } else {
-          // ⚠️ el vehículo llegó al punto index + 1
           index++;
-
-          // ⏹️ Si ya no hay más puntos, terminamos
           if (index >= puntosRuta.length - 1) return;
 
-          const puntoLlegado = ruta[index - 1]; // llegamos a este punto
+          const puntoLlegado = ruta[index - 1];
           const isDescarga = puntoLlegado?.accion === "Descarga";
           const delay = isDescarga ? duration * 0.2 : 0;
 
@@ -122,21 +118,49 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
     const pixelX = pos[0] * cellSize;
     const pixelY = (gridHeight - pos[1]) * cellSize;
 
-    VehicleIcon.displayName = "VehicleIcon";
-
     return (
-      <KonvaImage
-        ref={shapeRef}
-        image={image}
-        x={pixelX - cellSize / 2}
-        y={pixelY - cellSize / 2}
-        width={cellSize}
-        height={cellSize}
-        onClick={() => onClick?.(vehiculo)}
-        onTap={() => onClick?.(vehiculo)}
-        listening={true} // Asegura que escuche eventos
-        hitStrokeWidth={20} // Área de clic expandida
-      />
+      <>
+        <KonvaImage
+          ref={shapeRef}
+          image={image}
+          x={pixelX - cellSize / 2}
+          y={pixelY - cellSize / 2}
+          width={cellSize}
+          height={cellSize}
+          onClick={() => setIsTooltipVisible((prev) => !prev)}
+          onTap={() => setIsTooltipVisible((prev) => !prev)}
+          listening={true}
+          hitStrokeWidth={20}
+        />
+
+        {isTooltipVisible && (
+          <Label
+            x={pixelX}
+            y={pixelY - cellSize / 2 - 10}
+            listening={false}
+          >
+            <Tag
+              fill="white"
+              stroke="black"
+              cornerRadius={4}
+              pointerDirection="down"
+              pointerWidth={10}
+              pointerHeight={8}
+              shadowColor="black"
+              shadowBlur={4}
+              shadowOffset={{ x: 2, y: 2 }}
+              shadowOpacity={0.2}
+            />
+            <Text
+              text={`🚛 ${vehiculo.placa}\n📦 Pedido: ${vehiculo.rutaActual?.[0]?.idPedido ?? 'N/A'}`}
+              fontSize={12}
+              fill="black"
+              padding={5}
+              align="center"
+            />
+          </Label>
+        )}
+      </>
     );
   }
 );
