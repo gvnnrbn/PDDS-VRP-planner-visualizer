@@ -1,6 +1,7 @@
 package utils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -131,7 +132,25 @@ public class PathBuilder {
     }
 
     public static Map<Position, Map<Position, Double>> generateDistances(List<Position> positions, List<PlannerBlockage> blockages) {
-        throw new UnsupportedOperationException("Not implemented");
+        Map<Position, Map<Position, Double>> distances = new HashMap<>();
+        for (Position position : positions) {
+            distances.put(position, new HashMap<>());
+        }
+
+        for (int i = 0; i < positions.size(); i++) {
+            Position position = positions.get(i);
+            for (int j = i + 1; j < positions.size(); j++) {
+                Position other = positions.get(j);
+                List<Position> path = buildPath(position, other, blockages);
+                double distance = (path != null) ? calculateDistance(path) : Double.POSITIVE_INFINITY;
+                
+                // Store distance in both directions since it's symmetric
+                distances.get(position).put(other, distance);
+                distances.get(other).put(position, distance);
+            }
+        }
+
+        return distances;
     }
 
     private static boolean isPathBlocked(Position from, Position to, List<PlannerBlockage> blockages) {

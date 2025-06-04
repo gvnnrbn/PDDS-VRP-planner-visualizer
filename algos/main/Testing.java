@@ -3,8 +3,10 @@ package main;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import algorithm.Algorithm;
 import algorithm.Environment;
 import algorithm.Node;
+import algorithm.Solution;
 import utils.DataParser;
 import utils.PathBuilder;
 import utils.Time;
@@ -71,8 +73,8 @@ public class Testing {
         Environment environment = new Environment(activeVehicles, activeOrders, warehouses, activeBlockages, failures, activeMaintenances, currTime);
         System.out.println(environment);
 
-        for (Node node : environment.getNodes()) {
-            System.out.println(node);
-        }
+        Solution sol = Algorithm.run(environment, minutesToSimulate);
+        sol.simulate(environment, minutesToSimulate);
+        System.out.println(sol);
     }
 }
