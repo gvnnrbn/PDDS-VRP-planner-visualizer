@@ -8,6 +8,7 @@ import LegendPanel from '../../components/common/Legend'
 import BottomLeftControls from '../../components/common/MapActions'
 import PedidosPhaseCollapse from './PedidosPhase'
 import { OrderCard } from '../../components/common/cards/PedidoCard'
+import MyComponent from '../weekly-simulation/MyComponent'
 
 const ordersOutput = [
   {
@@ -96,7 +97,7 @@ export default function CollapseSimulation() {
 
   return (
     <Flex height="full" overflowY="auto">
-      <Box flex={1} p={4} bg={bgColor} h="full">
+      {/* <Box flex={1} p={4} bg={bgColor} h="full">
         <Routes>
           <Route path="pedidos" element={<PedidosPhaseCollapse />} />
           <Route path="simulacion" element={<SimulationPhase />} />
@@ -123,7 +124,8 @@ export default function CollapseSimulation() {
             //onSpeedChange={(v) => setSimSpeed(v)}
           />
         </>
-      )}
+      )} */}
+      <MyComponent></MyComponent>
     </Flex>
   )
 }
