@@ -32,7 +32,7 @@ interface SimulacionJson {
 
 interface MapGridProps {
   minuto: number;
-  data: SimulacionJson;
+  data: any;
 }
 
 export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
