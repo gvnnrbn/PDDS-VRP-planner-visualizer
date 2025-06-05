@@ -16,109 +16,73 @@ import { formatDateTime } from '../../utils/dateFormatter';
 
 interface PhaseProps {
   minuto: number
-  setMinuto: (min: number) => void
+  // setMinuto: (min: number) => void
   data: any 
-  speedMs: number
+  // speedMs: number
   setSpeedMs: (speed: number) => void
-  isPaused: boolean
+  // isPaused: boolean
   setIsPaused: (paused: boolean) => void
+  fechaVisual: Date
 }
 
 export default function SimulationPhase(
   { 
     minuto, 
-    setMinuto,
+    // setMinuto,
     data,
-    speedMs,
+    // speedMs,
     setSpeedMs,
-    isPaused,
-    setIsPaused 
+    // isPaused,
+    setIsPaused,
+    fechaVisual = new Date(jsonData.fechaInicio) // valor por defecto si no se pasa 
   } : PhaseProps) {
-  // const [isPaused, setIsPaused] = useState(false);
-  // const [speedMs, setSpeedMs] = useState(5000); // valor inicial
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const [simulacionFinalizada, setSimulacionFinalizada] = useState(false);
-  const [fechaVisual, setFechaVisual] = useState(new Date(jsonData.fechaInicio));
-
-  const totalMinutos = data.simulacion.length;
-  const fechaInicio = new Date(data.fechaInicio);
-
-  // ➕ Cálculo de fecha actual (usado por BottomLeftControls)
-  const fechaActual = new Date(fechaInicio);
-  fechaActual.setMinutes(fechaInicio.getMinutes() + minuto * 75);
-
-  // ➕ Cálculo de fecha fin
-  const fechaFin = new Date(fechaInicio);
-  fechaFin.setDate(fechaInicio.getDate() + totalMinutos - 1);
-
-
-  // // ➕ Simulación automática
-  useEffect(() => {
-  //   console.log(minuto);
-  //   if (isPaused || minuto >= totalMinutos - 1) return;
-
-  //   const interval = setTimeout(() => {
-  //     setMinuto((prev) => prev + 1);
-  //   }, speedMs);
-    // Avanza minuto real
-    const interval = setTimeout(() => {
-      setMinuto((prev) => prev + 1);
-    }, speedMs);
-
-  //   return () => clearTimeout(interval);
-  // }, [minuto, speedMs, isPaused]);
-    // Animar tiempo visual
-    const from = new Date(fechaInicio);
-    from.setMinutes(from.getMinutes() + minuto * 75);
-
-    const to = new Date(fechaInicio);
-    to.setMinutes(to.getMinutes() + (minuto + 1) * 75);
-
-    const animSteps = 30;
-    let step = 0;
-
-    const animInterval = setInterval(() => {
-      step++;
-      const interpolatedTime = new Date(from.getTime() + ((to.getTime() - from.getTime()) * (step / animSteps)));
-      setFechaVisual(interpolatedTime);
-      if (step >= animSteps) clearInterval(animInterval);
-    }, speedMs / animSteps);
-
-    return () => {
-      clearTimeout(interval);
-      clearInterval(animInterval);
+    
+    const { isOpen, onOpen, onClose } = useDisclosure();
+    const [simulacionFinalizada, setSimulacionFinalizada] = useState(false);
+    useEffect(() => {
+      console.log('Minuto simulation:', minuto);
+    },[minuto])
+    const totalMinutos = jsonData.simulacion.length;
+    const fechaInicio = new Date(jsonData.fechaInicio);
+  
+    // ➕ Cálculo de fecha actual (usado por BottomLeftControls)
+    const fechaActual = new Date(fechaInicio);
+    fechaActual.setMinutes(fechaInicio.getMinutes() + minuto * 75);
+  
+    // ➕ Cálculo de fecha fin
+    const fechaFin = new Date(fechaInicio);
+    fechaFin.setDate(fechaInicio.getDate() + totalMinutos - 1);
+  
+    
+    useEffect(() => {
+      // console.log(`Minuto actual ${minuto} y total de minutos ${totalMinutos}`);
+      if (minuto >= totalMinutos  && !isOpen && !simulacionFinalizada) {
+        setSimulacionFinalizada(true);
+        onOpen(); // solo una vez
+      }
+    }, [minuto, totalMinutos, isOpen, simulacionFinalizada]);
+  
+    const displayDate = `${fechaVisual.toLocaleDateString()} | ${fechaVisual.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
+    })}`;
+  
+    //Funciones de acción
+  
+    const handleSpeedChange = (newSpeed: string) => {
+      if (newSpeed === "Velocidad x1") {
+        setSpeedMs(31250);
+      } else if (newSpeed === "Velocidad x2") {
+        setSpeedMs(15625);
+      }
     };
-  }, [minuto, speedMs, isPaused]);
-
-  useEffect(() => {
-    console.log(`Minuto actual ${minuto} y total de minutos ${totalMinutos}`);
-    if (minuto >= totalMinutos  && !isOpen && !simulacionFinalizada) {
-      setSimulacionFinalizada(true);
-      onOpen(); // solo una vez
-    }
-  }, [minuto, totalMinutos, isOpen, simulacionFinalizada]);
-
-  const displayDate = `${fechaVisual.toLocaleDateString()} | ${fechaVisual.toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit'
-  })}`;
-
-  //Funciones de acción
-
-  const handleSpeedChange = (newSpeed: string) => {
-    if (newSpeed === "Velocidad x1") {
-      setSpeedMs(31250);
-    } else if (newSpeed === "Velocidad x2") {
-      setSpeedMs(15625);
-    }
-  };
-
-  const handleStop = () => {
-    setIsPaused(true);
-    setSimulacionFinalizada(true); // importante aquí también
-    onOpen();
-  };
-
+  
+    const handleStop = () => {
+      setIsPaused(true);
+      setSimulacionFinalizada(true); // importante aquí también
+      onOpen();
+    };
+  
   return (
     <div>
       <MapGrid minuto={minuto} data={data} />

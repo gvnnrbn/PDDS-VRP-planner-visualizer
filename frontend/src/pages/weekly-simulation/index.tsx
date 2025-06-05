@@ -17,70 +17,80 @@ import { PanelSearchBar } from '../../components/common/PanelSearchBar'
 import { MantenimientoCard } from '../../components/common/cards/MantenimientoCard'
 import { FilterSortButtons } from '../../components/common/cards/FilterSortButtons'
 import AlmacenPhase from './AlmacenPhase'
-import jsonData from "../../data/simulacion.json";
+import jsonData from "../../data/simulacionV2.json";
+import { min, set } from 'date-fns'
 
 export default function WeeklySimulation() {  
   const bgColor = useColorModeValue('white', '#1a1a1a')
   const [isCollapsed, setIsCollapsed] = useState(true)
   
+  // delay
   const currPath = useLocation().pathname.split('/').pop()
   const [isLoading, setIsLoading] = useState(false);
-  
-  const [minuto, setMinuto] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-  const [speedMs, setSpeedMs] = useState(5000); // valor inicial
-  const [simulacionFinalizada, setSimulacionFinalizada] = useState(false);
-  
-  const data = jsonData;
-  const fechaInicio = new Date(data.fechaInicio);
-  const planificacion = data.simulacion;
-  const totalMinutos = planificacion.length;
-  
-  // ➕ Cálculo de fecha actual (usado por BottomLeftControls)
-  const fechaActual = new Date(fechaInicio);
-  fechaActual.setDate(fechaInicio.getDate() + minuto);
-  
-  // ➕ Cálculo de fecha fin
-  const fechaFin = new Date(fechaInicio);
-  fechaFin.setDate(fechaInicio.getDate() + totalMinutos - 1);
-  
-  // const displayDate = `Día ${minuto + 1} | ${formatDateTime(fechaActual)} | 11:00`;
-  
-  
   useEffect(() => {
     if (currPath === "simulacion") {
       setIsLoading(true);
-      const timer = setTimeout(() => setIsLoading(false), 100); // 10s simulado
+      const timer = setTimeout(() => setIsLoading(false), 2000); // 2s simulado
       return () => clearTimeout(timer);
     }
   }, [currPath]);
   
-  const handleSectionChange = (section: string) => {
-    setSection(section)
-  }
-  useEffect(() => {
-    if(isCollapsed){
-      setSection('')
-    }
-  }, [isCollapsed]);
-  
-  // ➕ Simulación automática
-  useEffect(() => {
-    console.log(minuto);
-    if (isPaused || minuto >= totalMinutos - 1) return;
-    
-    const interval = setTimeout(() => {
-      setMinuto((prev) => prev + 1);
-    }, speedMs);
-    
-    return () => clearTimeout(interval);
-  }, [minuto, speedMs, isPaused]);
-  
+  // Datos de simulación
+  const [minuto, setMinuto] = useState(0);
+  const [ data, setData ] = useState(jsonData);
   const minutoActual = data.simulacion.find((m) => m.minuto === minuto);
   const pedidos = minutoActual?.pedidos || [];
   const vehiculos = minutoActual?.vehiculos || [];
   const incidencias = minutoActual?.incidencias || [];
-  const mantenimientos = minutoActual?.mantenimientos || [];
+  const mantenimientos = minutoActual?.mantenimientos || [];  
+
+  const [isPaused, setIsPaused] = useState(false);
+  const [speedMs, setSpeedMs] = useState(38250); // valor inicial
+    const [fechaVisual, setFechaVisual] = useState(new Date(data.fechaInicio));
+
+  useEffect(() => {
+    setData(jsonData);
+  },[])
+
+// ➕ Simulación automática
+    useEffect(() => {
+      const totalMinutos = data.simulacion.length;
+      if (minuto >= totalMinutos || isPaused) return;
+  
+      // Avanza minuto real
+      const interval = setTimeout(() => {
+        setMinuto((prev) => prev + 1);
+      }, speedMs);
+  
+      // Animar tiempo visual
+      const fechaInicio = new Date(data.fechaInicio);
+      const from = new Date(fechaInicio);
+      from.setMinutes(from.getMinutes() + minuto * 75);
+  
+      const to = new Date(fechaInicio);
+      to.setMinutes(to.getMinutes() + (minuto + 1) * 75);
+  
+      const animSteps = 30;
+      let step = 0;
+  
+      const animInterval = setInterval(() => {
+        step++;
+        const interpolatedTime = new Date(from.getTime() + ((to.getTime() - from.getTime()) * (step / animSteps)));
+        setFechaVisual(interpolatedTime);
+        if (step >= animSteps) clearInterval(animInterval);
+      }, speedMs / animSteps);
+  
+      return () => {
+        clearTimeout(interval);
+        clearInterval(animInterval);
+      };
+    }, [minuto, speedMs, isPaused]);
+  
+
+  useEffect(() => {
+    console.log('Minuto index:', minuto);
+  },[minuto])
+  // Secciones de panel lateral
   const sections = [
     {
       title: 'Pedidos',
@@ -170,7 +180,14 @@ export default function WeeklySimulation() {
     },
   ]
   const [section, setSection] = useState(sections[0].title)
-
+  const handleSectionChange = (section: string) => {
+    setSection(section)
+  }
+  useEffect(() => {
+    if(isCollapsed){
+      setSection('')
+    }
+  }, [isCollapsed]);
 
 
   return (
@@ -188,12 +205,13 @@ export default function WeeklySimulation() {
               ? <></> 
               : <SimulationPhase 
                 minuto={minuto}
-                setMinuto={setMinuto} 
-                data={data} 
-                isPaused={isPaused}
+                // setMinuto={setMinuto} 
+                data={data}
+                // isPaused={isPaused}
                 setIsPaused={setIsPaused}
-                speedMs={speedMs}
+                // speedMs={speedMs}
                 setSpeedMs={setSpeedMs}
+                fechaVisual={fechaVisual}
                 />
             }
           />

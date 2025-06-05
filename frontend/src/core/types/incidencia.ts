@@ -17,13 +17,3 @@ export interface IncidenciaSimulada {
     placa: string;
     estado: string;
 }
-
-export interface IncidenciaSimulado{
-    idIncidencia: number;
-    fechaInicio: string;
-    fechaFin: string;
-    turno: string;
-    tipo: string;
-    placa: string;
-    estado: string;
-}

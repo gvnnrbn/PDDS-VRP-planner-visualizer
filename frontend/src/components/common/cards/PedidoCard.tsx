@@ -13,7 +13,8 @@ export const PedidoCard = ({
 }:PedidoCardProps) => {
     let cardColor;
     let isFocus = false;
-    console.log(pedido);
+    const codigoPedido = `PE${pedido.idPedido.toString().padStart(3, '0')}`;
+
     switch(pedido.estado.toUpperCase()){
             case 'EN CURSO': 
             cardColor = 'yellow';
@@ -56,11 +57,12 @@ export const PedidoCard = ({
             <Text id='deadline'>Fecha Límite: {pedido.fechaLimite}</Text>
             </Flex>
             <Flex id='vehicles' direction='column'>
-            { pedido.vehiculosAtendiendo.map((vehiculo) => (
-                <Flex id='vehiculo' gap={1} color='grey' fontSize={14}>
-                <Text id='placa'>{vehiculo.placa}</Text>
+            {
+            pedido.vehiculosAtendiendo.map((vehiculo) => (
+            <Flex key={`vehiculo-${pedido.idPedido}x${vehiculo.placa}`} gap={1} color='grey' fontSize={14}>
+                <Text>{vehiculo.placa}</Text>
                 |
-                <Text id='eta'>ETA: {vehiculo.eta}</Text>
+                <Text>ETA: {vehiculo.eta}</Text>
             </Flex>
             ))}
         </Flex>

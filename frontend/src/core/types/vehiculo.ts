@@ -13,10 +13,6 @@ export interface Vehiculo {
   disponible: boolean;
 }
 
-export interface IFlotaCard {
-  id: number;
-  combustible: number;
-}
 export interface VehiculoSimulado  {
   idVehiculo: number;
   estado: string;
@@ -25,11 +21,15 @@ export interface VehiculoSimulado  {
   glp: number;
   combustible: number;
   maxCombustible: number;
-  pedidoId: string;
   currGLP: number;
+  maxGLP: number;
   placa: string;
   posicionX: number;
   posicionY: number;
-  accion: string;
-  rutaActual?: { posX: number; posY: number }[];
+  rutaActual?: Array<{ 
+    idPedido: string;
+    posX: number; 
+    posY: number
+    accion: string; 
+  }>;
 }

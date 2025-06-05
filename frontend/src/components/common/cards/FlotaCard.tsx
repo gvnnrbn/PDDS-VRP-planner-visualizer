@@ -11,13 +11,16 @@ export const FlotaCard = ({
     vehiculo,
     onClick,
 }:FlotaCardProps) => {
+    const estado = vehiculo.estado;
+    const idPedido = vehiculo.rutaActual?.pop()?.idPedido || 0;// cambiar a como este el ultimo json
+    const codigoPedido = `PE${idPedido.toString().padStart(3, '0')}`;
     let cardColor;
     let isFocus = false;
     let hasRoute = true;
     let combustiblePercentage = 0;
     let isBroken = false;
 
-    switch(vehiculo.estado.toUpperCase()){
+    switch(estado.toUpperCase()){
             case 'AVERIADO': 
             cardColor = '#FFCFCF';
             isBroken = true;
@@ -66,7 +69,7 @@ export const FlotaCard = ({
             <></>
             :
             <>
-                <Text id='pedidoId'>Pedido {vehiculo.pedidoId}</Text>
+                <Text id='pedidoId'>Pedido {codigoPedido}</Text>
                 <Flex direction={'row'} gap={1}>
 
                 {isBroken

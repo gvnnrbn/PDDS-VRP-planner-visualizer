@@ -9,7 +9,7 @@ export interface Pedido {
 }
 
 export interface PedidoSimulado  {
-  idPedido: number;
+  idPedido: string;
   estado: string;
   glp: number;
   posX: number;
