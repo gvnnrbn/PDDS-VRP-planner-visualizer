@@ -1,14 +1,12 @@
 package algorithm;
 
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 
 import entities.PlannerOrder;
 import entities.PlannerVehicle;
-import entities.PlannerWarehouse;
 import utils.SimulationProperties;
 import utils.Time;
 
@@ -20,26 +18,77 @@ public class Solution implements Cloneable {
     private boolean isFeasible = true;
     private double fitness = 0;
 
+    // Add fields to store fitness components
+    private double timeGLPPointsComponent = 0;
+    private double fulfilledOrdersComponent = 0;
+    private double imaginaryFuelComponent = 0;
+    private double imaginaryGLPComponent = 0;
+    private double missedOrdersComponent = 0;
+
+    // Add fields to store the raw values
+    private double rawTimeGLPPoints = 0;
+    private int rawFulfilledOrders = 0;
+    private double rawImaginaryFuel = 0;
+    private int rawImaginaryGLP = 0;
+    private int rawMissedOrders = 0;
+
+    // Add normalization factors
+    private static double maxTimeGLPPoints = 1000000.0;
+    private static double maxOrders = 100.0;
+    private static double maxFuel = 1000.0;
+    private static double maxGLP = 1000.0;
+
     private List<String> errors = new ArrayList<>();
 
-    private long totalPossibleTimePoints = 0;
-    private long totalTimePoints = 0;
+    private static int weightTimeGLPPoints = 1;
+    private static int weightFulfilledOrders = 2;
+    private static int weightImaginaryFuel = 2;
+    private static int weightImaginaryGLP = 2;
+    private static int weightMissedOrders = 10;
 
-    private double imaginaryFuelConsumed = 0;
-    private double totalFuelCost = 0;
+    // Add normalization helper methods
+    private double normalizeTimeGLPPoints(double value) {
+        return value / maxTimeGLPPoints;
+    }
 
-    private long imaginaryGLPConsumed = 0;
-    private long projectedGLPConsumption = 0;
+    private double normalizeOrders(double value) {
+        return value / maxOrders;
+    }
 
-    private int deliveredOrders = 0;
-    private int deliveredOrdersOnTime = 0;
-    private int totalOrders = 0;
+    private double normalizeFuel(double value) {
+        return value / maxFuel;
+    }
 
-    private static int weightTimePoints = 2;
-    private static int weightImaginaryFuelConsumed = 10;
-    private static int weightImaginaryGLPConsumed = 10;
-    private static int weightOrdersNotDelivered = 2;
-    private static int weightOrdersDeliveredOnTime = 1;
+    private double normalizeGLP(double value) {
+        return value / maxGLP;
+    }
+
+    public void updateNormalizationFactors(Environment environment) {
+        // Calculate maximum possible time-GLP points
+        maxTimeGLPPoints = 0;
+        for (PlannerOrder order : environment.orders) {
+            // Maximum points would be if delivered at start time
+            double maxTimePoints = environment.currentTime.minutesUntil(order.deadline) * order.amountGLP;
+            maxTimeGLPPoints = Math.max(maxTimePoints, maxTimePoints);
+        }
+        maxTimeGLPPoints *= environment.orders.size(); // Multiply by number of orders for total possible
+
+        // Update max orders
+        maxOrders = environment.orders.size();
+
+        // Find maximum fuel and GLP capacity
+        maxFuel = 0;
+        maxGLP = 0;
+        for (PlannerVehicle vehicle : environment.vehicles) {
+            maxFuel = Math.max(maxFuel, vehicle.maxFuel);
+            maxGLP = Math.max(maxGLP, vehicle.maxGLP);
+        }
+
+        // Add some margin to avoid edge cases
+        maxTimeGLPPoints *= 1.2;
+        maxFuel *= 1.2;
+        maxGLP *= 1.2;
+    }
 
     public Solution() {
         routes = new HashMap<>();
@@ -65,49 +114,39 @@ public class Solution implements Cloneable {
 
     public double fitness(Environment environment) {
         if (!hasRunSimulation) {
-            throw new RuntimeException("Solution has not been simulated yet.");
+            updateNormalizationFactors(environment);  // Update factors before simulation
+            simulate(environment);
         }
         return fitness;
     }
 
     public boolean isFeasible(Environment environment) {
         if (!hasRunSimulation) {
-            throw new RuntimeException("Solution has not been simulated yet.");
+            simulate(environment);
         }
         return isFeasible;
     }
 
-    public void simulate(Environment environment, int minutes) {
+    public void simulate(Environment environment) {
         if (hasRunSimulation) {
             return;
         }
 
-        totalOrders = environment.orders.size();
+        // Store raw values
+        rawTimeGLPPoints = 0;
+        rawFulfilledOrders = 0;
+        rawImaginaryFuel = 0;
+        rawImaginaryGLP = 0;
+        rawMissedOrders = 0;
 
-        // Clone orders
         Map<Integer, PlannerOrder> orderMap = new HashMap<>();
         for (PlannerOrder order : environment.orders) {
             orderMap.put(order.id, order.clone());
         }
 
-        // Clone warehouses
-        Map<Integer, PlannerWarehouse> warehouseMap = new HashMap<>();
-        for (PlannerWarehouse warehouse : environment.warehouses) {
-            warehouseMap.put(warehouse.id, warehouse.clone());
-        }
-
-        // Clone vehicles
         Map<Integer, PlannerVehicle> vehicleMap = new HashMap<>();
         for (PlannerVehicle vehicle : environment.vehicles) {
             vehicleMap.put(vehicle.id, vehicle.clone());
-        }
-
-        // Calculate max possible time points (sum deadline_i - currentTime)
-        for (OrderDeliverNode deliverNode : environment.getNodes().stream()
-            .filter(node -> node instanceof OrderDeliverNode)
-            .map(node -> (OrderDeliverNode) node)
-            .collect(Collectors.toList())) {
-            totalPossibleTimePoints += environment.currentTime.minutesUntil(deliverNode.order.deadline);
         }
 
         for (PlannerVehicle vehicle : vehicleMap.values()) {
@@ -118,66 +157,42 @@ public class Solution implements Cloneable {
                 currentTime = currentTime.addMinutes(vehicle.waitTransition);
             }
 
-
-            for (int i = 0; i < route.size() - 1 && currentTime.minutesSince(environment.currentTime) < minutes; i++) {
+            for (int i = 0; i < route.size() - 1 && currentTime.minutesSince(environment.currentTime) < environment.minutesToSimulate; i++) {
                 Node originNode = route.get(i);
                 Node destinationNode = route.get(i + 1);
 
-                // Pass time after traveling from originNode to destinationNode
                 double distance = environment.getDistances().get(originNode.getPosition()).get(destinationNode.getPosition());
                 int timeSpent = (int) Math.ceil(distance / SimulationProperties.speed) * 60; // Convert hours to minutes
                 currentTime = currentTime.addMinutes(timeSpent);
 
-                // Calculate and check fuel cost
                 double fuelCost = Environment.calculateFuelCost(originNode, destinationNode, environment.getDistances(), vehicle);
                 if (vehicle.currentFuel < fuelCost) {
-                    // Terminate the route
-                    imaginaryFuelConsumed += fuelCost;
                     errors.add("Vehicle " + vehicle.id + " has not enough fuel to travel from " + originNode.getPosition() + " to " + destinationNode.getPosition() + ".");
-                    break;
-                } else {
-                    // Consume fuel
-                    vehicle.currentFuel -= fuelCost;
-                    totalFuelCost += fuelCost;
-                }
+                    rawImaginaryFuel += fuelCost - vehicle.currentFuel;
+                } 
 
-                // When the vehicle arrives at an OrderDeliverNode
+                vehicle.currentFuel -= fuelCost;
+
                 if (destinationNode instanceof OrderDeliverNode) {
                     OrderDeliverNode deliverNode = (OrderDeliverNode) destinationNode;
-                    PlannerOrder order = deliverNode.order;
+                    PlannerOrder order = orderMap.get(deliverNode.order.id);
 
                     int GLPToDeliver = deliverNode.amountGLP;
 
-                    // Check if the vehicle has enough GLP to deliver the order
                     if (vehicle.currentGLP < GLPToDeliver) {
-                        // Terminate the route
-                        imaginaryGLPConsumed += GLPToDeliver;
                         errors.add("Vehicle " + vehicle.id + " has not enough GLP to deliver order " + order.id + ".");
-                        break;
-                    } else {
-                        // Consume GLP and track the cost
-                        vehicle.currentGLP -= GLPToDeliver;
-                    }
+                        rawImaginaryGLP += GLPToDeliver - vehicle.currentGLP;
+                    } 
 
-                    if (currentTime.isBefore(order.deadline)) {
-                        totalTimePoints += currentTime.minutesUntil(order.deadline);
-                    } else {
-                        totalTimePoints -= currentTime.minutesSince(order.deadline);
+                    vehicle.currentGLP -= GLPToDeliver;
+
+                    order.amountGLP -= GLPToDeliver;
+
+                    if (currentTime.isAfter(order.deadline)) {
                         errors.add("Vehicle " + vehicle.id + " has delivered order " + order.id + " after the deadline.");
-                    }
+                    } 
 
-                    if (order.amountGLP == GLPToDeliver) {
-                        // Remove the order from the orderMap
-                        if (currentTime.isBefore(order.deadline)) {
-                            deliveredOrdersOnTime++;
-                        } else {
-                            errors.add("Vehicle " + vehicle.id + " has delivered order " + order.id + " after the deadline.");
-                        }
-                        orderMap.remove(order.id);
-                    } else {
-                        // Update the order amount
-                        order.amountGLP -= GLPToDeliver;
-                    }
+                    rawTimeGLPPoints += currentTime.minutesUntil(order.deadline) * order.amountGLP;
                     
                     // If destination node breaks an order chain (changes order or goes from order to non-order node), wait the corresponding time
                     boolean breaksOrderChain = (originNode instanceof OrderDeliverNode && !(destinationNode instanceof OrderDeliverNode)) ||
@@ -192,8 +207,13 @@ public class Solution implements Cloneable {
                 if (destinationNode instanceof ProductRefillNode) {
                     ProductRefillNode refillNode = (ProductRefillNode) destinationNode;
 
-                    // Refill the vehicle with GLP and full fuel
+                    // Refill the vehicle with GLP
                     vehicle.currentGLP += refillNode.amountGLP;
+
+                    // Full fuel refill if not a vehicle
+                    if (!refillNode.warehouse.wasVehicle) {
+                        vehicle.currentFuel = vehicle.maxFuel;
+                    }
 
                     // If destination node breaks a refill chain (changes warehouse or goes from warehouse to non-warehouse node), wait the corresponding time
                     boolean breaksRefillChain = (originNode instanceof ProductRefillNode && !(destinationNode instanceof ProductRefillNode)) ||
@@ -206,29 +226,31 @@ public class Solution implements Cloneable {
             }
         }
 
-        deliveredOrders = environment.orders.size() - orderMap.size();
+        Time timeAfterSimulation = environment.currentTime.addMinutes(environment.minutesToSimulate);
+        for (PlannerOrder order : orderMap.values()) {
+            if (order.amountGLP > 0 && timeAfterSimulation.isAfter(order.deadline)) {
+                rawMissedOrders++;
+            }
+            if (order.amountGLP == 0) {
+                rawFulfilledOrders++;
+            }
+        }
 
-        projectedGLPConsumption = vehicleMap.size() * 30;
+        // Store the individual components before calculating final fitness
+        // Normalize each component to [0,1] range before applying weights
+        timeGLPPointsComponent = weightTimeGLPPoints * normalizeTimeGLPPoints(rawTimeGLPPoints);
+        fulfilledOrdersComponent = weightFulfilledOrders * normalizeOrders(rawFulfilledOrders);
+        imaginaryFuelComponent = weightImaginaryFuel * normalizeFuel(rawImaginaryFuel);
+        imaginaryGLPComponent = weightImaginaryGLP * normalizeGLP(rawImaginaryGLP);
+        missedOrdersComponent = weightMissedOrders * normalizeOrders(rawMissedOrders);
 
-        double timePointsProportion = totalPossibleTimePoints > 0 ? 
-            (totalTimePoints * 1.0 / totalPossibleTimePoints) : 0.0;
-        double imaginaryFuelConsumedProportion = totalFuelCost > 0 ? 
-            (imaginaryFuelConsumed * 1.0 / totalFuelCost) : 0.0;
-        double imaginaryGLPConsumedProportion = projectedGLPConsumption > 0 ? 
-            (imaginaryGLPConsumed * 1.0 / projectedGLPConsumption) : 0.0;
-		double ordersNotDeliveredProportion = totalOrders > 0 ? 
-            (orderMap.size() * 1.0 / totalOrders) : 0.0;
-		double ordersNotDeliveredOnTimeProportion = totalOrders > 0 ? 
-            (1 - deliveredOrdersOnTime * 1.0 / totalOrders) : 0.0;
-
-		fitness = Solution.weightTimePoints * timePointsProportion -
-			Solution.weightImaginaryFuelConsumed * imaginaryFuelConsumedProportion -
-			Solution.weightImaginaryGLPConsumed * imaginaryGLPConsumedProportion -
-			Solution.weightOrdersNotDelivered * ordersNotDeliveredProportion -
-			Solution.weightOrdersDeliveredOnTime * ordersNotDeliveredOnTimeProportion;
-
+        fitness = timeGLPPointsComponent +
+                 fulfilledOrdersComponent -
+                 imaginaryFuelComponent -
+                 imaginaryGLPComponent -
+                 missedOrdersComponent;
+        
         isFeasible = errors.isEmpty();
-
         hasRunSimulation = true;
     }
 
@@ -270,25 +292,27 @@ public class Solution implements Cloneable {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("PlannerSolution{\n");
-        sb.append("  fitness=").append(fitness).append("\n");
-        sb.append("  isFeasible=").append(isFeasible).append("\n");
-        sb.append("  deliveredOrders=").append(deliveredOrders).append("\n");
-        sb.append("  deliveredOrdersOnTime=").append(deliveredOrdersOnTime).append("\n");
-        sb.append("  totalOrders=").append(totalOrders).append("\n");
-        sb.append("  errors=").append(errors).append("\n");
-        sb.append("  routes={\n");
+        sb.append("Solution {\n");
+        sb.append(getReport());  // Get all the common information
+        
+        // Add routes information
+        sb.append("\n  Routes:\n");
         if (routes != null) {
-            for (Map.Entry<Integer, List<Node>> entry : routes.entrySet()) {
-                sb.append("    Vehicle ").append(entry.getKey()).append(": ");
-                List<Node> route = entry.getValue();
-                for (Node node : route) {
-                    sb.append("Node").append(node).append(" ");
+            routes.forEach((vehicleId, route) -> {
+                sb.append("    Vehicle ").append(vehicleId).append(": ");
+                if (route.isEmpty()) {
+                    sb.append("Empty route");
+                } else {
+                    route.forEach(node -> sb.append(node).append(" → "));
+                    // Remove the last arrow
+                    sb.setLength(sb.length() - 3);
                 }
                 sb.append("\n");
-            }
+            });
+        } else {
+            sb.append("    No routes defined\n");
         }
-        sb.append("  }\n");
+        
         sb.append("}");
         return sb.toString();
     }
@@ -300,31 +324,24 @@ public class Solution implements Cloneable {
             return "No simulation has been run yet.";
         }
 
-        report.append("Feasibility: ").append(isFeasible ? "Is Feasible" : "Is Not Feasible").append("\n");
-        report.append("Fitness: ").append(String.format("%.4f", fitness)).append("\n\n");
+        report.append("  Simulation Status: ").append(hasRunSimulation ? "Completed" : "Not Run").append("\n");
+        report.append("  Feasibility: ").append(isFeasible ? "Feasible" : "Not Feasible").append("\n");
+        report.append("  Total Fitness: ").append(String.format("%.4f", fitness)).append("\n");
+        report.append("  Fitness Components:\n");
+        report.append(String.format("    - Time GLP Points (weight=%d): %.4f (based on %.2f minutes×GLP, normalized: %.4f)\n", 
+            weightTimeGLPPoints, timeGLPPointsComponent, rawTimeGLPPoints, normalizeTimeGLPPoints(rawTimeGLPPoints)));
+        report.append(String.format("    - Fulfilled Orders (weight=%d): %.4f (based on %d orders, normalized: %.4f)\n", 
+            weightFulfilledOrders, fulfilledOrdersComponent, rawFulfilledOrders, normalizeOrders(rawFulfilledOrders)));
+        report.append(String.format("    - Imaginary Fuel (weight=%d): %.4f (based on %.2f liters, normalized: %.4f)\n", 
+            weightImaginaryFuel, imaginaryFuelComponent, rawImaginaryFuel, normalizeFuel(rawImaginaryFuel)));
+        report.append(String.format("    - Imaginary GLP (weight=%d): %.4f (based on %d units, normalized: %.4f)\n", 
+            weightImaginaryGLP, imaginaryGLPComponent, rawImaginaryGLP, normalizeGLP(rawImaginaryGLP)));
+        report.append(String.format("    - Missed Orders (weight=%d): %.4f (based on %d orders, normalized: %.4f)\n", 
+            weightMissedOrders, missedOrdersComponent, rawMissedOrders, normalizeOrders(rawMissedOrders)));
         
-        report.append("Fitness Components:\n");
-        report.append(String.format("  Time Points: %d/%d (%.4f)\n", 
-            totalTimePoints, totalPossibleTimePoints, 
-            totalPossibleTimePoints > 0 ? totalTimePoints * 1.0 / totalPossibleTimePoints : 0.0));
-        report.append(String.format("  Imaginary Fuel Consumed: %.4f/%.4f (%.4f)\n", 
-            imaginaryFuelConsumed, totalFuelCost, 
-            totalFuelCost > 0 ? imaginaryFuelConsumed * 1.0 / totalFuelCost : 0.0));
-        report.append(String.format("  Imaginary GLP Consumed: %d/%d (%.4f)\n", 
-            imaginaryGLPConsumed, projectedGLPConsumption, 
-            projectedGLPConsumption > 0 ? imaginaryGLPConsumed * 1.0 / projectedGLPConsumption : 0.0));
-        report.append(String.format("  Orders Not Delivered: %d/%d (%.4f)\n", 
-            totalOrders - deliveredOrders, totalOrders, 
-            totalOrders > 0 ? (totalOrders - deliveredOrders) * 1.0 / totalOrders : 0.0));
-        report.append(String.format("  Orders Not Delivered On Time: %d/%d (%.4f)\n", 
-            totalOrders - deliveredOrdersOnTime, totalOrders, 
-            totalOrders > 0 ? (totalOrders - deliveredOrdersOnTime) * 1.0 / totalOrders : 0.0));
-
         if (!errors.isEmpty()) {
-            report.append("\nErrors:\n");
-            report.append(errors.stream().collect(Collectors.joining("\n")));
-        } else {
-            report.append("\nNo errors found.");
+            report.append("\n  Errors:\n");
+            errors.forEach(error -> report.append("    - ").append(error).append("\n"));
         }
 
         return report.toString();

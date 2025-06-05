@@ -10,7 +10,6 @@ import java.util.Random;
 import utils.PathBuilder;
 import utils.Time;
 import utils.Position;
-import utils.SimulationProperties;
 import entities.PlannerVehicle;
 import entities.PlannerOrder;
 import entities.PlannerWarehouse;
@@ -20,6 +19,7 @@ import entities.PlannerMaintenance;
 
 public class Environment {
     public Time currentTime;
+    public int minutesToSimulate;
 
     public List<PlannerVehicle> vehicles;
     public List<PlannerOrder> orders;
@@ -50,7 +50,7 @@ public class Environment {
     }
 
     public Environment(List<PlannerVehicle> vehicles, List<PlannerOrder> orders, List<PlannerWarehouse> warehouses, List<PlannerBlockage> blockages,
-            List<PlannerFailure> failures, List<PlannerMaintenance> maintenances, Time currentTime) {
+            List<PlannerFailure> failures, List<PlannerMaintenance> maintenances, Time currentTime, int minutesToSimulate) {
         this.vehicles = vehicles;
         this.orders = orders;
         this.warehouses = warehouses;
@@ -58,10 +58,11 @@ public class Environment {
         this.failures = failures;
         this.maintenances = maintenances;
         this.currentTime = currentTime;
+        this.minutesToSimulate = minutesToSimulate;
     }
 
     public Environment() {
-        this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new Time(1, 1, 1, 0, 0));
+        this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new Time(1, 1, 1, 0, 0), 0);
     }
 
     @Override
@@ -125,7 +126,7 @@ public class Environment {
         }
 
         int totalGLPToRefill = totalGLP - totalGLPInVehicles;
-        int totalAssignableGLP = (int) (totalGLPToRefill * 2.5);
+        int totalAssignableGLP = (int) (totalGLPToRefill * 1.5);
 
         // Round robin to assign GLP from the warehouses
         int currentWarehouseIndex = 0;

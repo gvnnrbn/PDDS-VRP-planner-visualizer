@@ -8,38 +8,20 @@ import java.util.Random;
 
 public class Algorithm {
     // Hyperparameters
-    private static int maxIterations = 10_000;
-    private static int maxTimeMs = 10 * 1000;
-    private static int maxNoImprovement = 250;
+    private static int maxTimeMs = 15 * 1000;
+    private static int maxNoImprovement = 450;
     private static int maxNoImprovementFeasible = 125; 
     private static int tabuListSize = 400;
     private static double aspirationCriteria = 0.05; // 5% improvement over best solution
 
-    private static final boolean isDebug = false;
+    private static final boolean isDebug = true;
 
     public Algorithm() {
     }
 
     public static Solution run(Environment environment, int minutes) {
-        Solution solution = null;
-        int attempts = 0;
-        do {
-            solution = _run(environment, minutes);
-            attempts++;
-            if (attempts >= 25) {
-                break;
-            }
-        } while (!solution.isFeasible(environment));
-        solution.compress();
-        return solution;
-    }
-
-    private static Solution _run(Environment environment, int minutes) {
         Solution currSolution = environment.getRandomSolution();
         Solution bestSolution = currSolution.clone();
-        
-        currSolution.simulate(environment, minutes);
-        bestSolution.simulate(environment, minutes);
         
         double bestFitness = bestSolution.fitness(environment);
         double currFitness = bestFitness;
@@ -51,10 +33,8 @@ public class Algorithm {
         int iterations = 0;
         int noImprovementCount = 0;
 
-        while (iterations < maxIterations && 
-               (System.currentTimeMillis() - startTime) < maxTimeMs) {
+        while ((System.currentTimeMillis() - startTime) < maxTimeMs) {
             
-            bestSolution.simulate(environment, minutes);
             boolean isFeasible = bestSolution.isFeasible(environment);
             
             // Check termination conditions
@@ -64,9 +44,6 @@ public class Algorithm {
             }
 
             List<Neighbor> neighborhood = NeighborhoodGenerator.generateNeighborhood(currSolution, environment);
-            for (Neighbor neighbor : neighborhood) {
-                neighbor.solution.simulate(environment, minutes);
-            }
             
             Neighbor bestNeighbor = null;
             double bestNeighborFitness = Double.NEGATIVE_INFINITY;
@@ -114,19 +91,21 @@ public class Algorithm {
             }
 
             if (isDebug && iterations % 100 == 0) {
+                System.out.println("--------------------------------");
                 long timePassed = System.currentTimeMillis() - startTime;
                 System.out.println("Iteration " + iterations + 
-                    ": Current fitness: " + String.format("%.4f", currFitness) + 
-                    ", Best fitness: " + String.format("%.4f", bestFitness) + 
-                    ", Feasible: " + currSolution.isFeasible(environment) + 
-                    ", No improvement: " + noImprovementCount +
-                    ", Tabu size: " + tabuList.size() +
-                    ", Time: " + timePassed + "ms");
+                        ": Current fitness: " + String.format("%.4f", currFitness) + 
+                        ", Best fitness: " + String.format("%.4f", bestFitness) + 
+                        ", Feasible: " + currSolution.isFeasible(environment) + 
+                        ", No improvement: " + noImprovementCount +
+                        ", Tabu size: " + tabuList.size() +
+                        ", Time: " + timePassed + "ms");
             }
 
             iterations++;
         }
 
+        bestSolution.compress();
         return bestSolution;
     }
 

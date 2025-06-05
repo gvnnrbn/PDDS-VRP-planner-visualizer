@@ -59,24 +59,29 @@ public class Testing {
             List<PlannerMaintenance> activeMaintenances = getActiveMaintenances(maintenances, currTime);
             List<PlannerVehicle> activeVehicles = getActiveVehicles(vehicles, currTime);
 
-            Environment environment = new Environment(activeVehicles, activeOrders, warehouses, activeBlockages, failures, activeMaintenances, currTime);
-            System.out.println("Size of the environment: " + activeVehicles.size() + " " + activeOrders.size() + " " + warehouses.size() + " " + activeBlockages.size() + " " + failures.size() + " " + activeMaintenances.size());
+            Environment environment = new Environment(activeVehicles, activeOrders, warehouses, activeBlockages, failures, activeMaintenances, currTime, minutesToSimulate);
+            System.out.println("Environment sizes:");
+            System.out.println("  Active vehicles: " + activeVehicles.size());
+            System.out.println("  Active orders: " + activeOrders.size()); 
+            System.out.println("  Warehouses: " + warehouses.size());
+            System.out.println("  Active blockages: " + activeBlockages.size());
+            System.out.println("  Failures: " + failures.size());
+            System.out.println("  Active maintenances: " + activeMaintenances.size());
             Solution sol = Algorithm.run(environment, minutesToSimulate);
-
             System.out.println(sol.getReport());
 
-            for (PlannerVehicle plannerVehicle : vehicles) {
-                plannerVehicle.currentNode = sol.routes.get(plannerVehicle.id).get(0);
-            }
+            // for (PlannerVehicle plannerVehicle : vehicles) {
+            //     plannerVehicle.currentNode = sol.routes.get(plannerVehicle.id).get(0);
+            // }
 
-            // Iterate over time
-            for(int i = 0; i < minutesToSimulate; i++) {
-                // Iterate over vehicles
-                for (PlannerVehicle plannerVehicle : vehicles) {
-                }
-            }
+            // // Iterate over time
+            // for(int i = 0; i < minutesToSimulate; i++) {
+            //     // Iterate over vehicles
+            //     for (PlannerVehicle plannerVehicle : vehicles) {
+            //     }
+            // }
 
-            currTime = currTime.addMinutes(minutesToSimulate);
+            // currTime = currTime.addMinutes(minutesToSimulate);
         // }
     }
 }
