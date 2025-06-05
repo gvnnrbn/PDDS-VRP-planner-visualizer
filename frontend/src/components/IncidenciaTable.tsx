@@ -10,13 +10,16 @@ import {
   HStack,
   Text,
   Box,
-  useToast
+  useToast,
+  Button,
+  Select
 } from '@chakra-ui/react'
 import { DeleteIcon, EditIcon } from '@chakra-ui/icons'
 import type { Incidencia } from '../core/types/incidencia'
 import { IncidenciaService } from '../core/services/IncidenciaService'
 import { format } from 'date-fns'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 
 const incidenciaService = new IncidenciaService()
 
@@ -33,6 +36,14 @@ export const IncidenciaTable = ({ onIncidenciaSelect }: IncidenciaTableProps) =>
     queryFn: () => incidenciaService.getAllIncidencias(),
     retry: 1
   })
+
+  const [currentPage, setCurrentPage] = useState(1)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
+
+  const indexOfLastRow = currentPage * rowsPerPage
+  const indexOfFirstRow = indexOfLastRow - rowsPerPage
+  const currentIncidencias = incidencias?.slice(indexOfFirstRow, indexOfLastRow) || []
+  const totalPages = Math.ceil((incidencias?.length || 0) / rowsPerPage)
 
   const handleDelete = async (id: number) => {
     try {
@@ -56,8 +67,13 @@ export const IncidenciaTable = ({ onIncidenciaSelect }: IncidenciaTableProps) =>
     }
   }
 
+  const handleRowsChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setRowsPerPage(parseInt(e.target.value))
+    setCurrentPage(1)
+  }
+
   if (isLoading) return <Text>Loading...</Text>
-  if (error) return <Text>Error: {error.message}</Text>
+  if (error) return <Text>Error: {(error as Error).message}</Text>
 
   return (
     <Box>
@@ -73,7 +89,7 @@ export const IncidenciaTable = ({ onIncidenciaSelect }: IncidenciaTableProps) =>
             </Tr>
           </Thead>
           <Tbody>
-            {incidencias?.map((incidencia) => (
+            {currentIncidencias.map((incidencia) => (
               <Tr key={incidencia.id}>
                 <Td>{format(new Date(incidencia.fecha), 'yyyy-MM-dd')}</Td>
                 <Td>{incidencia.turno}</Td>
@@ -101,6 +117,34 @@ export const IncidenciaTable = ({ onIncidenciaSelect }: IncidenciaTableProps) =>
           </Tbody>
         </Table>
       </TableContainer>
+
+      {/* Paginación alineada a la derecha */}
+      <HStack justify="flex-end" mt={4} spacing={6}>
+        <HStack>
+          <Text>Filas por página:</Text>
+          <Select size="sm" value={rowsPerPage} onChange={handleRowsChange} w="75px">
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="15">15</option>
+          </Select>
+        </HStack>
+
+        <Button
+          size="sm"
+          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          isDisabled={currentPage === 1}
+        >
+          Anterior
+        </Button>
+        <Text fontSize="sm">Página {currentPage} de {totalPages}</Text>
+        <Button
+          size="sm"
+          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+          isDisabled={currentPage === totalPages}
+        >
+          Siguiente
+        </Button>
+      </HStack>
     </Box>
   )
 }

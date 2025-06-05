@@ -19,7 +19,6 @@ export interface IFlotaCard {
 }
 export interface VehiculoSimulado  {
   idVehiculo: number;
-  placa: string;
   estado: string;
   eta: string;
   tipo: string;
@@ -28,6 +27,7 @@ export interface VehiculoSimulado  {
   maxCombustible: number;
   pedidoId: string;
   currGLP: number;
+  placa: string;
   posicionX: number;
   posicionY: number;
   accion: string;

@@ -10,10 +10,10 @@ export interface Pedido {
 
 export interface PedidoSimulado  {
   idPedido: number;
+  estado: string;
+  glp: number;
   posX: number;
   posY: number;
-  estado: string,
-  glp: number,
   fechaLimite: string,
   vehiculosAtendiendo: Array<{
       placa: string,

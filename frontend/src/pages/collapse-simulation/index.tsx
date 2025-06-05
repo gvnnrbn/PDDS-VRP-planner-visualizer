@@ -88,7 +88,7 @@ export default function CollapseSimulation() {
 
   return (
     <Flex height="full" overflowY="auto">
-      <Box flex={1} p={4} bg={bgColor} h="full">
+      {/* <Box flex={1} p={4} bg={bgColor} h="full">
         <Routes>
           <Route path="pedidos" element={<PedidosPhaseCollapse />} />
           <Route path="simulacion" element={<SimulationPhase />} />
@@ -115,7 +115,8 @@ export default function CollapseSimulation() {
             //onSpeedChange={(v) => setSimSpeed(v)}
           />
         </>
-      )}
+      )} */}
+      <MyComponent></MyComponent>
     </Flex>
   )
 }

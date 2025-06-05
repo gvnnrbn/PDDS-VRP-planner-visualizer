@@ -3,6 +3,7 @@ package pucp.pdds.backend.seeder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
+
 import pucp.pdds.backend.model.Vehiculo;
 import pucp.pdds.backend.model.Vehiculo.TipoVehiculo;
 import pucp.pdds.backend.repository.VehiculoRepository;
@@ -19,18 +20,19 @@ public class VehiculoSeeder implements CommandLineRunner {
         
         // Vehicle types with their specifications
         String[][] vehiculos = {
-            {"TA", "1000", "50", "20"},
-            {"TB", "1500", "60", "30"},
-            {"TC", "2000", "70", "40"},
-            {"TD", "2500", "80", "50"}
+            {"TA","CJ2111" ,"1000", "50", "20"},
+            {"TB", "RRR222", "800","60", "30"},
+            {"TC", "SS3333","1000", "70", "40"},
+            {"TD", "TUUU11", "800","80", "50"}
         };
         
         for (String[] vehiculoData : vehiculos) {
             Vehiculo vehiculo = new Vehiculo(
                 TipoVehiculo.valueOf(vehiculoData[0]),
-                Integer.parseInt(vehiculoData[1]),
-                Float.parseFloat(vehiculoData[2]),
-                Float.parseFloat(vehiculoData[3])
+                String.valueOf(vehiculoData[1]),
+                Integer.parseInt(vehiculoData[2]),
+                Float.parseFloat(vehiculoData[3]),
+                Float.parseFloat(vehiculoData[4])
             );
             vehiculoRepository.save(vehiculo);
         }

@@ -16,137 +16,8 @@ import { FlotaCard } from '../../components/common/cards/FlotaCard'
 import { PanelSearchBar } from '../../components/common/PanelSearchBar'
 import { MantenimientoCard } from '../../components/common/cards/MantenimientoCard'
 import { FilterSortButtons } from '../../components/common/cards/FilterSortButtons'
+import AlmacenPhase from './AlmacenPhase'
 import jsonData from "../../data/simulacion.json";
-
-// mock data
-const ordersOutput = [
-  {
-    id: 'PED-001',
-    state: 'En Proceso',
-    glp: 150,
-    deadline: '2023-10-15',
-    vehicles: [
-      { plaque: 'ABC123', eta: '2023-10-14 12:00' },
-      { plaque: 'XYZ789', eta: '2023-10-14 14:30' }
-    ]
-  },
-  {
-    id: 'PED-002',
-    state: 'Completado',
-    glp: 200,
-    deadline: '2023-10-16',
-    vehicles: [
-      { plaque: 'LMN456', eta: '2023-10-15 10:00' },
-    ]
-  },
-]
-
-const incidencias = [
-  {
-    id: 1,
-    estado: 'En Curso',
-    placa: 'ABC123',
-    turno: "T1",
-    tipo: "TI1",
-    fechaInicio: '2023-10-14 18:00',
-    fechaFin: '2023-10-14 22:00',
-  },
-  {
-    id: 2,
-    estado: 'Estimada',
-    placa: 'IJK123',
-    turno: "T1",
-    tipo: "TI2",
-    fechaInicio: '2023-10-14 18:00',
-    fechaFin: '2023-10-14 22:00',
-  },
-  {
-    id: 3,
-    estado: 'Resuelta',
-    placa: 'IJK123',
-    turno: "T1",
-    tipo: "TI2",
-    fechaInicio: '2023-10-14 18:00',
-    fechaFin: '2023-10-14 22:00',
-  },
-]
-
-const flota = [
-  {
-    id:1,
-    placa: 'ABC123',
-    estado: "Averiado",
-    eta: '2023-10-14 12:00',
-    glp: 50,
-    combustible: 180,
-    maxCombustible: 200,
-    pedidoId: 'PED-001',
-  },
-  {
-    id:2,
-    placa: 'XYZ098',
-    estado: "Entregando",
-    eta: '2023-10-14 12:00',
-    glp: 50,
-    combustible: 100,
-    maxCombustible: 200,
-    pedidoId: 'PED-002',
-  },
-  {
-    id:3,
-    placa: 'XSZ098',
-    estado: "Sin Programación",
-    eta: '2023-10-14 12:00',
-    glp: 50,
-    combustible: 100,
-    maxCombustible: 200,
-    pedidoId: 'PED-002',
-  },
-  {
-    id:4,
-    placa: 'XSZ098',
-    estado: "En Mantenimiento",
-    eta: '2023-10-14 12:00',
-    glp: 50,
-    combustible: 100,
-    maxCombustible: 200,
-    pedidoId: 'PED-002',
-  },
-]
-
-const mantenimientos = [
-  {
-    id: 1,
-    vehiculo: {
-      placa: 'ABC123',
-      tipo: 'TA',
-    },
-    estado: 'En Curso',
-    fechaInicio: '2023-10-14 00:00',
-    fechaFin: '2023-10-14 11:59',
-  },
-  {
-    id: 2,
-    vehiculo: {
-      placa: 'ABC123',
-      tipo: 'TA',
-    },
-    estado: 'Programado',
-    fechaInicio: '2023-10-14 00:00',
-    fechaFin: '2023-10-14 11:59',
-  },
-  {
-    id: 3,
-    vehiculo: {
-      placa: 'ABC123',
-      tipo: 'TA',
-    },
-    estado: 'Terminado',
-    fechaInicio: '2023-10-14 00:00',
-    fechaFin: '2023-10-14 11:59',
-  },
-]
-
 
 export default function WeeklySimulation() {  
   const bgColor = useColorModeValue('white', '#1a1a1a')
@@ -172,17 +43,6 @@ export default function WeeklySimulation() {
   // ➕ Cálculo de fecha fin
   const fechaFin = new Date(fechaInicio);
   fechaFin.setDate(fechaInicio.getDate() + totalMinutos - 1);
-  
-  // ➕ Formateador reutilizable
-  const formatDateTime = (fecha: Date) => {
-    const dd = String(fecha.getDate()).padStart(2, "0");
-    const mm = String(fecha.getMonth() + 1).padStart(2, "0");
-    const yyyy = fecha.getFullYear();
-    const hh = String(fecha.getHours()).padStart(2, "0");
-    const min = String(fecha.getMinutes()).padStart(2, "0");
-    const ss = String(fecha.getSeconds()).padStart(2, "0");
-    return `${dd}/${mm}/${yyyy} ${hh}:${min}:${ss}`;
-  };
   
   // const displayDate = `Día ${minuto + 1} | ${formatDateTime(fechaActual)} | 11:00`;
   
@@ -217,7 +77,6 @@ export default function WeeklySimulation() {
   }, [minuto, speedMs, isPaused]);
   
   const minutoActual = data.simulacion.find((m) => m.minuto === minuto);
-  const minutoSiguiente = data.simulacion.find((m) => m.minuto === minuto + 1);
   const pedidos = minutoActual?.pedidos || [];
   const vehiculos = minutoActual?.vehiculos || [];
   const incidencias = minutoActual?.incidencias || [];
@@ -312,6 +171,8 @@ export default function WeeklySimulation() {
   ]
   const [section, setSection] = useState(sections[0].title)
 
+
+
   return (
     <Flex height="full" overflowY="auto" position="relative">
       <Box flex={1} p={4} bg={bgColor} h="full">
@@ -319,13 +180,15 @@ export default function WeeklySimulation() {
           <Route path="pedidos" element={<PedidosPhase />} />
           <Route path="incidencias" element={<IncidenciasPhase />} />
           <Route path="vehiculos" element={<VehiculosPhase />} />
+          <Route path="almacen" element={<AlmacenPhase />} />
           <Route
             path="simulacion"
             element={
               isLoading 
               ? <></> 
               : <SimulationPhase 
-                minuto={minuto} 
+                minuto={minuto}
+                setMinuto={setMinuto} 
                 data={data} 
                 isPaused={isPaused}
                 setIsPaused={setIsPaused}

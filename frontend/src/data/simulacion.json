@@ -85,7 +85,7 @@
           "placa": "TA123",
           "rutaActual":[
             {
-              "posX": 1,
+              "posX": 0,
               "posY": 15
             },{
               "posX": 15,
@@ -214,9 +214,9 @@
           "tipo": "TA",
           "combustible": 15,
           "currGLP": 10,
-          "posicionX": 1,
-          "posicionY": 1,
-          "estado": "Entregando",
+          "posicionX": 0,
+          "posicionY": 0,
+          "estado": "MuevetePo",
           "accion": "moviendose",
           "maxCombustible": 30,
           "pedidoId": "PE01",
@@ -224,7 +224,7 @@
           "placa": "TA123",
           "rutaActual":[
             {
-              "posX": 1,
+              "posX": 0,
               "posY": 15
             },{
               "posX": 15,
@@ -304,9 +304,9 @@
           "tipo": "TA",
           "combustible": 14.6,
           "currGLP": 10,
-          "posicionX": 1,
-          "posicionY": 3,
-          "estado": "Entregando",
+          "posicionX": 0,
+          "posicionY": 15,
+          "estado": "MuevetePo",
           "accion": "moviendose",
           "maxCombustible": 30,
           "pedidoId": "PE01",
