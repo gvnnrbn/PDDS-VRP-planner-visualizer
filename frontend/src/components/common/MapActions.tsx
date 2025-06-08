@@ -11,7 +11,6 @@ interface BottomLeftControlsProps {
   onStop?: () => void;
   speed?: string;
   onSpeedChange?: (value: string) => void;
-  hasStarted?: boolean; 
 }
 
 const BottomLeftControls: React.FC<BottomLeftControlsProps> = ({
@@ -19,7 +18,6 @@ const BottomLeftControls: React.FC<BottomLeftControlsProps> = ({
     date = "Día 1 | 02/04/2025 | 13:00",
     onStop,
     onSpeedChange,
-    hasStarted
     }) => {
     const panelBg = useColorModeValue("white", "gray.800");
 
@@ -77,12 +75,9 @@ const BottomLeftControls: React.FC<BottomLeftControlsProps> = ({
                     border="1px solid"
                     borderColor="blue.600"
                     _hover={{ bg: "gray.100" }} // Cambia el color al pasar el mouse
-                >{
-                    hasStarted ? 
-                    (<Button size="xs" colorScheme="red" onClick={onStop}/>)
-                    :
-                    (<Button size="xs" colorScheme="green" onClick={onStop}/>)
-                }
+                >
+                    <Button size="xs" colorScheme="red" onClick={onStop}/>
+                
                 </Box>
             )}
 

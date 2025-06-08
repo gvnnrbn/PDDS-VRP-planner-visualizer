@@ -305,10 +305,10 @@ export default function WeeklySimulation() {
     <Flex height="full" overflowY="auto" position="relative">
       <Box flex={1} p={4} bg={bgColor} h="full">
         <Routes>
-          <Route path="pedidos" element={<PedidosPhase />} />
+          {/* <Route path="pedidos" element={<PedidosPhase />} />
           <Route path="incidencias" element={<IncidenciasPhase />} />
           <Route path="vehiculos" element={<VehiculosPhase />} />
-          <Route path="almacen" element={<AlmacenPhase />} />
+          <Route path="almacen" element={<AlmacenPhase />} /> */}
           <Route
             path="simulacion"
             element={
