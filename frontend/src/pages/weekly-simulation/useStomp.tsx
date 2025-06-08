@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Client, type Message } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
-const useStomp = (url) => {
+const useStomp = (url: string) => {
   const [client, setClient] = useState(null);
   const [connected, setConnected] = useState(false);
   const subscriptions = useRef(new Map());
@@ -18,20 +18,20 @@ const useStomp = (url) => {
       webSocketFactory: () => socket,
       reconnectDelay: 5000, // intenta reconectar cada 5s (si quieres mantener reconexión)
       onConnect: () => {
-        console.log('STOMP connected');
+        // console.log('STOMP connected');
         setConnected(true);
         subscriptions.current.forEach((callback, destination) => {
           stompClient.subscribe(destination, callback);
         });
       },
       onWebSocketClose: (evt) => {
-        console.warn('WebSocket closed', evt);
+        // console.warn('WebSocket closed', evt);
         setConnected(false);
       },
       onStompError: (frame) => {
         console.error('STOMP error', frame);
       },
-      debug: (str) => console.log('[STOMP]', str), // más visibilidad
+      // debug: (str) => console.log('[STOMP]', str), // más visibilidad
     });
 
   stompClient.activate();
@@ -86,8 +86,7 @@ useEffect(() => {
   return () => {
     disconnect();
   };
-  // ⛔️ NO incluir connect ni disconnect en deps
-}, []); // ← importante: arreglo vacío
+}, []);
 
   return { connected, subscribe, unsubscribe, publish };
 };

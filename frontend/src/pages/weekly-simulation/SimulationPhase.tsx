@@ -46,7 +46,7 @@ export default function SimulationPhase() {
 
   // ➕ Simulación automática
   useEffect(() => {
-    console.log(minuto);
+    // console.log(minuto);
     if (isPaused || minuto >= totalMinutos - 1) return;
 
     const interval = setTimeout(() => {
