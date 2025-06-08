@@ -244,14 +244,14 @@ export default function WeeklySimulation() {
   const currPath = useLocation().pathname.split('/').pop()
 
   const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    if (currPath === "simulacion") {
-      setIsLoading(true);
-      const timer = setTimeout(() => setIsLoading(false), 10000); // 10s simulado
-      return () => clearTimeout(timer);
-    }
-  }, [currPath]);
+  // agregar cuando sea necesario
+  // useEffect(() => {
+  //   if (currPath === "simulacion") {
+  //     setIsLoading(true);
+  //     const timer = setTimeout(() => setIsLoading(false), 10000); // 10s simulado
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [currPath]);
 
   const handleSectionChange = (section: string) => {
     setSection(section)
