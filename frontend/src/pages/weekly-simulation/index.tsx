@@ -1,4 +1,4 @@
-import { Box, Text, useColorModeValue, VStack } from '@chakra-ui/react'
+import { Box, Button, Text, useColorModeValue, VStack } from '@chakra-ui/react'
 import { Route, Routes, useLocation } from 'react-router-dom'
 import { SectionBar } from '../../components/common/SectionBar'
 import { useEffect, useState } from 'react'
@@ -17,6 +17,8 @@ import { PanelSearchBar } from '../../components/common/PanelSearchBar'
 import { MantenimientoCard } from '../../components/common/cards/mantenimientoCard'
 import { FilterSortButtons } from '../../components/common/cards/FilterSortButtons'
 import AlmacenPhase from './AlmacenPhase'
+import useStomp from './useStomp'
+import type { Message } from '@stomp/stompjs'
 
 // mock data
 const ordersOutput = [
@@ -237,6 +239,44 @@ const sections = [
 ]
 
 export default function WeeklySimulation() {
+  const { connected, subscribe, unsubscribe, publish } = useStomp('http://localhost:8080/ws');
+  const [log, setLog] = useState<string[]>([]);
+  // Add a button to trigger the simulation
+  const handleStartSimulation = () => {
+    if (connected) {
+      // Send a static date (you can modify this to use a dynamic date)
+      const now = new Date();
+      const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      
+      publish('/app/simulacion-start', formattedDate);
+      console.log('Sent date to backend:', formattedDate);
+    }
+  };
+
+  useEffect(() => {
+    if (!connected) return;
+    const suscribeUrl = '/topic/simulacion-start';
+    const handleSimulacion = (message: Message) => {
+      try {
+        const payload = JSON.parse(message.body);
+        console.log('Received simulation data:', payload);
+        setLog(prev => [...prev, payload]);
+      } catch (error) {
+        console.error('Error parsing message:', error);
+      }
+    };
+
+    subscribe(suscribeUrl, handleSimulacion);
+    return () => {
+      unsubscribe(suscribeUrl);
+    };
+  }, [connected, subscribe, unsubscribe]);
+
+  // useEffect(() => {
+  //   if (connected) {
+  //     console.log(log);
+  //   }
+  // },[log])
   const bgColor = useColorModeValue('white', '#1a1a1a')
   const [isCollapsed, setIsCollapsed] = useState(true)
   const [section, setSection] = useState(sections[0].title)
@@ -280,6 +320,9 @@ export default function WeeklySimulation() {
 
       {currPath === "simulacion" && !isLoading && (
         <>
+          <Button variant={'primary'} onClick={handleStartSimulation} disabled={!connected}>
+          {connected ? 'Start Simulation' : 'Connecting...'}
+            </Button>
           <SectionBar
             sections={sections}
             onSectionChange={handleSectionChange}
