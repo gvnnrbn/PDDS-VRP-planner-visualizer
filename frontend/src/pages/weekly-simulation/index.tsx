@@ -226,21 +226,21 @@ const sections = [
       </Box>
     )
   },
-  {
-    title: 'Indicadores',
-    content: (
-      <Box>
-        <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
-          contenido indicadores
-        </Text>
-      </Box>
-    )
-  },
+  // {
+  //   title: 'Indicadores',
+  //   content: (
+  //     <Box>
+  //       <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
+  //         contenido indicadores
+  //       </Text>
+  //     </Box>
+  //   )
+  // },
 ]
 
 export default function WeeklySimulation() {
   const { connected, subscribe, unsubscribe, publish } = useStomp('http://localhost:8080/ws');
-  const [log, setLog] = useState<string[]>([]);
+  const [log, setLog] = useState<string>();
   // Add a button to trigger the simulation
   const handleStartSimulation = () => {
     if (connected) {
@@ -259,8 +259,8 @@ export default function WeeklySimulation() {
     const handleSimulacion = (message: Message) => {
       try {
         const payload = JSON.parse(message.body);
-        console.log('Received simulation data:', payload);
-        setLog(prev => [...prev, payload]);
+        // console.log('Received simulation data:', payload);
+        setLog(payload);
       } catch (error) {
         console.error('Error parsing message:', error);
       }
@@ -272,11 +272,11 @@ export default function WeeklySimulation() {
     };
   }, [connected, subscribe, unsubscribe]);
 
-  // useEffect(() => {
-  //   if (connected) {
-  //     console.log(log);
-  //   }
-  // },[log])
+  useEffect(() => {
+    if (connected) {
+      console.log(log);
+    }
+  },[log])
   const bgColor = useColorModeValue('white', '#1a1a1a')
   const [isCollapsed, setIsCollapsed] = useState(true)
   const [section, setSection] = useState(sections[0].title)
