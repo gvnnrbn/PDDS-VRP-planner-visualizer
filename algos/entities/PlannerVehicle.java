@@ -184,7 +184,8 @@ public class PlannerVehicle implements Cloneable {
         ONTHEWAY("has routes planned, AVAILABLE"),
         STUCK("failure occurred, AVAILABLE AS WAREHOUSE"),
         REPAIR("inside main warehouse, NOT AVAILABLE until x shift according to failure type"),
-        MAINTENANCE("heading to or in maintenance, NOT AVAILABLE until 23:59");
+        MAINTENANCE("heading to or in maintenance, NOT AVAILABLE until 23:59"),
+        FINISHED("finished route for this planning interval");
 
         private final String description;
 
