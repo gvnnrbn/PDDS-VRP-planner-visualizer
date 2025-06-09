@@ -40,7 +40,7 @@ public class Solution implements Cloneable {
 
     private List<String> errors = new ArrayList<>();
 
-    private static int weightTimeGLPPoints = 1;
+    private static int weightTimeGLPPoints = 10;
     private static int weightFulfilledOrders = 2;
     private static int weightImaginaryFuel = 2;
     private static int weightImaginaryGLP = 2;
@@ -192,8 +192,12 @@ public class Solution implements Cloneable {
                         errors.add("Vehicle " + vehicle.id + " has delivered order " + order.id + " after the deadline.");
                     } 
 
-                    rawTimeGLPPoints += currentTime.minutesUntil(order.deadline) * order.amountGLP;
-                    
+                    // --- Exponential decay for lateness (reward on-time, penalize late) ---
+                    double minutesLate = Math.max(0, currentTime.minutesSince(order.deadline));
+                    double alpha = 0.01; // Decay rate, tune as needed
+                    rawTimeGLPPoints += order.amountGLP * Math.exp(-alpha * minutesLate);
+                    // This rewards on-time/early deliveries, penalizes late ones smoothly
+
                     // If destination node breaks an order chain (changes order or goes from order to non-order node), wait the corresponding time
                     boolean breaksOrderChain = (originNode instanceof OrderDeliverNode && !(destinationNode instanceof OrderDeliverNode)) ||
                     (originNode instanceof OrderDeliverNode && destinationNode instanceof OrderDeliverNode && ((OrderDeliverNode) originNode).order.id != ((OrderDeliverNode) destinationNode).order.id);
@@ -238,21 +242,68 @@ public class Solution implements Cloneable {
 
         isFeasible = errors.isEmpty();
 
-        // Store the individual components before calculating final fitness
-        // Normalize each component to [0,1] range before applying weights
-        timeGLPPointsComponent = weightTimeGLPPoints * normalizeTimeGLPPoints(rawTimeGLPPoints);
-        fulfilledOrdersComponent = weightFulfilledOrders * normalizeOrders(rawFulfilledOrders);
-        imaginaryFuelComponent = weightImaginaryFuel * normalizeFuel(rawImaginaryFuel);
-        imaginaryGLPComponent = weightImaginaryGLP * normalizeGLP(rawImaginaryGLP);
-        missedOrdersComponent = weightMissedOrders * normalizeOrders(rawMissedOrders);
+        // --- Fitness Calculation (Redesigned & Extended) ---
+        // Tunable weights for new components
+        double w1 = 1.0; // expReward
+        double w2 = 2.0; // sigmoidOrders
+        double w3 = 1.5; // logImaginaryFuel
+        double w4 = 1.5; // logImaginaryGLP
+        double w5 = 3.0; // quadMissedOrders
+        double w6 = 2.0; // vehicle utilization bonus
+        double w7 = 1.0; // end-period GLP bonus
 
-        fitness = timeGLPPointsComponent +
-                 fulfilledOrdersComponent -
-                 imaginaryFuelComponent -
-                 imaginaryGLPComponent -
-                 missedOrdersComponent +
-                 (isFeasible ? 1 : 0);
-        
+        // 1. Normalize expReward
+        double maxExpReward = 0.0;
+        for (PlannerOrder order : orderMap.values()) {
+            double urgencyWeight = (order.deadline.minutesSince(environment.currentTime) < 360) ? 2.0 : 1.0;
+            maxExpReward += urgencyWeight * order.amountGLP;
+        }
+        double expRewardNorm = (maxExpReward > 0) ? (rawTimeGLPPoints / maxExpReward) : 0.0; // [0,1]
+
+        // 2. Logistic (sigmoid) for fulfilled orders (smoothly in [0,1])
+        double sigmoidOrders = 1.0 / (1.0 + Math.exp(-0.5 * (rawFulfilledOrders - environment.orders.size() / 2.0)));
+
+        // 3. Normalize quadMissedOrders
+        double quadMissedOrdersNorm = (environment.orders.size() > 0) ? (rawMissedOrders / (environment.orders.size() * environment.orders.size())) : 0.0; // [0,1]
+
+        // 4. Normalize logImaginaryFuel/GLP
+        double maxFuel = 0.0, maxGLP_fleet = 0.0;
+        for (PlannerVehicle v : vehicleMap.values()) {
+            maxFuel += v.maxFuel;
+            maxGLP_fleet += v.maxGLP;
+        }
+        double logImaginaryFuelNorm = (maxFuel > 0) ? (rawImaginaryFuel / Math.log1p(maxFuel)) : 0.0;
+        double logImaginaryGLPNorm = (maxGLP_fleet > 0) ? (rawImaginaryGLP / Math.log1p(maxGLP_fleet)) : 0.0;
+
+        // 5. Vehicle utilization bonus: reward for using more vehicles (not idle/finished)
+        int usedVehicles = 0;
+        for (PlannerVehicle v : vehicleMap.values()) {
+            if (v.state != PlannerVehicle.VehicleState.IDLE && v.state != PlannerVehicle.VehicleState.FINISHED) {
+                usedVehicles++;
+            }
+        }
+        double utilizationBonus = usedVehicles / (double) Math.max(1, environment.vehicles.size()); // [0,1]
+        // Optionally, use sigmoid for smoother reward: 1/(1+exp(-4*(utilization-0.5)))
+
+        // 6. End-period GLP bonus: reward for finishing with more GLP in vehicles
+        double totalGLP = 0.0;
+        double maxGLP = 0.0;
+        for (PlannerVehicle v : vehicleMap.values()) {
+            totalGLP += v.currentGLP;
+            maxGLP += v.maxGLP;
+        }
+        double glpBonus = (maxGLP > 0) ? (totalGLP / maxGLP) : 0.0; // [0,1]
+
+        // 7. Fitness (weights as before, now using normalized components)
+        fitness = w1 * expRewardNorm
+                + w2 * sigmoidOrders
+                - w3 * logImaginaryFuelNorm
+                - w4 * logImaginaryGLPNorm
+                - w5 * quadMissedOrdersNorm
+                + w6 * utilizationBonus
+                + w7 * glpBonus;
+        if (isFeasible) fitness *= 2.0;
+
         hasRunSimulation = true;
     }
 

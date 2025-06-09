@@ -9,10 +9,10 @@ import java.util.Random;
 public class Algorithm {
     // Hyperparameters
     private static int maxTimeMs = 20 * 1000;
-    private static int maxNoImprovement = 500;
-    private static int maxNoImprovementFeasible = 250; 
-    private static int tabuListSize = 600;
-    private static double aspirationCriteria = 0.05; // 5% improvement over best solution
+    private static int maxNoImprovement = 2000;
+    private static int maxNoImprovementFeasible = 500; 
+    private static int tabuListSize = 2000;
+    private static double aspirationCriteria = 0.01; // 5% improvement over best solution
 
     private static final boolean isDebug = true;
 
@@ -20,6 +20,28 @@ public class Algorithm {
     }
 
     public static Solution run(Environment environment, int minutes) {
+        Solution bestSolution = null;
+        double bestFitness = Double.NEGATIVE_INFINITY;
+        long startTime = System.currentTimeMillis();
+        
+        while (System.currentTimeMillis() - startTime < 55000) { // 55 seconds
+            Solution solution = _run(environment, minutes);
+            double fitness = solution.fitness(environment);
+            
+            if (solution.isFeasible(environment)) {
+                return solution;
+            }
+            
+            if (fitness > bestFitness) {
+                bestFitness = fitness;
+                bestSolution = solution;
+            }
+        }
+        
+        return bestSolution; // Return best solution found even if not feasible
+    }
+
+    private static Solution _run(Environment environment, int minutes) {
         Solution currSolution = environment.getRandomSolution();
         Solution bestSolution = currSolution.clone();
         

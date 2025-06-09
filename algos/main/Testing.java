@@ -193,7 +193,8 @@ public class Testing {
         List<PlannerFailure> failures = DataParser.parseFailures("main/failures.csv");
         List<PlannerMaintenance> maintenances = DataParser.parseMaintenances("main/maintenances.csv");
 
-        for(int i=0; i<10; i++) {
+        int totalIntervals = 7 * 24 * 60 / minutesToSimulate;
+        for(int i=0; i<totalIntervals; i++) {
             List<PlannerBlockage> activeBlockages = getActiveBlockages(blockages, currTime);
             List<PlannerOrder> activeOrders = getActiveOrders(orders, currTime);
             List<PlannerMaintenance> activeMaintenances = getActiveMaintenances(maintenances, currTime);
@@ -203,6 +204,10 @@ public class Testing {
             System.out.println("Planning interval " + i + " started at " + currTime + " with " + activeVehicles.size() + " vehicles and " + activeOrders.size() + " orders");
             Solution sol = Algorithm.run(environment, minutesToSimulate);
             System.out.println(sol.getReport());
+
+            if (!sol.isFeasible(environment)) {
+                throw new RuntimeException("Solution is not feasible");
+            }
 
             for (PlannerVehicle vehicle : activeVehicles) {
                 vehicle.nextNodeIndex = 1;
@@ -276,7 +281,7 @@ public class Testing {
                 }
                 draw(activeVehicles, activeBlockages, deliveryNodes, refillNodes);
                 try {
-                    Thread.sleep(250); // 750 ms delay between steps
+                    Thread.sleep(5); // 750 ms delay between steps
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
