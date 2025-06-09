@@ -1,0 +1,504 @@
+--------------------------------
+Iteration 0: Current fitness: 1.0000, Best fitness: 1.0000, Feasible: true, No improvement: 1, Tabu size: 1, Time: 19ms
+--------------------------------
+Iteration 100: Current fitness: 1.0000, Best fitness: 1.0000, Feasible: true, No improvement: 101, Tabu size: 101, Time: 354ms
+--------------------------------
+Iteration 200: Current fitness: 1.0000, Best fitness: 1.0000, Feasible: true, No improvement: 201, Tabu size: 201, Time: 548ms
+
+Breaking: No improvement for 250 iterations while solution is feasible
+  Simulation Status: Completed
+  Feasibility: Feasible
+  Total Fitness: 1.0000
+  Fitness Components:
+    - Time GLP Points (weight=1): 0.0000 (based on 0.00 minutes×GLP, normalized: 0.0000)
+    - Fulfilled Orders (weight=2): 0.0000 (based on 0 orders, normalized: 0.0000)
+    - Imaginary Fuel (weight=2): 0.0000 (based on 0.00 liters, normalized: 0.0000)
+    - Imaginary GLP (weight=2): 0.0000 (based on 0 units, normalized: 0.0000)
+    - Missed Orders (weight=10): 0.0000 (based on 0 orders, normalized: 0.0000)
+
+--- Time: 2025/01/01 02:00 ---
+Vehicle 1 started at position: Position{x=12.0, y=8.0}
+Before currentPath correction the path is: null
+Vehicle 1 has arrived at location of node To refill 10m3 from warehouse 3 at Position{x=63.0, y=3.0}
+Vehicle 1 is processing node To refill 10m3 from warehouse 3 at Position{x=63.0, y=3.0}
+After currentPath correction the path is: [Position{x=63.0, y=3.0}, Position{x=63.0, y=42.0}, Position{x=42.0, y=42.0}]
+Vehicle 1 ended at position: Position{x=12.0, y=8.0}
+--- Time: 2025/01/01 02:01 ---
+Vehicle 1 started at position: Position{x=12.0, y=8.0}
+Vehicle 1 is waiting for 10 minutes
+Vehicle 1 ended at position: Position{x=12.0, y=8.0}
+--- Time: 2025/01/01 02:02 ---
+Vehicle 1 started at position: Position{x=12.0, y=8.0}
+Vehicle 1 is waiting for 9 minutes
+Vehicle 1 ended at position: Position{x=12.0, y=8.0}
+--- Time: 2025/01/01 02:03 ---
+Vehicle 1 started at position: Position{x=12.0, y=8.0}
+Vehicle 1 is waiting for 8 minutes
+Vehicle 1 ended at position: Position{x=12.0, y=8.0}
+--- Time: 2025/01/01 02:04 ---
+Vehicle 1 started at position: Position{x=12.0, y=8.0}
+Vehicle 1 is waiting for 7 minutes
+Vehicle 1 ended at position: Position{x=12.0, y=8.0}
+--- Time: 2025/01/01 02:05 ---
+Vehicle 1 started at position: Position{x=12.0, y=8.0}
+Vehicle 1 is waiting for 6 minutes
+Vehicle 1 ended at position: Position{x=12.0, y=8.0}
+--- Time: 2025/01/01 02:06 ---
+Vehicle 1 started at position: Position{x=12.0, y=8.0}
+Vehicle 1 is waiting for 5 minutes
+Vehicle 1 ended at position: Position{x=12.0, y=8.0}
+--- Time: 2025/01/01 02:07 ---
+Vehicle 1 started at position: Position{x=12.0, y=8.0}
+Vehicle 1 is waiting for 4 minutes
+Vehicle 1 ended at position: Position{x=12.0, y=8.0}
+--- Time: 2025/01/01 02:08 ---
+Vehicle 1 started at position: Position{x=12.0, y=8.0}
+Vehicle 1 is waiting for 3 minutes
+Vehicle 1 ended at position: Position{x=12.0, y=8.0}
+--- Time: 2025/01/01 02:09 ---
+Vehicle 1 started at position: Position{x=12.0, y=8.0}
+Vehicle 1 is waiting for 2 minutes
+Vehicle 1 ended at position: Position{x=12.0, y=8.0}
+--- Time: 2025/01/01 02:10 ---
+Vehicle 1 started at position: Position{x=12.0, y=8.0}
+Vehicle 1 is waiting for 1 minutes
+Vehicle 1 ended at position: Position{x=12.0, y=8.0}
+--- Time: 2025/01/01 02:11 ---
+Vehicle 1 started at position: Position{x=12.0, y=8.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=3.8333333333333335}
+--- Time: 2025/01/01 02:12 ---
+Vehicle 1 started at position: Position{x=63.0, y=3.8333333333333335}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=4.666666666666667}
+--- Time: 2025/01/01 02:13 ---
+Vehicle 1 started at position: Position{x=63.0, y=4.666666666666667}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=5.5}
+--- Time: 2025/01/01 02:14 ---
+Vehicle 1 started at position: Position{x=63.0, y=5.5}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=6.333333333333333}
+--- Time: 2025/01/01 02:15 ---
+Vehicle 1 started at position: Position{x=63.0, y=6.333333333333333}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=7.166666666666666}
+--- Time: 2025/01/01 02:16 ---
+Vehicle 1 started at position: Position{x=63.0, y=7.166666666666666}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=7.999999999999999}
+--- Time: 2025/01/01 02:17 ---
+Vehicle 1 started at position: Position{x=63.0, y=7.999999999999999}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=8.833333333333332}
+--- Time: 2025/01/01 02:18 ---
+Vehicle 1 started at position: Position{x=63.0, y=8.833333333333332}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=9.666666666666666}
+--- Time: 2025/01/01 02:19 ---
+Vehicle 1 started at position: Position{x=63.0, y=9.666666666666666}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=10.5}
+--- Time: 2025/01/01 02:20 ---
+Vehicle 1 started at position: Position{x=63.0, y=10.5}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=11.333333333333334}
+--- Time: 2025/01/01 02:21 ---
+Vehicle 1 started at position: Position{x=63.0, y=11.333333333333334}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=12.166666666666668}
+--- Time: 2025/01/01 02:22 ---
+Vehicle 1 started at position: Position{x=63.0, y=12.166666666666668}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=13.000000000000002}
+--- Time: 2025/01/01 02:23 ---
+Vehicle 1 started at position: Position{x=63.0, y=13.000000000000002}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=13.833333333333336}
+--- Time: 2025/01/01 02:24 ---
+Vehicle 1 started at position: Position{x=63.0, y=13.833333333333336}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=14.66666666666667}
+--- Time: 2025/01/01 02:25 ---
+Vehicle 1 started at position: Position{x=63.0, y=14.66666666666667}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=15.500000000000004}
+--- Time: 2025/01/01 02:26 ---
+Vehicle 1 started at position: Position{x=63.0, y=15.500000000000004}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=16.333333333333336}
+--- Time: 2025/01/01 02:27 ---
+Vehicle 1 started at position: Position{x=63.0, y=16.333333333333336}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=17.166666666666668}
+--- Time: 2025/01/01 02:28 ---
+Vehicle 1 started at position: Position{x=63.0, y=17.166666666666668}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=18.0}
+--- Time: 2025/01/01 02:29 ---
+Vehicle 1 started at position: Position{x=63.0, y=18.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=18.833333333333332}
+--- Time: 2025/01/01 02:30 ---
+Vehicle 1 started at position: Position{x=63.0, y=18.833333333333332}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=19.666666666666664}
+--- Time: 2025/01/01 02:31 ---
+Vehicle 1 started at position: Position{x=63.0, y=19.666666666666664}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=20.499999999999996}
+--- Time: 2025/01/01 02:32 ---
+Vehicle 1 started at position: Position{x=63.0, y=20.499999999999996}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=21.33333333333333}
+--- Time: 2025/01/01 02:33 ---
+Vehicle 1 started at position: Position{x=63.0, y=21.33333333333333}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=22.16666666666666}
+--- Time: 2025/01/01 02:34 ---
+Vehicle 1 started at position: Position{x=63.0, y=22.16666666666666}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=22.999999999999993}
+--- Time: 2025/01/01 02:35 ---
+Vehicle 1 started at position: Position{x=63.0, y=22.999999999999993}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=23.833333333333325}
+--- Time: 2025/01/01 02:36 ---
+Vehicle 1 started at position: Position{x=63.0, y=23.833333333333325}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=24.666666666666657}
+--- Time: 2025/01/01 02:37 ---
+Vehicle 1 started at position: Position{x=63.0, y=24.666666666666657}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=25.49999999999999}
+--- Time: 2025/01/01 02:38 ---
+Vehicle 1 started at position: Position{x=63.0, y=25.49999999999999}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=26.33333333333332}
+--- Time: 2025/01/01 02:39 ---
+Vehicle 1 started at position: Position{x=63.0, y=26.33333333333332}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=27.166666666666654}
+--- Time: 2025/01/01 02:40 ---
+Vehicle 1 started at position: Position{x=63.0, y=27.166666666666654}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=27.999999999999986}
+--- Time: 2025/01/01 02:41 ---
+Vehicle 1 started at position: Position{x=63.0, y=27.999999999999986}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=28.833333333333318}
+--- Time: 2025/01/01 02:42 ---
+Vehicle 1 started at position: Position{x=63.0, y=28.833333333333318}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=29.66666666666665}
+--- Time: 2025/01/01 02:43 ---
+Vehicle 1 started at position: Position{x=63.0, y=29.66666666666665}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=30.499999999999982}
+--- Time: 2025/01/01 02:44 ---
+Vehicle 1 started at position: Position{x=63.0, y=30.499999999999982}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=31.333333333333314}
+--- Time: 2025/01/01 02:45 ---
+Vehicle 1 started at position: Position{x=63.0, y=31.333333333333314}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=32.16666666666665}
+--- Time: 2025/01/01 02:46 ---
+Vehicle 1 started at position: Position{x=63.0, y=32.16666666666665}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=32.999999999999986}
+--- Time: 2025/01/01 02:47 ---
+Vehicle 1 started at position: Position{x=63.0, y=32.999999999999986}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=33.83333333333332}
+--- Time: 2025/01/01 02:48 ---
+Vehicle 1 started at position: Position{x=63.0, y=33.83333333333332}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=34.66666666666666}
+--- Time: 2025/01/01 02:49 ---
+Vehicle 1 started at position: Position{x=63.0, y=34.66666666666666}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=35.49999999999999}
+--- Time: 2025/01/01 02:50 ---
+Vehicle 1 started at position: Position{x=63.0, y=35.49999999999999}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=36.33333333333333}
+--- Time: 2025/01/01 02:51 ---
+Vehicle 1 started at position: Position{x=63.0, y=36.33333333333333}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=37.166666666666664}
+--- Time: 2025/01/01 02:52 ---
+Vehicle 1 started at position: Position{x=63.0, y=37.166666666666664}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=38.0}
+--- Time: 2025/01/01 02:53 ---
+Vehicle 1 started at position: Position{x=63.0, y=38.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=38.833333333333336}
+--- Time: 2025/01/01 02:54 ---
+Vehicle 1 started at position: Position{x=63.0, y=38.833333333333336}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=39.66666666666667}
+--- Time: 2025/01/01 02:55 ---
+Vehicle 1 started at position: Position{x=63.0, y=39.66666666666667}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=40.50000000000001}
+--- Time: 2025/01/01 02:56 ---
+Vehicle 1 started at position: Position{x=63.0, y=40.50000000000001}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=63.0, y=41.33333333333334}
+--- Time: 2025/01/01 02:57 ---
+Vehicle 1 started at position: Position{x=63.0, y=41.33333333333334}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=62.83333333333332, y=42.0}
+--- Time: 2025/01/01 02:58 ---
+Vehicle 1 started at position: Position{x=62.83333333333332, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=61.999999999999986, y=42.0}
+--- Time: 2025/01/01 02:59 ---
+Vehicle 1 started at position: Position{x=61.999999999999986, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=61.16666666666665, y=42.0}
+--- Time: 2025/01/01 03:00 ---
+Vehicle 1 started at position: Position{x=61.16666666666665, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=60.333333333333314, y=42.0}
+--- Time: 2025/01/01 03:01 ---
+Vehicle 1 started at position: Position{x=60.333333333333314, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=59.49999999999998, y=42.0}
+--- Time: 2025/01/01 03:02 ---
+Vehicle 1 started at position: Position{x=59.49999999999998, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=58.66666666666664, y=42.0}
+--- Time: 2025/01/01 03:03 ---
+Vehicle 1 started at position: Position{x=58.66666666666664, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=57.83333333333331, y=42.0}
+--- Time: 2025/01/01 03:04 ---
+Vehicle 1 started at position: Position{x=57.83333333333331, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=56.99999999999997, y=42.0}
+--- Time: 2025/01/01 03:05 ---
+Vehicle 1 started at position: Position{x=56.99999999999997, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=56.166666666666636, y=42.0}
+--- Time: 2025/01/01 03:06 ---
+Vehicle 1 started at position: Position{x=56.166666666666636, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=55.3333333333333, y=42.0}
+--- Time: 2025/01/01 03:07 ---
+Vehicle 1 started at position: Position{x=55.3333333333333, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=54.499999999999964, y=42.0}
+--- Time: 2025/01/01 03:08 ---
+Vehicle 1 started at position: Position{x=54.499999999999964, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=53.66666666666663, y=42.0}
+--- Time: 2025/01/01 03:09 ---
+Vehicle 1 started at position: Position{x=53.66666666666663, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=52.83333333333329, y=42.0}
+--- Time: 2025/01/01 03:10 ---
+Vehicle 1 started at position: Position{x=52.83333333333329, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=51.99999999999996, y=42.0}
+--- Time: 2025/01/01 03:11 ---
+Vehicle 1 started at position: Position{x=51.99999999999996, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=51.16666666666662, y=42.0}
+--- Time: 2025/01/01 03:12 ---
+Vehicle 1 started at position: Position{x=51.16666666666662, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=50.333333333333286, y=42.0}
+--- Time: 2025/01/01 03:13 ---
+Vehicle 1 started at position: Position{x=50.333333333333286, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=49.49999999999995, y=42.0}
+--- Time: 2025/01/01 03:14 ---
+Vehicle 1 started at position: Position{x=49.49999999999995, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=48.666666666666615, y=42.0}
+--- Time: 2025/01/01 03:15 ---
+Vehicle 1 started at position: Position{x=48.666666666666615, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=47.83333333333328, y=42.0}
+--- Time: 2025/01/01 03:16 ---
+Vehicle 1 started at position: Position{x=47.83333333333328, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=46.99999999999994, y=42.0}
+--- Time: 2025/01/01 03:17 ---
+Vehicle 1 started at position: Position{x=46.99999999999994, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=46.16666666666661, y=42.0}
+--- Time: 2025/01/01 03:18 ---
+Vehicle 1 started at position: Position{x=46.16666666666661, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=45.33333333333327, y=42.0}
+--- Time: 2025/01/01 03:19 ---
+Vehicle 1 started at position: Position{x=45.33333333333327, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=44.499999999999936, y=42.0}
+--- Time: 2025/01/01 03:20 ---
+Vehicle 1 started at position: Position{x=44.499999999999936, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=43.6666666666666, y=42.0}
+--- Time: 2025/01/01 03:21 ---
+Vehicle 1 started at position: Position{x=43.6666666666666, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.833333333333265, y=42.0}
+--- Time: 2025/01/01 03:22 ---
+Vehicle 1 started at position: Position{x=42.833333333333265, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=42.0}
+--- Time: 2025/01/01 03:23 ---
+Vehicle 1 started at position: Position{x=42.0, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=42.0}
+--- Time: 2025/01/01 03:24 ---
+Vehicle 1 started at position: Position{x=42.0, y=42.0}
+Before currentPath correction the path is: null
+Vehicle 1 has arrived at location of node To refill 10m3 from warehouse 2 at Position{x=42.0, y=42.0}
+Vehicle 1 is processing node To refill 10m3 from warehouse 2 at Position{x=42.0, y=42.0}
+After currentPath correction the path is: [Position{x=42.0, y=42.0}, Position{x=42.0, y=3.0}, Position{x=63.0, y=3.0}]
+Vehicle 1 ended at position: Position{x=42.0, y=42.0}
+--- Time: 2025/01/01 03:25 ---
+Vehicle 1 started at position: Position{x=42.0, y=42.0}
+Vehicle 1 is waiting for 10 minutes
+Vehicle 1 ended at position: Position{x=42.0, y=42.0}
+--- Time: 2025/01/01 03:26 ---
+Vehicle 1 started at position: Position{x=42.0, y=42.0}
+Vehicle 1 is waiting for 9 minutes
+Vehicle 1 ended at position: Position{x=42.0, y=42.0}
+--- Time: 2025/01/01 03:27 ---
+Vehicle 1 started at position: Position{x=42.0, y=42.0}
+Vehicle 1 is waiting for 8 minutes
+Vehicle 1 ended at position: Position{x=42.0, y=42.0}
+--- Time: 2025/01/01 03:28 ---
+Vehicle 1 started at position: Position{x=42.0, y=42.0}
+Vehicle 1 is waiting for 7 minutes
+Vehicle 1 ended at position: Position{x=42.0, y=42.0}
+--- Time: 2025/01/01 03:29 ---
+Vehicle 1 started at position: Position{x=42.0, y=42.0}
+Vehicle 1 is waiting for 6 minutes
+Vehicle 1 ended at position: Position{x=42.0, y=42.0}
+--- Time: 2025/01/01 03:30 ---
+Vehicle 1 started at position: Position{x=42.0, y=42.0}
+Vehicle 1 is waiting for 5 minutes
+Vehicle 1 ended at position: Position{x=42.0, y=42.0}
+--- Time: 2025/01/01 03:31 ---
+Vehicle 1 started at position: Position{x=42.0, y=42.0}
+Vehicle 1 is waiting for 4 minutes
+Vehicle 1 ended at position: Position{x=42.0, y=42.0}
+--- Time: 2025/01/01 03:32 ---
+Vehicle 1 started at position: Position{x=42.0, y=42.0}
+Vehicle 1 is waiting for 3 minutes
+Vehicle 1 ended at position: Position{x=42.0, y=42.0}
+--- Time: 2025/01/01 03:33 ---
+Vehicle 1 started at position: Position{x=42.0, y=42.0}
+Vehicle 1 is waiting for 2 minutes
+Vehicle 1 ended at position: Position{x=42.0, y=42.0}
+--- Time: 2025/01/01 03:34 ---
+Vehicle 1 started at position: Position{x=42.0, y=42.0}
+Vehicle 1 is waiting for 1 minutes
+Vehicle 1 ended at position: Position{x=42.0, y=42.0}
+--- Time: 2025/01/01 03:35 ---
+Vehicle 1 started at position: Position{x=42.0, y=42.0}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=41.166666666666664}
+--- Time: 2025/01/01 03:36 ---
+Vehicle 1 started at position: Position{x=42.0, y=41.166666666666664}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=40.33333333333333}
+--- Time: 2025/01/01 03:37 ---
+Vehicle 1 started at position: Position{x=42.0, y=40.33333333333333}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=39.49999999999999}
+--- Time: 2025/01/01 03:38 ---
+Vehicle 1 started at position: Position{x=42.0, y=39.49999999999999}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=38.66666666666666}
+--- Time: 2025/01/01 03:39 ---
+Vehicle 1 started at position: Position{x=42.0, y=38.66666666666666}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=37.83333333333332}
+--- Time: 2025/01/01 03:40 ---
+Vehicle 1 started at position: Position{x=42.0, y=37.83333333333332}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=36.999999999999986}
+--- Time: 2025/01/01 03:41 ---
+Vehicle 1 started at position: Position{x=42.0, y=36.999999999999986}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=36.16666666666665}
+--- Time: 2025/01/01 03:42 ---
+Vehicle 1 started at position: Position{x=42.0, y=36.16666666666665}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=35.333333333333314}
+--- Time: 2025/01/01 03:43 ---
+Vehicle 1 started at position: Position{x=42.0, y=35.333333333333314}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=34.49999999999998}
+--- Time: 2025/01/01 03:44 ---
+Vehicle 1 started at position: Position{x=42.0, y=34.49999999999998}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=33.66666666666664}
+--- Time: 2025/01/01 03:45 ---
+Vehicle 1 started at position: Position{x=42.0, y=33.66666666666664}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=32.83333333333331}
+--- Time: 2025/01/01 03:46 ---
+Vehicle 1 started at position: Position{x=42.0, y=32.83333333333331}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=31.999999999999975}
+--- Time: 2025/01/01 03:47 ---
+Vehicle 1 started at position: Position{x=42.0, y=31.999999999999975}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=31.166666666666643}
+--- Time: 2025/01/01 03:48 ---
+Vehicle 1 started at position: Position{x=42.0, y=31.166666666666643}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=30.33333333333331}
+--- Time: 2025/01/01 03:49 ---
+Vehicle 1 started at position: Position{x=42.0, y=30.33333333333331}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=29.49999999999998}
+--- Time: 2025/01/01 03:50 ---
+Vehicle 1 started at position: Position{x=42.0, y=29.49999999999998}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=28.666666666666647}
+--- Time: 2025/01/01 03:51 ---
+Vehicle 1 started at position: Position{x=42.0, y=28.666666666666647}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=27.833333333333314}
+--- Time: 2025/01/01 03:52 ---
+Vehicle 1 started at position: Position{x=42.0, y=27.833333333333314}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=26.999999999999982}
+--- Time: 2025/01/01 03:53 ---
+Vehicle 1 started at position: Position{x=42.0, y=26.999999999999982}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=26.16666666666665}
+--- Time: 2025/01/01 03:54 ---
+Vehicle 1 started at position: Position{x=42.0, y=26.16666666666665}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=25.333333333333318}
+--- Time: 2025/01/01 03:55 ---
+Vehicle 1 started at position: Position{x=42.0, y=25.333333333333318}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=24.499999999999986}
+--- Time: 2025/01/01 03:56 ---
+Vehicle 1 started at position: Position{x=42.0, y=24.499999999999986}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=23.666666666666654}
+--- Time: 2025/01/01 03:57 ---
+Vehicle 1 started at position: Position{x=42.0, y=23.666666666666654}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=22.83333333333332}
+--- Time: 2025/01/01 03:58 ---
+Vehicle 1 started at position: Position{x=42.0, y=22.83333333333332}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=21.99999999999999}
+--- Time: 2025/01/01 03:59 ---
+Vehicle 1 started at position: Position{x=42.0, y=21.99999999999999}
+Vehicle 1 is advancing path
+Vehicle 1 ended at position: Position{x=42.0, y=21.166666666666657}

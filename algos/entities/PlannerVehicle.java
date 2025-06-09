@@ -7,7 +7,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import algorithm.Node;
+import algorithm.OrderDeliverNode;
+import algorithm.ProductRefillNode;
 import utils.Position;
+import utils.SimulationProperties;
 import utils.Time;
 import utils.PathBuilder;
 
@@ -30,7 +33,7 @@ public class PlannerVehicle implements Cloneable {
     
     // Path and node information
     public List<Position> currentPath;
-    public Node currentNode;
+    public int nextNodeIndex;
 
     public PlannerVehicle(int id, String plaque, String type, VehicleState state, 
                          double weight, int maxFuel, double currentFuel, 
@@ -48,7 +51,7 @@ public class PlannerVehicle implements Cloneable {
         this.initialPosition = position;
         this.waitTransition = 0;
         this.currentPath = null;
-        this.currentNode = null;
+        this.nextNodeIndex = 1;
     }
 
     // Path advancement method
@@ -65,15 +68,62 @@ public class PlannerVehicle implements Cloneable {
             double distance = PathBuilder.calculateDistance(List.of(from, to));
             if (distance > units) {
                 // Move 'from' position the corresponding amount of units
-                double deltaX = to.x - from.x;
-                double deltaY = to.y - from.y;
-                currentPath.set(0, new Position(from.x + deltaX, from.y + deltaY));
+                double ratio = units / distance;
+                double deltaX = (to.x - from.x) * ratio;
+                double deltaY = (to.y - from.y) * ratio;
+                Position newPosition = new Position(from.x + deltaX, from.y + deltaY);
+                currentPath.set(0, newPosition);
+                this.position = newPosition;  // Update vehicle position
                 units = 0;
             } else if (distance <= units) {
                 // Remove 'from' position from path
                 currentPath.remove(0);
+                this.position = to;  // Update vehicle position
                 units -= distance;
+                
+                // Update from and to for next iteration
+                if (currentPath.size() > 1) {
+                    from = currentPath.get(0);
+                    to = currentPath.get(1);
+                }
             }
+        }
+    }
+
+    public void processNode(Node node, PlannerVehicle vehicle, List<PlannerOrder> orders, List<PlannerWarehouse> warehouses, Time currentTime) {
+        if (node instanceof ProductRefillNode) {
+            ProductRefillNode refillNode = (ProductRefillNode) node;
+            PlannerWarehouse warehouse = warehouses.stream()
+                .filter(w -> w.id == refillNode.warehouse.id)
+                .findFirst()
+                .orElse(null);
+            if (warehouse == null) {
+                throw new RuntimeException("Warehouse with id " + refillNode.warehouse.id + " not found");
+            }
+
+            warehouse.currentGLP -= refillNode.amountGLP;
+            vehicle.currentGLP += refillNode.amountGLP;
+            vehicle.currentFuel = vehicle.maxFuel;
+            this.waitTransition = SimulationProperties.timeAfterRefill;
+        }
+        if (node instanceof OrderDeliverNode) {
+            OrderDeliverNode deliverNode = (OrderDeliverNode) node;
+            PlannerOrder order = orders.stream()
+                .filter(o -> o.id == deliverNode.order.id)
+                .findFirst()
+                .orElse(null);
+            if (order == null) {
+                throw new RuntimeException("Order with id " + deliverNode.order.id + " not found");
+            }
+
+            order.amountGLP -= deliverNode.amountGLP;
+            vehicle.currentGLP += deliverNode.amountGLP;
+
+            if (order.amountGLP == 0) {
+                order.deliverTime = currentTime;
+            }
+
+            this.waitTransition = SimulationProperties.timeAfterDelivery;
         }
     }
 
@@ -95,7 +145,7 @@ public class PlannerVehicle implements Cloneable {
             ", position=" + position.toString() +
             ", initialPosition=" + initialPosition.toString() +
             ", currentPath=" + (currentPath != null ? currentPath.size() + " positions" : "null") +
-            ", currentNode=" + (currentNode != null ? currentNode.toString() : "null") +
+            ", nextNodeIndex=" + nextNodeIndex +
             '}';
     }
 
@@ -118,7 +168,7 @@ public class PlannerVehicle implements Cloneable {
             // Clone mutable fields
             clone.waitTransition = this.waitTransition;
             clone.currentPath = this.currentPath != null ? new ArrayList<>(this.currentPath) : null;
-            clone.currentNode = this.currentNode != null ? this.currentNode.clone() : null;
+            clone.nextNodeIndex = this.nextNodeIndex;
             clone.currentFailure = this.currentFailure != null ? this.currentFailure.clone() : null;
             clone.currentMaintenance = this.currentMaintenance != null ? this.currentMaintenance.clone() : null;
             clone.initialPosition = this.initialPosition.clone();

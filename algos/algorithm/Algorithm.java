@@ -8,10 +8,10 @@ import java.util.Random;
 
 public class Algorithm {
     // Hyperparameters
-    private static int maxTimeMs = 15 * 1000;
-    private static int maxNoImprovement = 450;
-    private static int maxNoImprovementFeasible = 125; 
-    private static int tabuListSize = 400;
+    private static int maxTimeMs = 20 * 1000;
+    private static int maxNoImprovement = 500;
+    private static int maxNoImprovementFeasible = 250; 
+    private static int tabuListSize = 600;
     private static double aspirationCriteria = 0.05; // 5% improvement over best solution
 
     private static final boolean isDebug = true;
@@ -34,12 +34,15 @@ public class Algorithm {
         int noImprovementCount = 0;
 
         while ((System.currentTimeMillis() - startTime) < maxTimeMs) {
-            
             boolean isFeasible = bestSolution.isFeasible(environment);
             
             // Check termination conditions
-            if ((isFeasible && noImprovementCount >= maxNoImprovementFeasible) ||
-                (!isFeasible && noImprovementCount >= maxNoImprovement)) {
+            if (isFeasible && noImprovementCount >= maxNoImprovementFeasible) {
+                System.out.println("\nBreaking: No improvement for " + noImprovementCount + " iterations while solution is feasible");
+                break;
+            }
+            if (!isFeasible && noImprovementCount >= maxNoImprovement) {
+                System.out.println("\nBreaking: No improvement for " + noImprovementCount + " iterations while solution is not feasible");
                 break;
             }
 
@@ -103,6 +106,10 @@ public class Algorithm {
             }
 
             iterations++;
+        }
+
+        if ((System.currentTimeMillis() - startTime) >= maxTimeMs) {
+            System.out.println("\nBreaking: Time limit reached (" + maxTimeMs + "ms)");
         }
 
         bestSolution.compress();

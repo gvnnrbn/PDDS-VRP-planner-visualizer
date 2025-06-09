@@ -1,12 +1,17 @@
 package main;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import algorithm.Algorithm;
 import algorithm.Environment;
+import algorithm.Node;
 import algorithm.Solution;
 import utils.DataParser;
+import utils.PathBuilder;
+import utils.Position;
+import utils.SimulationProperties;
 import utils.Time;
 import entities.PlannerVehicle;
 import entities.PlannerOrder;
@@ -14,6 +19,8 @@ import entities.PlannerBlockage;
 import entities.PlannerWarehouse;
 import entities.PlannerFailure;
 import entities.PlannerMaintenance;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
 
 public class Testing {
     private static List<PlannerBlockage> getActiveBlockages(List<PlannerBlockage> blockages, Time time) {
@@ -41,7 +48,7 @@ public class Testing {
     }
 
     public static void main(String[] args) {
-        int minutesToSimulate = 60;
+        int minutesToSimulate = 120;
         Time currTime = new Time(2025, 1, 1, 0, 0).addMinutes(minutesToSimulate);
 
         List<PlannerVehicle> vehicles = DataParser.parseVehicles("main/vehicles.csv");
@@ -51,37 +58,65 @@ public class Testing {
         List<PlannerFailure> failures = DataParser.parseFailures("main/failures.csv");
         List<PlannerMaintenance> maintenances = DataParser.parseMaintenances("main/maintenances.csv");
 
-        // Simulate a week
-        // final Time endTime = currTime.addMinutes(7 * 24 * 60); // 1 week later
-        // while (currTime.isBefore(endTime)) {
-            List<PlannerBlockage> activeBlockages = getActiveBlockages(blockages, currTime);
-            List<PlannerOrder> activeOrders = getActiveOrders(orders, currTime);
-            List<PlannerMaintenance> activeMaintenances = getActiveMaintenances(maintenances, currTime);
-            List<PlannerVehicle> activeVehicles = getActiveVehicles(vehicles, currTime);
+        List<PlannerBlockage> activeBlockages = getActiveBlockages(blockages, currTime);
+        List<PlannerOrder> activeOrders = getActiveOrders(orders, currTime);
+        List<PlannerMaintenance> activeMaintenances = getActiveMaintenances(maintenances, currTime);
+        List<PlannerVehicle> activeVehicles = getActiveVehicles(vehicles, currTime);
+        activeVehicles = activeVehicles.subList(0, 1);
 
-            Environment environment = new Environment(activeVehicles, activeOrders, warehouses, activeBlockages, failures, activeMaintenances, currTime, minutesToSimulate);
-            System.out.println("Environment sizes:");
-            System.out.println("  Active vehicles: " + activeVehicles.size());
-            System.out.println("  Active orders: " + activeOrders.size()); 
-            System.out.println("  Warehouses: " + warehouses.size());
-            System.out.println("  Active blockages: " + activeBlockages.size());
-            System.out.println("  Failures: " + failures.size());
-            System.out.println("  Active maintenances: " + activeMaintenances.size());
-            Solution sol = Algorithm.run(environment, minutesToSimulate);
-            System.out.println(sol.getReport());
+        Environment environment = new Environment(activeVehicles, activeOrders, warehouses, activeBlockages, failures, activeMaintenances, currTime, minutesToSimulate);
+        Solution sol = Algorithm.run(environment, minutesToSimulate);
+        System.out.println(sol.getReport());
 
-            // for (PlannerVehicle plannerVehicle : vehicles) {
-            //     plannerVehicle.currentNode = sol.routes.get(plannerVehicle.id).get(0);
-            // }
+        for (PlannerVehicle vehicle : activeVehicles) {
+            vehicle.nextNodeIndex = 1;
+        }
 
-            // // Iterate over time
-            // for(int i = 0; i < minutesToSimulate; i++) {
-            //     // Iterate over vehicles
-            //     for (PlannerVehicle plannerVehicle : vehicles) {
-            //     }
-            // }
+        for (int i = 0; i < minutesToSimulate; i++) {
+            System.out.println("--- Time: " + currTime + " ---");
 
-            // currTime = currTime.addMinutes(minutesToSimulate);
-        // }
+            for (PlannerVehicle plannerVehicle : activeVehicles) {
+                System.out.println("Vehicle " + plannerVehicle.id + " started at position: " + plannerVehicle.position);
+
+                // Create path when there's no path or the path is empty
+                if (plannerVehicle.currentPath == null || plannerVehicle.currentPath.isEmpty()) {
+                    System.out.println("Before currentPath correction the path is: " + plannerVehicle.currentPath);
+
+                    // Has arrived at location
+                    Node arrivedNode = sol.routes.get(plannerVehicle.id).get(plannerVehicle.nextNodeIndex);
+                    System.out.println("Vehicle " + plannerVehicle.id + " has arrived at location of node " + arrivedNode);
+
+                    // HERE GOES ON_REACHING_NODE_LOCATION
+                    System.out.println("Vehicle " + plannerVehicle.id + " is processing node " + arrivedNode);
+                    plannerVehicle.processNode(arrivedNode, plannerVehicle, activeOrders, warehouses, currTime);
+
+                    plannerVehicle.nextNodeIndex++;
+
+                    if (plannerVehicle.nextNodeIndex >= sol.routes.get(plannerVehicle.id).size()) {
+                        // Has reached last node
+                        System.out.println("HAS REACHED LAST NODE");
+                        continue;
+                    }
+
+                    Node currNode = sol.routes.get(plannerVehicle.id).get(plannerVehicle.nextNodeIndex - 1);
+                    Node nextNode = sol.routes.get(plannerVehicle.id).get(plannerVehicle.nextNodeIndex);
+
+                    plannerVehicle.currentPath = PathBuilder.buildPath(currNode.getPosition(), nextNode.getPosition(), activeBlockages);
+                    System.out.println("After currentPath correction the path is: " + plannerVehicle.currentPath);
+                } else {
+
+                    if (plannerVehicle.waitTransition > 0) {
+                        System.out.println("Vehicle " + plannerVehicle.id + " is waiting for " + plannerVehicle.waitTransition + " minutes");
+                        plannerVehicle.waitTransition--;
+                    } else {
+                        System.out.println("Vehicle " + plannerVehicle.id + " is advancing path");
+                        plannerVehicle.advancePath(SimulationProperties.speed / 60.0);
+                    }
+                }
+                System.out.println("Vehicle " + plannerVehicle.id + " ended at position: " + plannerVehicle.position);
+            }
+
+            currTime = currTime.addMinutes(1);
+        }
     }
 }

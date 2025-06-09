@@ -1,7 +1,7 @@
 package utils;
 
 public class SimulationProperties {
-    public static int speed = 50; // km/h
+    public static double speed = 50.0; // km/h
     public static int timeAfterDelivery = 15; // minutes
     public static int timeAfterRefill = 10; // minutes
 

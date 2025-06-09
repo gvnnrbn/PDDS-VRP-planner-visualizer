@@ -1,0 +1,587 @@
+Environment sizes:
+  Active vehicles: 19
+  Active orders: 36
+  Warehouses: 3
+  Active blockages: 1
+  Failures: 0
+  Active maintenances: 1
+--------------------------------
+Iteration 0: Current fitness: -1.9629, Best fitness: -1.9629, Feasible: false, No improvement: 0, Tabu size: 1, Time: 11ms
+--------------------------------
+Iteration 100: Current fitness: 1.5878, Best fitness: 1.5878, Feasible: true, No improvement: 11, Tabu size: 101, Time: 249ms
+--------------------------------
+Iteration 200: Current fitness: 1.6111, Best fitness: 1.6111, Feasible: true, No improvement: 44, Tabu size: 201, Time: 353ms
+--------------------------------
+Iteration 300: Current fitness: 1.6667, Best fitness: 1.6667, Feasible: true, No improvement: 58, Tabu size: 301, Time: 410ms
+--------------------------------
+Iteration 400: Current fitness: 1.6667, Best fitness: 1.6667, Feasible: true, No improvement: 158, Tabu size: 401, Time: 473ms
+--------------------------------
+Iteration 500: Current fitness: 1.7222, Best fitness: 1.7222, Feasible: true, No improvement: 30, Tabu size: 501, Time: 566ms
+--------------------------------
+Iteration 600: Current fitness: 1.7222, Best fitness: 1.7222, Feasible: true, No improvement: 130, Tabu size: 600, Time: 648ms
+--------------------------------
+Iteration 700: Current fitness: 1.7222, Best fitness: 1.7222, Feasible: true, No improvement: 230, Tabu size: 600, Time: 709ms
+
+Breaking: No improvement for 250 iterations while solution is feasible
+  Simulation Status: Completed
+  Feasibility: Feasible
+  Total Fitness: 1.7222
+  Fitness Components:
+    - Time GLP Points (weight=1): 0.0000 (based on 0.00 minutes×GLP, normalized: 0.0000)
+    - Fulfilled Orders (weight=2): 0.7222 (based on 13 orders, normalized: 0.3611)
+    - Imaginary Fuel (weight=2): 0.0000 (based on 0.00 liters, normalized: 0.0000)
+    - Imaginary GLP (weight=2): 0.0000 (based on 0 units, normalized: 0.0000)
+    - Missed Orders (weight=10): 0.0000 (based on 0 orders, normalized: 0.0000)
+
+Vehicle: 1
+Plan:
+Empty node at Position{x=12.0, y=8.0} -> To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0}
+Position{x=12.0, y=8.0}
+To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0} -> To deliver 1m3 of GLP for order 13 at Position{x=8.0, y=37.0}
+Position{x=12.0, y=8.0}
+Position{x=12.0, y=37.0}
+Position{x=8.0, y=37.0}
+To deliver 1m3 of GLP for order 13 at Position{x=8.0, y=37.0} -> To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0}
+Position{x=8.0, y=37.0}
+Position{x=8.0, y=3.0}
+Position{x=63.0, y=3.0}
+To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0} -> To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0}
+Position{x=63.0, y=3.0}
+Position{x=63.0, y=8.0}
+Position{x=12.0, y=8.0}
+To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0} -> To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0}
+Position{x=12.0, y=8.0}
+Position{x=12.0, y=3.0}
+Position{x=63.0, y=3.0}
+To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0} -> To deliver 10m3 of GLP for order 17 at Position{x=6.0, y=3.0}
+Position{x=63.0, y=3.0}
+Position{x=6.0, y=3.0}
+To deliver 10m3 of GLP for order 17 at Position{x=6.0, y=3.0} -> To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0}
+Position{x=6.0, y=3.0}
+Position{x=6.0, y=8.0}
+Position{x=12.0, y=8.0}
+To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0} -> FinalNode
+Vehicle: 2
+Plan:
+Empty node at Position{x=12.0, y=8.0} -> To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0}
+Position{x=12.0, y=8.0}
+Position{x=12.0, y=42.0}
+Position{x=42.0, y=42.0}
+To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0} -> To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0}
+Position{x=42.0, y=42.0}
+Position{x=42.0, y=3.0}
+Position{x=63.0, y=3.0}
+To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0} -> To deliver 10m3 of GLP for order 4 at Position{x=46.0, y=10.0}
+Position{x=63.0, y=3.0}
+Position{x=63.0, y=10.0}
+Position{x=46.0, y=10.0}
+To deliver 10m3 of GLP for order 4 at Position{x=46.0, y=10.0} -> To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0}
+Position{x=46.0, y=10.0}
+Position{x=46.0, y=42.0}
+Position{x=42.0, y=42.0}
+To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0} -> To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0}
+Position{x=42.0, y=42.0}
+Position{x=42.0, y=8.0}
+Position{x=12.0, y=8.0}
+To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0} -> To deliver 2m3 of GLP for order 27 at Position{x=53.0, y=21.0}
+Position{x=12.0, y=8.0}
+Position{x=12.0, y=21.0}
+Position{x=53.0, y=21.0}
+To deliver 2m3 of GLP for order 27 at Position{x=53.0, y=21.0} -> To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0}
+Position{x=53.0, y=21.0}
+Position{x=53.0, y=42.0}
+Position{x=42.0, y=42.0}
+To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0} -> To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0}
+Position{x=42.0, y=42.0}
+Position{x=42.0, y=8.0}
+Position{x=12.0, y=8.0}
+To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0} -> To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0}
+Position{x=12.0, y=8.0}
+Position{x=12.0, y=42.0}
+Position{x=42.0, y=42.0}
+To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0} -> FinalNode
+Position{x=42.0, y=42.0}
+Position{x=42.0, y=8.0}
+Position{x=12.0, y=8.0}
+Vehicle: 3
+Plan:
+Empty node at Position{x=12.0, y=8.0} -> To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0}
+Position{x=12.0, y=8.0}
+Position{x=12.0, y=42.0}
+Position{x=42.0, y=42.0}
+To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0} -> To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0}
+Position{x=42.0, y=42.0}
+Position{x=42.0, y=3.0}
+Position{x=63.0, y=3.0}
+To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0} -> To deliver 10m3 of GLP for order 15 at Position{x=22.0, y=46.0}
+Position{x=63.0, y=3.0}
+Position{x=63.0, y=46.0}
+Position{x=22.0, y=46.0}
+To deliver 10m3 of GLP for order 15 at Position{x=22.0, y=46.0} -> To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0}
+Position{x=22.0, y=46.0}
+Position{x=22.0, y=42.0}
+Position{x=42.0, y=42.0}
+To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0} -> To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0}
+Position{x=42.0, y=42.0}
+Position{x=42.0, y=3.0}
+Position{x=63.0, y=3.0}
+To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0} -> To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0}
+Position{x=63.0, y=3.0}
+Position{x=63.0, y=42.0}
+Position{x=42.0, y=42.0}
+To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0} -> FinalNode
+Position{x=42.0, y=42.0}
+Position{x=42.0, y=8.0}
+Position{x=12.0, y=8.0}
+Vehicle: 4
+Plan:
+Empty node at Position{x=12.0, y=8.0} -> To refill 15m3 from warehouse 1 at Position{x=12.0, y=8.0}
+Position{x=12.0, y=8.0}
+To refill 15m3 from warehouse 1 at Position{x=12.0, y=8.0} -> To deliver 1m3 of GLP for order 3 at Position{x=48.0, y=41.0}
+Position{x=12.0, y=8.0}
+Position{x=12.0, y=41.0}
+Position{x=48.0, y=41.0}
+To deliver 1m3 of GLP for order 3 at Position{x=48.0, y=41.0} -> To deliver 10m3 of GLP for order 8 at Position{x=39.0, y=35.0}
+Position{x=48.0, y=41.0}
+Position{x=48.0, y=35.0}
+Position{x=39.0, y=35.0}
+To deliver 10m3 of GLP for order 8 at Position{x=39.0, y=35.0} -> To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0}
+Position{x=39.0, y=35.0}
+Position{x=39.0, y=8.0}
+Position{x=12.0, y=8.0}
+To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0} -> To deliver 10m3 of GLP for order 18 at Position{x=38.0, y=8.0}
+Position{x=12.0, y=8.0}
+Position{x=38.0, y=8.0}
+To deliver 10m3 of GLP for order 18 at Position{x=38.0, y=8.0} -> FinalNode
+Position{x=38.0, y=8.0}
+Position{x=12.0, y=8.0}
+Vehicle: 5
+Plan:
+Empty node at Position{x=12.0, y=8.0} -> To refill 10m3 from warehouse 1 at Position{x=12.0, y=8.0}
+Position{x=12.0, y=8.0}
+To refill 10m3 from warehouse 1 at Position{x=12.0, y=8.0} -> To deliver 3m3 of GLP for order 14 at Position{x=18.0, y=47.0}
+Position{x=12.0, y=8.0}
+Position{x=12.0, y=47.0}
+Position{x=18.0, y=47.0}
+To deliver 3m3 of GLP for order 14 at Position{x=18.0, y=47.0} -> To refill 10m3 from warehouse 3 at Position{x=63.0, y=3.0}
+Position{x=18.0, y=47.0}
+Position{x=18.0, y=3.0}
+Position{x=63.0, y=3.0}
+To refill 10m3 from warehouse 3 at Position{x=63.0, y=3.0} -> To deliver 10m3 of GLP for order 36 at Position{x=55.0, y=23.0}
+Position{x=63.0, y=3.0}
+Position{x=63.0, y=23.0}
+Position{x=55.0, y=23.0}
+To deliver 10m3 of GLP for order 36 at Position{x=55.0, y=23.0} -> FinalNode
+Position{x=55.0, y=23.0}
+Position{x=55.0, y=8.0}
+Position{x=12.0, y=8.0}
+Vehicle: 6
+Plan:
+Empty node at Position{x=12.0, y=8.0} -> To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0}
+Position{x=12.0, y=8.0}
+To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0} -> To deliver 1m3 of GLP for order 25 at Position{x=35.0, y=32.0}
+Position{x=12.0, y=8.0}
+Position{x=12.0, y=32.0}
+Position{x=35.0, y=32.0}
+To deliver 1m3 of GLP for order 25 at Position{x=35.0, y=32.0} -> To deliver 3m3 of GLP for order 5 at Position{x=51.0, y=33.0}
+Position{x=35.0, y=32.0}
+Position{x=35.0, y=33.0}
+Position{x=51.0, y=33.0}
+To deliver 3m3 of GLP for order 5 at Position{x=51.0, y=33.0} -> To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0}
+Position{x=51.0, y=33.0}
+Position{x=51.0, y=3.0}
+Position{x=63.0, y=3.0}
+To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0} -> To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0}
+Position{x=63.0, y=3.0}
+Position{x=63.0, y=42.0}
+Position{x=42.0, y=42.0}
+To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0} -> To deliver 3m3 of GLP for order 23 at Position{x=43.0, y=48.0}
+Position{x=42.0, y=42.0}
+Position{x=42.0, y=48.0}
+Position{x=43.0, y=48.0}
+To deliver 3m3 of GLP for order 23 at Position{x=43.0, y=48.0} -> To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0}
+Position{x=43.0, y=48.0}
+Position{x=43.0, y=8.0}
+Position{x=12.0, y=8.0}
+To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0} -> To deliver 2m3 of GLP for order 35 at Position{x=15.0, y=11.0}
+Position{x=12.0, y=8.0}
+Position{x=12.0, y=11.0}
+Position{x=15.0, y=11.0}
+To deliver 2m3 of GLP for order 35 at Position{x=15.0, y=11.0} -> To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0}
+Position{x=15.0, y=11.0}
+Position{x=15.0, y=42.0}
+Position{x=42.0, y=42.0}
+To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0} -> FinalNode
+Position{x=42.0, y=42.0}
+Position{x=42.0, y=8.0}
+Position{x=12.0, y=8.0}
+Vehicle: 7
+Plan:
+Empty node at Position{x=12.0, y=8.0} -> To refill 15m3 from warehouse 2 at Position{x=42.0, y=42.0}
+Position{x=12.0, y=8.0}
+Position{x=12.0, y=42.0}
+Position{x=42.0, y=42.0}
+To refill 15m3 from warehouse 2 at Position{x=42.0, y=42.0} -> To deliver 10m3 of GLP for order 35 at Position{x=15.0, y=11.0}
+Position{x=42.0, y=42.0}
+Position{x=42.0, y=11.0}
+Position{x=15.0, y=11.0}
+To deliver 10m3 of GLP for order 35 at Position{x=15.0, y=11.0} -> To refill 1m3 from warehouse 2 at Position{x=42.0, y=42.0}
+Position{x=15.0, y=11.0}
+Position{x=15.0, y=42.0}
+Position{x=42.0, y=42.0}
+To refill 1m3 from warehouse 2 at Position{x=42.0, y=42.0} -> To deliver 3m3 of GLP for order 36 at Position{x=55.0, y=23.0}
+Position{x=42.0, y=42.0}
+Position{x=42.0, y=23.0}
+Position{x=55.0, y=23.0}
+To deliver 3m3 of GLP for order 36 at Position{x=55.0, y=23.0} -> To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0}
+Position{x=55.0, y=23.0}
+Position{x=55.0, y=8.0}
+Position{x=12.0, y=8.0}
+To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0} -> To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0}
+Position{x=12.0, y=8.0}
+Position{x=12.0, y=3.0}
+Position{x=63.0, y=3.0}
+To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0} -> To deliver 1m3 of GLP for order 10 at Position{x=24.0, y=13.0}
+Position{x=63.0, y=3.0}
+Position{x=63.0, y=13.0}
+Position{x=24.0, y=13.0}
+To deliver 1m3 of GLP for order 10 at Position{x=24.0, y=13.0} -> To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0}
+Position{x=24.0, y=13.0}
+Position{x=24.0, y=3.0}
+Position{x=63.0, y=3.0}
+To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0} -> To deliver 10m3 of GLP for order 22 at Position{x=50.0, y=45.0}
+Position{x=63.0, y=3.0}
+Position{x=63.0, y=45.0}
+Position{x=50.0, y=45.0}
+To deliver 10m3 of GLP for order 22 at Position{x=50.0, y=45.0} -> To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0}
+Position{x=50.0, y=45.0}
+Position{x=50.0, y=3.0}
+Position{x=63.0, y=3.0}
+To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0} -> To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0}
+Position{x=63.0, y=3.0}
+Position{x=63.0, y=42.0}
+Position{x=42.0, y=42.0}
+To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0} -> To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0}
+Position{x=42.0, y=42.0}
+Position{x=42.0, y=3.0}
+Position{x=63.0, y=3.0}
+To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0} -> FinalNode
+Position{x=63.0, y=3.0}
+Position{x=63.0, y=8.0}
+Position{x=12.0, y=8.0}
+Vehicle: 8
+Plan:
+Empty node at Position{x=12.0, y=8.0} -> To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0}
+Position{x=12.0, y=8.0}
+To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0} -> To deliver 5m3 of GLP for order 34 at Position{x=4.0, y=28.0}
+Position{x=12.0, y=8.0}
+Position{x=4.0, y=8.0}
+Position{x=4.0, y=28.0}
+To deliver 5m3 of GLP for order 34 at Position{x=4.0, y=28.0} -> To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0}
+Position{x=4.0, y=28.0}
+Position{x=4.0, y=42.0}
+Position{x=42.0, y=42.0}
+To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0} -> To deliver 6m3 of GLP for order 11 at Position{x=44.0, y=5.0}
+Position{x=42.0, y=42.0}
+Position{x=42.0, y=5.0}
+Position{x=44.0, y=5.0}
+To deliver 6m3 of GLP for order 11 at Position{x=44.0, y=5.0} -> FinalNode
+Position{x=44.0, y=5.0}
+Position{x=44.0, y=8.0}
+Position{x=12.0, y=8.0}
+Vehicle: 9
+Plan:
+Empty node at Position{x=12.0, y=8.0} -> To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0}
+Position{x=12.0, y=8.0}
+To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0} -> To deliver 5m3 of GLP for order 7 at Position{x=21.0, y=22.0}
+Position{x=12.0, y=8.0}
+Position{x=12.0, y=22.0}
+Position{x=21.0, y=22.0}
+To deliver 5m3 of GLP for order 7 at Position{x=21.0, y=22.0} -> To deliver 8m3 of GLP for order 6 at Position{x=51.0, y=32.0}
+Position{x=21.0, y=22.0}
+Position{x=21.0, y=32.0}
+Position{x=51.0, y=32.0}
+To deliver 8m3 of GLP for order 6 at Position{x=51.0, y=32.0} -> To deliver 10m3 of GLP for order 16 at Position{x=24.0, y=20.0}
+Position{x=51.0, y=32.0}
+Position{x=51.0, y=20.0}
+Position{x=24.0, y=20.0}
+To deliver 10m3 of GLP for order 16 at Position{x=24.0, y=20.0} -> To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0}
+Position{x=24.0, y=20.0}
+Position{x=24.0, y=42.0}
+Position{x=42.0, y=42.0}
+To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0} -> FinalNode
+Position{x=42.0, y=42.0}
+Position{x=42.0, y=8.0}
+Position{x=12.0, y=8.0}
+Vehicle: 10
+Plan:
+Empty node at Position{x=12.0, y=8.0} -> To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0}
+Position{x=12.0, y=8.0}
+To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0} -> To deliver 2m3 of GLP for order 30 at Position{x=12.0, y=48.0}
+Position{x=12.0, y=8.0}
+Position{x=12.0, y=48.0}
+To deliver 2m3 of GLP for order 30 at Position{x=12.0, y=48.0} -> To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0}
+Position{x=12.0, y=48.0}
+Position{x=12.0, y=8.0}
+To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0} -> FinalNode
+Vehicle: 11
+Plan:
+Empty node at Position{x=12.0, y=8.0} -> To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0}
+Position{x=12.0, y=8.0}
+To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0} -> To deliver 2m3 of GLP for order 24 at Position{x=42.0, y=31.0}
+Position{x=12.0, y=8.0}
+Position{x=12.0, y=31.0}
+Position{x=42.0, y=31.0}
+To deliver 2m3 of GLP for order 24 at Position{x=42.0, y=31.0} -> To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0}
+Position{x=42.0, y=31.0}
+Position{x=42.0, y=3.0}
+Position{x=63.0, y=3.0}
+To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0} -> To deliver 10m3 of GLP for order 31 at Position{x=41.0, y=29.0}
+Position{x=63.0, y=3.0}
+Position{x=63.0, y=29.0}
+Position{x=41.0, y=29.0}
+To deliver 10m3 of GLP for order 31 at Position{x=41.0, y=29.0} -> To deliver 2m3 of GLP for order 20 at Position{x=14.0, y=11.0}
+Position{x=41.0, y=29.0}
+Position{x=41.0, y=11.0}
+Position{x=14.0, y=11.0}
+To deliver 2m3 of GLP for order 20 at Position{x=14.0, y=11.0} -> To refill 20m3 from warehouse 2 at Position{x=42.0, y=42.0}
+Position{x=14.0, y=11.0}
+Position{x=14.0, y=42.0}
+Position{x=42.0, y=42.0}
+To refill 20m3 from warehouse 2 at Position{x=42.0, y=42.0} -> To deliver 3m3 of GLP for order 17 at Position{x=6.0, y=3.0}
+Position{x=42.0, y=42.0}
+Position{x=42.0, y=3.0}
+Position{x=6.0, y=3.0}
+To deliver 3m3 of GLP for order 17 at Position{x=6.0, y=3.0} -> To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0}
+Position{x=6.0, y=3.0}
+Position{x=6.0, y=42.0}
+Position{x=42.0, y=42.0}
+To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0} -> FinalNode
+Position{x=42.0, y=42.0}
+Position{x=42.0, y=8.0}
+Position{x=12.0, y=8.0}
+Vehicle: 12
+Plan:
+Empty node at Position{x=12.0, y=8.0} -> To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0}
+Position{x=12.0, y=8.0}
+To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0} -> To deliver 2m3 of GLP for order 12 at Position{x=27.0, y=37.0}
+Position{x=12.0, y=8.0}
+Position{x=12.0, y=37.0}
+Position{x=27.0, y=37.0}
+To deliver 2m3 of GLP for order 12 at Position{x=27.0, y=37.0} -> To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0}
+Position{x=27.0, y=37.0}
+Position{x=27.0, y=3.0}
+Position{x=63.0, y=3.0}
+To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0} -> To deliver 2m3 of GLP for order 4 at Position{x=46.0, y=10.0}
+Position{x=63.0, y=3.0}
+Position{x=63.0, y=10.0}
+Position{x=46.0, y=10.0}
+To deliver 2m3 of GLP for order 4 at Position{x=46.0, y=10.0} -> To deliver 3m3 of GLP for order 1 at Position{x=23.0, y=23.0}
+Position{x=46.0, y=10.0}
+Position{x=46.0, y=23.0}
+Position{x=23.0, y=23.0}
+To deliver 3m3 of GLP for order 1 at Position{x=23.0, y=23.0} -> To refill 15m3 from warehouse 3 at Position{x=63.0, y=3.0}
+Position{x=23.0, y=23.0}
+Position{x=23.0, y=3.0}
+Position{x=63.0, y=3.0}
+To refill 15m3 from warehouse 3 at Position{x=63.0, y=3.0} -> To deliver 10m3 of GLP for order 27 at Position{x=53.0, y=21.0}
+Position{x=63.0, y=3.0}
+Position{x=63.0, y=21.0}
+Position{x=53.0, y=21.0}
+To deliver 10m3 of GLP for order 27 at Position{x=53.0, y=21.0} -> To deliver 8m3 of GLP for order 31 at Position{x=41.0, y=29.0}
+Position{x=53.0, y=21.0}
+Position{x=53.0, y=29.0}
+Position{x=41.0, y=29.0}
+To deliver 8m3 of GLP for order 31 at Position{x=41.0, y=29.0} -> To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0}
+Position{x=41.0, y=29.0}
+Position{x=41.0, y=42.0}
+Position{x=42.0, y=42.0}
+To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0} -> FinalNode
+Position{x=42.0, y=42.0}
+Position{x=42.0, y=8.0}
+Position{x=12.0, y=8.0}
+Vehicle: 13
+Plan:
+Empty node at Position{x=12.0, y=8.0} -> To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0}
+Position{x=12.0, y=8.0}
+Position{x=12.0, y=3.0}
+Position{x=63.0, y=3.0}
+To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0} -> To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0}
+Position{x=63.0, y=3.0}
+Position{x=63.0, y=42.0}
+Position{x=42.0, y=42.0}
+To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0} -> To deliver 1m3 of GLP for order 9 at Position{x=65.0, y=34.0}
+Position{x=42.0, y=42.0}
+Position{x=42.0, y=34.0}
+Position{x=65.0, y=34.0}
+To deliver 1m3 of GLP for order 9 at Position{x=65.0, y=34.0} -> To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0}
+Position{x=65.0, y=34.0}
+Position{x=65.0, y=42.0}
+Position{x=42.0, y=42.0}
+To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0} -> To refill 15m3 from warehouse 3 at Position{x=63.0, y=3.0}
+Position{x=42.0, y=42.0}
+Position{x=42.0, y=3.0}
+Position{x=63.0, y=3.0}
+To refill 15m3 from warehouse 3 at Position{x=63.0, y=3.0} -> To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0}
+Position{x=63.0, y=3.0}
+Position{x=63.0, y=42.0}
+Position{x=42.0, y=42.0}
+To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0} -> To deliver 10m3 of GLP for order 16 at Position{x=24.0, y=20.0}
+Position{x=42.0, y=42.0}
+Position{x=42.0, y=20.0}
+Position{x=24.0, y=20.0}
+To deliver 10m3 of GLP for order 16 at Position{x=24.0, y=20.0} -> To deliver 2m3 of GLP for order 33 at Position{x=36.0, y=50.0}
+Position{x=24.0, y=20.0}
+Position{x=24.0, y=50.0}
+Position{x=36.0, y=50.0}
+To deliver 2m3 of GLP for order 33 at Position{x=36.0, y=50.0} -> To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0}
+Position{x=36.0, y=50.0}
+Position{x=36.0, y=42.0}
+Position{x=42.0, y=42.0}
+To refill 5m3 from warehouse 2 at Position{x=42.0, y=42.0} -> FinalNode
+Position{x=42.0, y=42.0}
+Position{x=42.0, y=8.0}
+Position{x=12.0, y=8.0}
+Vehicle: 14
+Plan:
+Empty node at Position{x=12.0, y=8.0} -> To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0}
+Position{x=12.0, y=8.0}
+To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0} -> To deliver 3m3 of GLP for order 26 at Position{x=33.0, y=34.0}
+Position{x=12.0, y=8.0}
+Position{x=12.0, y=34.0}
+Position{x=33.0, y=34.0}
+To deliver 3m3 of GLP for order 26 at Position{x=33.0, y=34.0} -> To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0}
+Position{x=33.0, y=34.0}
+Position{x=33.0, y=8.0}
+Position{x=12.0, y=8.0}
+To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0} -> To deliver 1m3 of GLP for order 8 at Position{x=39.0, y=35.0}
+Position{x=12.0, y=8.0}
+Position{x=12.0, y=35.0}
+Position{x=39.0, y=35.0}
+To deliver 1m3 of GLP for order 8 at Position{x=39.0, y=35.0} -> FinalNode
+Position{x=39.0, y=35.0}
+Position{x=39.0, y=8.0}
+Position{x=12.0, y=8.0}
+Vehicle: 15
+Plan:
+Empty node at Position{x=12.0, y=8.0} -> To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0}
+Position{x=12.0, y=8.0}
+To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0} -> To deliver 3m3 of GLP for order 32 at Position{x=40.0, y=32.0}
+Position{x=12.0, y=8.0}
+Position{x=12.0, y=32.0}
+Position{x=40.0, y=32.0}
+To deliver 3m3 of GLP for order 32 at Position{x=40.0, y=32.0} -> FinalNode
+Position{x=40.0, y=32.0}
+Position{x=40.0, y=8.0}
+Position{x=12.0, y=8.0}
+Vehicle: 16
+Plan:
+Empty node at Position{x=12.0, y=8.0} -> To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0}
+Position{x=12.0, y=8.0}
+Position{x=12.0, y=3.0}
+Position{x=63.0, y=3.0}
+To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0} -> To deliver 10m3 of GLP for order 16 at Position{x=24.0, y=20.0}
+Position{x=63.0, y=3.0}
+Position{x=63.0, y=20.0}
+Position{x=24.0, y=20.0}
+To deliver 10m3 of GLP for order 16 at Position{x=24.0, y=20.0} -> To deliver 7m3 of GLP for order 29 at Position{x=16.0, y=2.0}
+Position{x=24.0, y=20.0}
+Position{x=24.0, y=2.0}
+Position{x=16.0, y=2.0}
+To deliver 7m3 of GLP for order 29 at Position{x=16.0, y=2.0} -> FinalNode
+Position{x=16.0, y=2.0}
+Position{x=16.0, y=8.0}
+Position{x=12.0, y=8.0}
+Vehicle: 17
+Plan:
+Empty node at Position{x=12.0, y=8.0} -> To refill 10m3 from warehouse 3 at Position{x=63.0, y=3.0}
+Position{x=12.0, y=8.0}
+Position{x=12.0, y=3.0}
+Position{x=63.0, y=3.0}
+To refill 10m3 from warehouse 3 at Position{x=63.0, y=3.0} -> To deliver 10m3 of GLP for order 8 at Position{x=39.0, y=35.0}
+Position{x=63.0, y=3.0}
+Position{x=63.0, y=35.0}
+Position{x=39.0, y=35.0}
+To deliver 10m3 of GLP for order 8 at Position{x=39.0, y=35.0} -> To deliver 5m3 of GLP for order 2 at Position{x=29.0, y=37.0}
+Position{x=39.0, y=35.0}
+Position{x=39.0, y=37.0}
+Position{x=29.0, y=37.0}
+To deliver 5m3 of GLP for order 2 at Position{x=29.0, y=37.0} -> To deliver 10m3 of GLP for order 27 at Position{x=53.0, y=21.0}
+Position{x=29.0, y=37.0}
+Position{x=29.0, y=21.0}
+Position{x=53.0, y=21.0}
+To deliver 10m3 of GLP for order 27 at Position{x=53.0, y=21.0} -> To deliver 1m3 of GLP for order 16 at Position{x=24.0, y=20.0}
+Position{x=53.0, y=21.0}
+Position{x=53.0, y=20.0}
+Position{x=24.0, y=20.0}
+To deliver 1m3 of GLP for order 16 at Position{x=24.0, y=20.0} -> To deliver 1m3 of GLP for order 28 at Position{x=34.0, y=48.0}
+Position{x=24.0, y=20.0}
+Position{x=24.0, y=48.0}
+Position{x=34.0, y=48.0}
+To deliver 1m3 of GLP for order 28 at Position{x=34.0, y=48.0} -> FinalNode
+Position{x=34.0, y=48.0}
+Position{x=34.0, y=8.0}
+Position{x=12.0, y=8.0}
+Vehicle: 18
+Plan:
+Empty node at Position{x=12.0, y=8.0} -> To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0}
+Position{x=12.0, y=8.0}
+To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0} -> To deliver 1m3 of GLP for order 19 at Position{x=46.0, y=40.0}
+Position{x=12.0, y=8.0}
+Position{x=12.0, y=40.0}
+Position{x=46.0, y=40.0}
+To deliver 1m3 of GLP for order 19 at Position{x=46.0, y=40.0} -> FinalNode
+Position{x=46.0, y=40.0}
+Position{x=46.0, y=8.0}
+Position{x=12.0, y=8.0}
+Vehicle: 19
+Plan:
+Empty node at Position{x=12.0, y=8.0} -> To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0}
+Position{x=12.0, y=8.0}
+To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0} -> To deliver 5m3 of GLP for order 21 at Position{x=41.0, y=32.0}
+Position{x=12.0, y=8.0}
+Position{x=12.0, y=32.0}
+Position{x=41.0, y=32.0}
+To deliver 5m3 of GLP for order 21 at Position{x=41.0, y=32.0} -> To deliver 6m3 of GLP for order 22 at Position{x=50.0, y=45.0}
+Position{x=41.0, y=32.0}
+Position{x=41.0, y=45.0}
+Position{x=50.0, y=45.0}
+To deliver 6m3 of GLP for order 22 at Position{x=50.0, y=45.0} -> To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0}
+Position{x=50.0, y=45.0}
+Position{x=50.0, y=3.0}
+Position{x=63.0, y=3.0}
+To refill 5m3 from warehouse 3 at Position{x=63.0, y=3.0} -> To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0}
+Position{x=63.0, y=3.0}
+Position{x=63.0, y=8.0}
+Position{x=12.0, y=8.0}
+To refill 5m3 from warehouse 1 at Position{x=12.0, y=8.0} -> FinalNode
+--- Time: 2025/01/01 00:30 ---
+--- Time: 2025/01/01 00:31 ---
+--- Time: 2025/01/01 00:32 ---
+--- Time: 2025/01/01 00:33 ---
+--- Time: 2025/01/01 00:34 ---
+--- Time: 2025/01/01 00:35 ---
+--- Time: 2025/01/01 00:36 ---
+--- Time: 2025/01/01 00:37 ---
+--- Time: 2025/01/01 00:38 ---
+--- Time: 2025/01/01 00:39 ---
+--- Time: 2025/01/01 00:40 ---
+--- Time: 2025/01/01 00:41 ---
+--- Time: 2025/01/01 00:42 ---
+--- Time: 2025/01/01 00:43 ---
+--- Time: 2025/01/01 00:44 ---
+--- Time: 2025/01/01 00:45 ---
+--- Time: 2025/01/01 00:46 ---
+--- Time: 2025/01/01 00:47 ---
+--- Time: 2025/01/01 00:48 ---
+--- Time: 2025/01/01 00:49 ---
+--- Time: 2025/01/01 00:50 ---
+--- Time: 2025/01/01 00:51 ---
+--- Time: 2025/01/01 00:52 ---
+--- Time: 2025/01/01 00:53 ---
+--- Time: 2025/01/01 00:54 ---
+--- Time: 2025/01/01 00:55 ---
+--- Time: 2025/01/01 00:56 ---
+--- Time: 2025/01/01 00:57 ---
+--- Time: 2025/01/01 00:58 ---
+--- Time: 2025/01/01 00:59 ---

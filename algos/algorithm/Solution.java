@@ -157,7 +157,7 @@ public class Solution implements Cloneable {
                 currentTime = currentTime.addMinutes(vehicle.waitTransition);
             }
 
-            for (int i = 0; i < route.size() - 1 && currentTime.minutesSince(environment.currentTime) < environment.minutesToSimulate; i++) {
+            for (int i = 0; i < route.size() - 1 && currentTime.minutesSince(environment.currentTime) < environment.minutesToSimulate + 30; i++) {
                 Node originNode = route.get(i);
                 Node destinationNode = route.get(i + 1);
 
@@ -236,6 +236,8 @@ public class Solution implements Cloneable {
             }
         }
 
+        isFeasible = errors.isEmpty();
+
         // Store the individual components before calculating final fitness
         // Normalize each component to [0,1] range before applying weights
         timeGLPPointsComponent = weightTimeGLPPoints * normalizeTimeGLPPoints(rawTimeGLPPoints);
@@ -248,9 +250,9 @@ public class Solution implements Cloneable {
                  fulfilledOrdersComponent -
                  imaginaryFuelComponent -
                  imaginaryGLPComponent -
-                 missedOrdersComponent;
+                 missedOrdersComponent +
+                 (isFeasible ? 1 : 0);
         
-        isFeasible = errors.isEmpty();
         hasRunSimulation = true;
     }
 
