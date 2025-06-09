@@ -105,7 +105,7 @@ public class PedidoController {
                     pedido.setId(null); // asegurar que se cree nuevo
                     pedidoRepository.save(pedido); // aquí usamos save individualmente
                     count++;
-                    System.out.println("Insertando pedido: " + pedido.getCodigoCliente());
+                    // System.out.println("Insertando pedido: " + pedido.getCodigoCliente());
 
                 }
             }

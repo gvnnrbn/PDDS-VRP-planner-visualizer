@@ -20,9 +20,9 @@ function App() {
             <Navbar />
             <Box flex={1} overflowY="auto">
               <Routes>
-                <Route path="/weekly-simulation/*" element={<WeeklySimulation />} />
-                <Route path="/collapse-simulation/*" element={<CollapseSimulation />} />
-                <Route path="/daily-operation/*" element={<DailyOperation />} />
+                <Route path="/semanal/*" element={<WeeklySimulation />} />
+                <Route path="/colapso/*" element={<CollapseSimulation />} />
+                <Route path="/dia-a-dia/*" element={<DailyOperation />} />
               </Routes>
             </Box>
           </Box>
