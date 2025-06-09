@@ -30,7 +30,7 @@ export default function VehiculosPhase() {
   }
 
   const handleNextPhase = () => {
-    navigate('/weekly-simulation/simulacion')
+    navigate('/weekly-simulation/almacen')
   }
 
 
@@ -53,7 +53,7 @@ export default function VehiculosPhase() {
             colorScheme="blue" 
             width="15rem"
           >
-            Siguiente: Simulación
+            Siguiente: Almacen
           </Button>
         </HStack>
 

@@ -78,10 +78,10 @@ const BottomLeftControls: React.FC<BottomLeftControlsProps> = ({
                     borderColor="blue.600"
                     _hover={{ bg: "gray.100" }} // Cambia el color al pasar el mouse
                 >{
-                    hasStarted ? 
+                    // hasStarted ? 
                     (<Button size="xs" colorScheme="red" onClick={onStop}/>)
-                    :
-                    (<Button size="xs" colorScheme="green" onClick={onStop}/>)
+                    // :
+                    // (<Button size="xs" colorScheme="green" onClick={onStop}/>)
                 }
                 </Box>
             )}

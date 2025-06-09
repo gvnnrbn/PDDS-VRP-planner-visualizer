@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Box, VStack, HStack, Text, Button, useToast } from '@chakra-ui/react'
 import { AlmacenForm } from '../../components/AlmacenForm'
+import { useNavigate } from 'react-router-dom'
 import { AlmacenTable } from '../../components/AlmacenTable'
 import { AlmacenService } from '../../core/services/AlmacenService'
 import { useQueryClient } from '@tanstack/react-query'
@@ -10,6 +11,7 @@ export default function AlmacenPhase() {
   const [selectedAlmacen, setSelectedAlmacen] = useState<any>(null)
   const queryClient = useQueryClient()
   const toast = useToast()
+  const navigate = useNavigate()
 
   const almacenService = new AlmacenService()
 
@@ -42,16 +44,35 @@ export default function AlmacenPhase() {
       toast({ title: 'Error', description: error.message, status: 'error', duration: 3000, isClosable: true })
     }
   }
+  const handlePreviousPhase = () => {
+    navigate('/weekly-simulation/vehiculos')
+  }
+
+  const handleNextPhase = () => {
+    navigate('/weekly-simulation/simulacion')
+  }
 
   return (
     <Box p={4}>
       <VStack spacing={4} align="stretch">
-        <HStack justify="space-between" align="center">
-          <Box width="15rem" />
-          <Text fontSize="2xl" fontWeight="bold" textAlign="center" width="100%">
+        <HStack justify="space-between">
+            <Button 
+                onClick={handlePreviousPhase}
+                colorScheme="gray" 
+                width="15rem"
+            >
+                Atrás: Vehiculos
+            </Button>
+          <Text fontSize="2xl" fontWeight="bold" textAlign="center" flex={1}>
             Gestión de Almacenes
           </Text>
-          <Box width="15rem" />
+          <Button 
+            onClick={handleNextPhase}
+            colorScheme="blue" 
+            width="15rem"
+          >
+            Siguiente: Simulación
+          </Button>
         </HStack>
 
         <HStack justify="flex-end" spacing={4}>
