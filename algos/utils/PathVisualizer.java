@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.ArrayList;
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.geom.*;
 import javax.swing.*;
 import entities.PlannerBlockage;
 
@@ -26,8 +25,6 @@ public class PathVisualizer {
     private static VisualizationPanel visualPanel;
     private static JButton prevButton;
     private static JButton nextButton;
-    private static int currentGridLength;
-    private static int currentGridWidth;
 
     private static class VisualizationPanel extends JPanel {
         private final int gridLength;
@@ -144,8 +141,6 @@ public class PathVisualizer {
         VisualizationState state = new VisualizationState(start, end, path, blockages);
         visualizationStates.add(state);
         currentStateIndex = visualizationStates.size() - 1;
-        currentGridLength = gridLength;
-        currentGridWidth = gridWidth;
         
         SwingUtilities.invokeLater(() -> {
             if (frame == null) {

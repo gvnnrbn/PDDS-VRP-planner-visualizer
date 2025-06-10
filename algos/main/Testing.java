@@ -8,6 +8,7 @@ import algorithm.Algorithm;
 import algorithm.Environment;
 import algorithm.Node;
 import algorithm.Solution;
+import data.DataChunk;
 import utils.DataParser;
 import utils.PathBuilder;
 import utils.SimulationProperties;
@@ -19,6 +20,7 @@ import entities.PlannerBlockage;
 import entities.PlannerWarehouse;
 import entities.PlannerFailure;
 import entities.PlannerMaintenance;
+import utils.DataExporter;
 
 public class Testing {
     private static List<PlannerBlockage> getActiveBlockages(List<PlannerBlockage> blockages, Time time) {
@@ -82,6 +84,10 @@ public class Testing {
                     vehicle.state = PlannerVehicle.VehicleState.IDLE;
                 }
             }
+
+            DataChunk dataChunk = new DataChunk();
+            DataChunk.MinuteData minuteData = new DataChunk.MinuteData(currTime);
+            minuteData.vehicles.addAll(activeVehicles.stream().map(vehicle -> new DataChunk.VehicleData(vehicle.plaque, vehicle.position.clone(), vehicle.state)).collect(Collectors.toList()));
 
             for (int iteration = 0; iteration < minutesToSimulate; iteration++) {
                 if (SimulationProperties.isDebug) {
@@ -149,6 +155,7 @@ public class Testing {
                             plannerVehicle.waitTransition--;
                         } else {
                             plannerVehicle.advancePath(SimulationProperties.speed / 60.0);
+                            plannerVehicle.state = PlannerVehicle.VehicleState.ONTHEWAY;
                         }
                     }
                 }
@@ -167,6 +174,11 @@ public class Testing {
                         }
                     }
                 }
+
+                minuteData = new DataChunk.MinuteData(currTime);
+                minuteData.vehicles.addAll(activeVehicles.stream().map(vehicle -> new DataChunk.VehicleData(vehicle.plaque, vehicle.position, vehicle.state)).collect(Collectors.toList()));
+                dataChunk.minutes.add(minuteData);
+
                 SimulationVisualizer.draw(activeVehicles, activeBlockages, deliveryNodes, refillNodes, currTime.toString());
                 try {
                     Thread.sleep(SimulationProperties.timeUnitMs);
@@ -174,6 +186,10 @@ public class Testing {
                     Thread.currentThread().interrupt();
                 }
                 currTime = currTime.addMinutes(1);
+            }
+
+            if (SimulationProperties.isDebug) {
+                DataExporter.exportToJson(dataChunk, currTime);
             }
         }
     }

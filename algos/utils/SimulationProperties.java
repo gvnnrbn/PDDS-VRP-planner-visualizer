@@ -10,5 +10,5 @@ public class SimulationProperties {
 
     public static int timeUnitMs = 2; // milliseconds
 
-    public static boolean isDebug = false;
+    public static boolean isDebug = true;
 }
