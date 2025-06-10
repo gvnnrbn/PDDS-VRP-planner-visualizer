@@ -56,10 +56,14 @@ public class Solution implements Cloneable {
     }
 
     private double normalizeFuel(double value) {
+        if (Double.isInfinite(value) || Double.isNaN(value)) return 0.0;
+        if (maxFuel == 0.0) return 0.0;
         return value / maxFuel;
     }
 
     private double normalizeGLP(double value) {
+        if (Double.isInfinite(value) || Double.isNaN(value)) return 0.0;
+        if (maxGLP == 0.0) return 0.0;
         return value / maxGLP;
     }
 
@@ -248,23 +252,29 @@ public class Solution implements Cloneable {
         double w2 = 2.0; // sigmoidOrders
         double w3 = 1.5; // logImaginaryFuel
         double w4 = 1.5; // logImaginaryGLP
-        double w5 = 3.0; // quadMissedOrders
+        double w5 = 3.0; // missedOrdersPenalty
         double w6 = 2.0; // vehicle utilization bonus
         double w7 = 1.0; // end-period GLP bonus
 
         // 1. Normalize expReward
         double maxExpReward = 0.0;
         for (PlannerOrder order : orderMap.values()) {
-            double urgencyWeight = (order.deadline.minutesSince(environment.currentTime) < 360) ? 2.0 : 1.0;
+            double minutesUntilDeadline = order.deadline.minutesSince(environment.currentTime);
+            double urgencyWeight = 1.0;
+            if (minutesUntilDeadline < 360) urgencyWeight = 2.5;
             maxExpReward += urgencyWeight * order.amountGLP;
         }
-        double expRewardNorm = (maxExpReward > 0) ? (rawTimeGLPPoints / maxExpReward) : 0.0; // [0,1]
+        if (maxExpReward <= 0) maxExpReward = 1.0; // Prevent division by zero
+        double expRewardNorm = rawTimeGLPPoints / maxExpReward;
 
         // 2. Logistic (sigmoid) for fulfilled orders (smoothly in [0,1])
         double sigmoidOrders = 1.0 / (1.0 + Math.exp(-0.5 * (rawFulfilledOrders - environment.orders.size() / 2.0)));
 
-        // 3. Normalize quadMissedOrders
-        double quadMissedOrdersNorm = (environment.orders.size() > 0) ? (rawMissedOrders / (environment.orders.size() * environment.orders.size())) : 0.0; // [0,1]
+        // 3. Smoother sigmoid penalty for missed orders
+        int nOrders = environment.orders.size();
+        if (nOrders <= 0) nOrders = 1;
+        double beta = 1.0; // Controls steepness; tune as needed
+        double missedOrdersPenalty = 1.0 / (1.0 + Math.exp(-beta * (rawMissedOrders - nOrders / 2.0)));
 
         // 4. Normalize logImaginaryFuel/GLP
         double maxFuel = 0.0, maxGLP_fleet = 0.0;
@@ -272,13 +282,15 @@ public class Solution implements Cloneable {
             maxFuel += v.maxFuel;
             maxGLP_fleet += v.maxGLP;
         }
-        double logImaginaryFuelNorm = (maxFuel > 0) ? (rawImaginaryFuel / Math.log1p(maxFuel)) : 0.0;
-        double logImaginaryGLPNorm = (maxGLP_fleet > 0) ? (rawImaginaryGLP / Math.log1p(maxGLP_fleet)) : 0.0;
+        if (maxFuel <= 0) maxFuel = 1.0;
+        if (maxGLP_fleet <= 0) maxGLP_fleet = 1.0;
+        double logImaginaryFuelNorm = (Double.isFinite(rawImaginaryFuel) && Math.log1p(maxFuel) > 0) ? rawImaginaryFuel / Math.log1p(maxFuel) : 0.0;
+        double logImaginaryGLPNorm = (Double.isFinite(rawImaginaryGLP) && Math.log1p(maxGLP_fleet) > 0) ? rawImaginaryGLP / Math.log1p(maxGLP_fleet) : 0.0;
 
         // 5. Vehicle utilization bonus: reward for using more vehicles (not idle/finished)
         int usedVehicles = 0;
-        for (PlannerVehicle v : vehicleMap.values()) {
-            if (v.state != PlannerVehicle.VehicleState.IDLE && v.state != PlannerVehicle.VehicleState.FINISHED) {
+        for (List<Node> route : routes.values()) {
+            if (route.size() > 2) {
                 usedVehicles++;
             }
         }
@@ -299,10 +311,15 @@ public class Solution implements Cloneable {
                 + w2 * sigmoidOrders
                 - w3 * logImaginaryFuelNorm
                 - w4 * logImaginaryGLPNorm
-                - w5 * quadMissedOrdersNorm
+                - w5 * missedOrdersPenalty
                 + w6 * utilizationBonus
                 + w7 * glpBonus;
-        if (isFeasible) fitness *= 2.0;
+        if (isFeasible) fitness *= 1.5; // Smoother feasible bonus
+
+        // --- Robustness: Clamp fitness to avoid -Infinity/NaN ---
+        if (!Double.isFinite(fitness) || fitness < -1e10) {
+            fitness = -1e6; // Assign a large negative value, but not -Infinity
+        }
 
         hasRunSimulation = true;
     }

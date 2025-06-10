@@ -14,22 +14,32 @@ public class Algorithm {
     private static int tabuListSize = 2000;
     private static double aspirationCriteria = 0.01; // 5% improvement over best solution
 
-    private static final boolean isDebug = true;
+    private static final boolean isDebug = false;
 
     public Algorithm() {
     }
 
     public static Solution run(Environment environment, int minutes) {
         Solution bestSolution = null;
+        Solution bestFeasibleSolution = null;
         double bestFitness = Double.NEGATIVE_INFINITY;
+        double bestFeasibleFitness = Double.NEGATIVE_INFINITY;
         long startTime = System.currentTimeMillis();
+        int feasibleSolutionsFound = 0;
         
-        while (System.currentTimeMillis() - startTime < 55000) { // 55 seconds
+        while (System.currentTimeMillis() - startTime < maxTimeMs) {
             Solution solution = _run(environment, minutes);
             double fitness = solution.fitness(environment);
             
             if (solution.isFeasible(environment)) {
-                return solution;
+                feasibleSolutionsFound++;
+                if (fitness > bestFeasibleFitness) {
+                    bestFeasibleFitness = fitness;
+                    bestFeasibleSolution = solution;
+                }
+                if (feasibleSolutionsFound >= 3) {
+                    return bestFeasibleSolution;
+                }
             }
             
             if (fitness > bestFitness) {
@@ -38,7 +48,7 @@ public class Algorithm {
             }
         }
         
-        return bestSolution; // Return best solution found even if not feasible
+        return bestFeasibleSolution != null ? bestFeasibleSolution : bestSolution;
     }
 
     private static Solution _run(Environment environment, int minutes) {
@@ -51,20 +61,23 @@ public class Algorithm {
         List<Movement> tabuList = new ArrayList<>();
         Map<Movement, Integer> tabuTenure = new HashMap<>();
         
-        long startTime = System.currentTimeMillis();
         int iterations = 0;
         int noImprovementCount = 0;
 
-        while ((System.currentTimeMillis() - startTime) < maxTimeMs) {
+        while (true) {
             boolean isFeasible = bestSolution.isFeasible(environment);
             
             // Check termination conditions
             if (isFeasible && noImprovementCount >= maxNoImprovementFeasible) {
-                System.out.println("\nBreaking: No improvement for " + noImprovementCount + " iterations while solution is feasible");
+                if (isDebug) {
+                    System.out.println("\nBreaking: No improvement for " + noImprovementCount + " iterations while solution is feasible");
+                }
                 break;
             }
             if (!isFeasible && noImprovementCount >= maxNoImprovement) {
-                System.out.println("\nBreaking: No improvement for " + noImprovementCount + " iterations while solution is not feasible");
+                if (isDebug) {
+                    System.out.println("\nBreaking: No improvement for " + noImprovementCount + " iterations while solution is not feasible");
+                }
                 break;
             }
 
@@ -104,7 +117,10 @@ public class Algorithm {
                 }
 
                 // Update best solution
-                if (currFitness > bestFitness) {
+                boolean currFeasible = currSolution.isFeasible(environment);
+                boolean bestFeasible = bestSolution.isFeasible(environment);
+                if ((currFeasible && !bestFeasible) ||
+                    (currFeasible == bestFeasible && currFitness > bestFitness)) {
                     bestSolution = currSolution.clone();
                     bestFitness = currFitness;
                     noImprovementCount = 0;
@@ -117,21 +133,16 @@ public class Algorithm {
 
             if (isDebug && iterations % 100 == 0) {
                 System.out.println("--------------------------------");
-                long timePassed = System.currentTimeMillis() - startTime;
                 System.out.println("Iteration " + iterations + 
                         ": Current fitness: " + String.format("%.4f", currFitness) + 
                         ", Best fitness: " + String.format("%.4f", bestFitness) + 
-                        ", Feasible: " + currSolution.isFeasible(environment) + 
+                        ", currSolution Feasible: " + currSolution.isFeasible(environment) +
+                        ", bestSolution Feasible: " + bestSolution.isFeasible(environment) +
                         ", No improvement: " + noImprovementCount +
-                        ", Tabu size: " + tabuList.size() +
-                        ", Time: " + timePassed + "ms");
+                        ", Tabu size: " + tabuList.size());
             }
 
             iterations++;
-        }
-
-        if ((System.currentTimeMillis() - startTime) >= maxTimeMs) {
-            System.out.println("\nBreaking: Time limit reached (" + maxTimeMs + "ms)");
         }
 
         bestSolution.compress();

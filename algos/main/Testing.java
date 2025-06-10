@@ -57,6 +57,7 @@ public class Testing {
         private List<PlannerBlockage> blockages;
         private List<Node> deliveryNodes;
         private List<Node> refillNodes;
+        private String currentTimeString = "";
 
         public VehicleVisualizerPanel(int gridLength, int gridWidth) {
             this.gridLength = gridLength;
@@ -65,11 +66,12 @@ public class Testing {
             setBackground(java.awt.Color.WHITE);
         }
 
-        public void updateState(List<PlannerVehicle> vehicles, List<PlannerBlockage> blockages, List<Node> deliveryNodes, List<Node> refillNodes) {
+        public void updateState(List<PlannerVehicle> vehicles, List<PlannerBlockage> blockages, List<Node> deliveryNodes, List<Node> refillNodes, String currentTimeString) {
             this.vehicles = vehicles;
             this.blockages = blockages;
             this.deliveryNodes = deliveryNodes;
             this.refillNodes = refillNodes;
+            this.currentTimeString = currentTimeString;
             repaint();
         }
 
@@ -81,6 +83,11 @@ public class Testing {
             int margin = 40;
             double scaleX = (getWidth() - 2 * margin) / (double) gridLength;
             double scaleY = (getHeight() - 2 * margin) / (double) gridWidth;
+
+            // Draw current time
+            g2d.setColor(java.awt.Color.BLACK);
+            g2d.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 18));
+            g2d.drawString("Time: " + currentTimeString, 20, 30);
 
             // Draw grid
             g2d.setColor(new java.awt.Color(220, 220, 220));
@@ -165,7 +172,7 @@ public class Testing {
     }
 
     // --- Main draw() method ---
-    public static void draw(List<PlannerVehicle> vehicles, List<PlannerBlockage> blockages, List<Node> deliveryNodes, List<Node> refillNodes) {
+    public static void draw(List<PlannerVehicle> vehicles, List<PlannerBlockage> blockages, List<Node> deliveryNodes, List<Node> refillNodes, String currentTimeString) {
         int gridLength = utils.SimulationProperties.gridLength;
         int gridWidth = utils.SimulationProperties.gridWidth;
         javax.swing.SwingUtilities.invokeLater(() -> {
@@ -178,7 +185,7 @@ public class Testing {
                 visFrame.setLocationRelativeTo(null);
                 visFrame.setVisible(true);
             }
-            visPanel.updateState(vehicles, blockages, deliveryNodes, refillNodes);
+            visPanel.updateState(vehicles, blockages, deliveryNodes, refillNodes, currentTimeString);
         });
     }
 
@@ -224,36 +231,33 @@ public class Testing {
                         continue;
                     }
 
-                    // System.out.println("Vehicle " + plannerVehicle.id + " started at position: " + plannerVehicle.position);
-
-                    // Create path when there's no path or the path is empty
+                    // If no path or path is empty, check if at next node; if not, build path
                     if (plannerVehicle.currentPath == null || plannerVehicle.currentPath.isEmpty()) {
-                        // System.out.println("Before currentPath correction the path is: " + plannerVehicle.currentPath);
-
-                        // Has arrived at location
-                        Node arrivedNode = sol.routes.get(plannerVehicle.id).get(plannerVehicle.nextNodeIndex);
-                        System.out.println("Vehicle " + plannerVehicle.id + " has arrived at location of node " + arrivedNode);
-
-                        // HERE GOES ON_REACHING_NODE_LOCATION
-                        // System.out.println("Vehicle " + plannerVehicle.id + " is processing node " + arrivedNode);
-                        plannerVehicle.processNode(arrivedNode, plannerVehicle, activeOrders, warehouses, currTime);
-
-                        plannerVehicle.nextNodeIndex++;
-
-                        if (plannerVehicle.nextNodeIndex >= sol.routes.get(plannerVehicle.id).size()) {
-                            // Has reached last node
-                            System.out.println("HAS REACHED LAST NODE");
-                            plannerVehicle.state = PlannerVehicle.VehicleState.FINISHED;
+                        List<Node> route = sol.routes.get(plannerVehicle.id);
+                        if (route == null || plannerVehicle.nextNodeIndex >= route.size()) {
                             continue;
                         }
+                        Node nextNode = route.get(plannerVehicle.nextNodeIndex);
+                        // Check if at the node's position
+                        if (!plannerVehicle.position.equals(nextNode.getPosition())) {
+                            // Not at node yet: build path to it
+                            plannerVehicle.currentPath = PathBuilder.buildPath(plannerVehicle.position, nextNode.getPosition(), activeBlockages);
+                            continue;
+                        }
+                        // Has arrived at location
+                        System.out.println("Vehicle " + plannerVehicle.id + " has arrived at location of node " + nextNode);
+                        plannerVehicle.processNode(nextNode, plannerVehicle, activeOrders, warehouses, currTime);
 
-                        Node currNode = sol.routes.get(plannerVehicle.id).get(plannerVehicle.nextNodeIndex - 1);
-                        Node nextNode = sol.routes.get(plannerVehicle.id).get(plannerVehicle.nextNodeIndex);
-
-                        plannerVehicle.currentPath = PathBuilder.buildPath(currNode.getPosition(), nextNode.getPosition(), activeBlockages);
-                        // System.out.println("After currentPath correction the path is: " + plannerVehicle.currentPath);
+                        if (plannerVehicle.nextNodeIndex == route.size() - 1) {
+                            // Just processed the FinalNode
+                            System.out.println("HAS REACHED FINAL NODE (base)");
+                            plannerVehicle.state = PlannerVehicle.VehicleState.FINISHED;
+                            plannerVehicle.nextNodeIndex++; // Optional: move index past end
+                            continue;
+                        }
+                        plannerVehicle.nextNodeIndex++;
+                        // No need to build path here; will do so on next iteration if needed
                     } else {
-
                         if (plannerVehicle.waitTransition > 0) {
                             System.out.println("Vehicle " + plannerVehicle.id + " is waiting for " + plannerVehicle.waitTransition + " minutes");
                             plannerVehicle.waitTransition--;
@@ -279,12 +283,12 @@ public class Testing {
                         }
                     }
                 }
-                draw(activeVehicles, activeBlockages, deliveryNodes, refillNodes);
-                try {
-                    Thread.sleep(5); // 750 ms delay between steps
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
+                // draw(activeVehicles, activeBlockages, deliveryNodes, refillNodes, currTime.toString());
+                // try {
+                //     Thread.sleep();
+                // } catch (InterruptedException e) {
+                //     Thread.currentThread().interrupt();
+                // }
                 currTime = currTime.addMinutes(1);
             }
         }
