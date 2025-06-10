@@ -238,21 +238,24 @@ const sections = [
   // },
 ]
 
-interface ScheduleChunk{
-  current: string,
-  next: string
+interface ScheduleChunk {
+  current?: any;
+  next?: any;
 }
+
 
 export default function WeeklySimulation() {
   const bgColor = useColorModeValue('white', '#1a1a1a')
   const [isCollapsed, setIsCollapsed] = useState(true)
   const [section, setSection] = useState(sections[0].title)
   const [isSimulationLoading, setIsSimulationLoading] = useState(false);
+  const [ isSimulationCompleted, setIsSImulationCompleted ] = useState(false);
 
   const [selectedDate, setSelectedDate] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(true);
   const { connected, subscribe, unsubscribe, publish } = useStomp('http://localhost:8080/ws');
-  const [scheduleChunk, setScheduleChunk] = useState<ScheduleChunk>();
+  const [scheduleChunk, setScheduleChunk] = useState<ScheduleChunk>({});
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   const [dateValue, setDateValue] = useState<string>(() => {
     const now = new Date();
@@ -261,6 +264,9 @@ export default function WeeklySimulation() {
   const [hourValue, setHourValue] = useState<number>(new Date().getHours());
   const [minuteValue, setMinuteValue] = useState<number>(new Date().getMinutes());
 
+  /**
+   * HANDLE DATE 
+   */
   // Format the selected date/time into ISO format
   const formatDateTime = () => {
     const [year, month, day] = dateValue.split('-');
@@ -268,11 +274,21 @@ export default function WeeklySimulation() {
     setSelectedDate(formattedDate);
   };
 
-  // Update formatted date whenever inputs change
   useEffect(() => {
     formatDateTime();
   }, [dateValue, hourValue, minuteValue]);
+  
+  
+  /**
+   * START SIMULATION
+  */
 
+  // delay after simulation starts
+  // useEffect(() => {
+  //   const timer = setTimeout(() => setIsSimulationLoading(false), 2000); // 2s simulado
+  //   return () => clearTimeout(timer);
+  // },[isSimulationLoading])
+ 
   const handleSubmit = () => {
     formatDateTime(); // Ensure we have the latest value
     setIsModalOpen(false);
@@ -280,37 +296,119 @@ export default function WeeklySimulation() {
     setIsSimulationLoading(true);
   };
 
-  useEffect(() => {
-    const timer = setTimeout(() => setIsSimulationLoading(false), 2000); // 2s simulado
-    return () => clearTimeout(timer);
-  },[isSimulationLoading])
-
-  // Add a button to trigger the simulation
   const handleStartSimulation = () => {
     if (connected) {
-      publish('/app/simulacion-start', selectedDate);
-      // console.log('Sent date to backend:', selectedDate);
+      publish('/app/simulation-start', selectedDate);
+      console.log('Sent date to backend:', selectedDate);
     }
   };
 
+  // end simulation
+  // useEffect(() => {
+  //   if (!connected) return;
+  //   var finished = false;
+
+  //   const handleNoMoreChunks = (message: string) => {
+  //     if(message == "COMPLETED"){
+  //       finished = true;
+  //       console.log("simulation completed");
+  //     }
+  //   }
+  //   subscribe('/topic/simulation-data', handleNoMoreChunks);
+
+  //   return () => {
+  //     // Cleanup subscription if needed
+  //   };
+  // }, [connected, subscribe]);
+
+   // 1. Handle incoming WebSocket messages
   useEffect(() => {
     if (!connected) return;
-    const suscribeUrl = '/topic/simulacion-start';
-    const handleSimulacion = (message: Message) => {
+
+    const handleIncomingData = (message: any) => {
       try {
-        const payload = JSON.parse(message.body);
-        console.log('Received simulation data:', payload);
-        setScheduleChunk();
+        console.log("receiving message");
+        const data: any = JSON.parse(message.body);
+        console.log("message: "+ data);
+        setScheduleChunk(prev => {
+          // First message goes to current
+          if (!prev.current) {
+            return { current: data };
+          } 
+          // Subsequent messages go to next
+          else {
+            return { ...prev, next: data };
+          }
+          
+        });
       } catch (error) {
-        console.error('Error parsing message:', error);
+        console.error('Error parsing simulation data:', error);
       }
     };
 
-    subscribe(suscribeUrl, handleSimulacion);
+    subscribe('/topic/simulation-data', handleIncomingData);
+
     return () => {
-      unsubscribe(suscribeUrl);
+      // Cleanup subscription if needed
     };
-  }, [connected, subscribe, unsubscribe]);
+  }, [connected, subscribe]);
+
+  // 2. Request next chunk when needed
+  useEffect(() => {
+    if (connected && !scheduleChunk.next && !scheduleChunk.current) {
+      publish('/app/request-chunk', JSON.stringify({}));
+      console.log('Requested next chunk');
+    }
+  }, [connected, scheduleChunk, publish]);
+
+  // 3. Handle chunk transition logic
+  useEffect(() => {
+    if (!scheduleChunk.current) return;
+
+    const simulationArray = scheduleChunk.current.simulacion;
+    const isLastElement = currentIndex >= simulationArray.length - 1;
+    const hasNextChunk = scheduleChunk.next;
+
+    if (isLastElement && hasNextChunk) {
+      // Transition to next chunk
+      setScheduleChunk({
+        current: scheduleChunk.next,
+        next: undefined
+      });
+      setCurrentIndex(0);
+      console.log('Transitioned to next chunk');
+    }
+  }, [currentIndex, scheduleChunk]);
+
+  // 4. Visualization timer (example)
+  useEffect(() => {
+    if (!scheduleChunk.current) return;
+
+    const timer = setInterval(() => {
+      setCurrentIndex(prev => {
+        // Prevent going beyond array bounds
+        if (prev >= scheduleChunk.current!.simulacion.length - 1) {
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, 1000); // Adjust timing as needed
+
+    return () => clearInterval(timer);
+  }, [scheduleChunk]);
+
+  useEffect(()=> {
+    console.log(scheduleChunk);
+
+  },[scheduleChunk]);
+
+  // Render current simulation state
+  const currentMinute = scheduleChunk.current?.simulacion[currentIndex]?.minuto;
+  const currentData = scheduleChunk.current?.simulacion[currentIndex];
+  // console.log(currentData);
+  /*
+   * HANDLE PANEL SECTIONS
+   */
   const handleSectionChange = (section: string) => {
     setSection(section)
   }
