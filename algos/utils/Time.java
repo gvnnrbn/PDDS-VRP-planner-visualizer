@@ -78,6 +78,10 @@ public class Time implements Comparable<Time>, Cloneable {
         return other.isBefore(this);
     }
 
+    public boolean isAfterOrAt(Time other) {
+        return other.isBeforeOrAt(this);
+    }
+
     public Time addMinutes(int minutes) {
         int totalMinutes = this.min + minutes;
         int newMin = totalMinutes % 60;

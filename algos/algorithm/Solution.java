@@ -161,7 +161,7 @@ public class Solution implements Cloneable {
                 currentTime = currentTime.addMinutes(vehicle.waitTransition);
             }
 
-            for (int i = 0; i < route.size() - 1 && currentTime.minutesSince(environment.currentTime) < environment.minutesToSimulate + 30; i++) {
+            for (int i = 0; i < route.size() - 1 && currentTime.minutesSince(environment.currentTime) < environment.minutesToSimulate; i++) {
                 Node originNode = route.get(i);
                 Node destinationNode = route.get(i + 1);
 

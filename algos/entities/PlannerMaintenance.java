@@ -16,7 +16,7 @@ public class PlannerMaintenance implements Cloneable {
     }
 
     public boolean isActive(Time currentTime) {
-        return currentTime.isAfter(startDate) && currentTime.isBefore(endDate);
+        return currentTime.isAfterOrAt(startDate) && currentTime.isBefore(endDate);
     }
 
     @Override

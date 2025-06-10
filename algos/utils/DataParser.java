@@ -87,6 +87,7 @@ public class DataParser {
 
     public static List<PlannerVehicle> parseVehicles(String filePath) {
         List<PlannerVehicle> vehicles = new ArrayList<>();
+        String currentType = null;
         int id = 1;
         
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
@@ -108,6 +109,12 @@ public class DataParser {
                     // Extract vehicle type (TA, TB, TC, TD)
                     String type = parts[0];
                     
+                    // Reset ID counter if we encounter a new vehicle type
+                    if (!type.equals(currentType)) {
+                        id = 1;
+                        currentType = type;
+                    }
+                    
                     // Convert weights from Ton to kg (1 Ton = 1000 kg)
                     double grossWeight = Double.parseDouble(parts[1]) * 1000;
                     
@@ -119,8 +126,8 @@ public class DataParser {
                     
                     // Create vehicles
                     for (int i = 0; i < amountOfUnits; i++) {
-                        // Generate plaque using type and sequential number
-                        String plaque = type + "-" + (100 + id);
+                        // Generate plaque using type and sequential number, adding leading zero only for single digits
+                        String plaque = type + (id < 10 ? "0" + id : String.valueOf(id));
                         PlannerVehicle vehicle = new PlannerVehicle(
                             id++,
                             plaque,

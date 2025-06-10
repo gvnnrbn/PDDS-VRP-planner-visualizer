@@ -10,11 +10,9 @@ import utils.SimulationProperties;
 
 public class Algorithm {
     // Hyperparameters
-    private static int maxTimeMs = 20 * 1000;
-    private static int maxNoImprovement = 2000;
-    private static int maxNoImprovementFeasible = 500; 
-    private static int tabuListSize = 2000;
-    private static double aspirationCriteria = 0.01; // 5% improvement over best solution
+    private static int maxTimeMs = 30 * 1000;
+    private static int maxNoImprovement = 3000;
+    private static int maxNoImprovementFeasible = 1000; 
 
     public Algorithm() {
     }
@@ -26,6 +24,15 @@ public class Algorithm {
         double bestFeasibleFitness = Double.NEGATIVE_INFINITY;
         long startTime = System.currentTimeMillis();
         int feasibleSolutionsFound = 0;
+        
+        // Ensure we have at least one solution
+        bestSolution = _run(environment, minutes);
+        bestFitness = bestSolution.fitness(environment);
+        if (bestSolution.isFeasible(environment)) {
+            bestFeasibleSolution = bestSolution;
+            bestFeasibleFitness = bestFitness;
+            feasibleSolutionsFound++;
+        }
         
         while (System.currentTimeMillis() - startTime < maxTimeMs) {
             Solution solution = _run(environment, minutes);
@@ -48,25 +55,21 @@ public class Algorithm {
             }
         }
         
+        // Always return a solution, preferring feasible ones
         return bestFeasibleSolution != null ? bestFeasibleSolution : bestSolution;
     }
 
     private static Solution _run(Environment environment, int minutes) {
         Solution currSolution = environment.getRandomSolution();
         Solution bestSolution = currSolution.clone();
-        
         double bestFitness = bestSolution.fitness(environment);
         double currFitness = bestFitness;
-
-        List<Movement> tabuList = new ArrayList<>();
-        Map<Movement, Integer> tabuTenure = new HashMap<>();
-        
         int iterations = 0;
         int noImprovementCount = 0;
 
         while (true) {
             boolean isFeasible = bestSolution.isFeasible(environment);
-            
+
             // Check termination conditions
             if (isFeasible && noImprovementCount >= maxNoImprovementFeasible) {
                 if (SimulationProperties.isDebug) {
@@ -82,41 +85,23 @@ public class Algorithm {
             }
 
             List<Neighbor> neighborhood = NeighborhoodGenerator.generateNeighborhood(currSolution, environment);
-            
+
             Neighbor bestNeighbor = null;
             double bestNeighborFitness = Double.NEGATIVE_INFINITY;
 
-            // Find best non-tabu neighbor or one that satisfies aspiration criteria
+            // Find best neighbor (no tabu logic)
             for (Neighbor neighbor : neighborhood) {
                 double neighborFitness = neighbor.solution.fitness(environment);
-
-                // Check if movement is in tabu list
-                boolean isTabu = tabuList.contains(neighbor.movement);
-
-                // Aspiration criteria: accept tabu move if it improves the best solution significantly
-                boolean satisfiesAspiration = neighborFitness > bestFitness * (1 + aspirationCriteria);
-
-                if ((!isTabu || satisfiesAspiration) && neighborFitness > bestNeighborFitness) {
+                if (neighborFitness > bestNeighborFitness) {
                     bestNeighbor = neighbor;
                     bestNeighborFitness = neighborFitness;
                 }
             }
 
-            if (bestNeighbor != null) {
+            if (bestNeighbor != null && bestNeighborFitness > currFitness) {
                 currSolution = bestNeighbor.solution;
                 currFitness = bestNeighborFitness;
-
-                // Update tabu list
-                tabuList.add(bestNeighbor.movement);
-                tabuTenure.put(bestNeighbor.movement, iterations);
-
-                // Remove old tabu moves
-                while (tabuList.size() > tabuListSize) {
-                    Movement oldestMove = tabuList.remove(0);
-                    tabuTenure.remove(oldestMove);
-                }
-
-                // Update best solution
+                // Update best solution if improved
                 boolean currFeasible = currSolution.isFeasible(environment);
                 boolean bestFeasible = bestSolution.isFeasible(environment);
                 if ((currFeasible && !bestFeasible) ||
@@ -128,18 +113,21 @@ public class Algorithm {
                     noImprovementCount++;
                 }
             } else {
-                noImprovementCount++;
+                // No improvement found, stop (hill climbing terminates at local optimum)
+                if (SimulationProperties.isDebug) {
+                    System.out.println("No improving neighbor found, terminating hill climbing at iteration " + iterations);
+                }
+                break;
             }
 
             if (SimulationProperties.isDebug && iterations % 100 == 0) {
                 System.out.println("--------------------------------");
-                System.out.println("Iteration " + iterations + 
-                        ": Current fitness: " + String.format("%.4f", currFitness) + 
-                        ", Best fitness: " + String.format("%.4f", bestFitness) + 
+                System.out.println("Iteration " + iterations +
+                        ": Current fitness: " + String.format("%.4f", currFitness) +
+                        ", Best fitness: " + String.format("%.4f", bestFitness) +
                         ", currSolution Feasible: " + currSolution.isFeasible(environment) +
                         ", bestSolution Feasible: " + bestSolution.isFeasible(environment) +
-                        ", No improvement: " + noImprovementCount +
-                        ", Tabu size: " + tabuList.size());
+                        ", No improvement: " + noImprovementCount);
             }
 
             iterations++;

@@ -10,6 +10,24 @@ import entities.PlannerBlockage;
 public class PathBuilder {
     private static final double EPSILON = 1e-6;
 
+    // Static cache key for positions and blockages
+    private static class CacheKey {
+        final List<Position> positions;
+        final List<PlannerBlockage> blockages;
+        final int hash;
+        CacheKey(List<Position> positions, List<PlannerBlockage> blockages) {
+            this.positions = positions;
+            this.blockages = blockages;
+            this.hash = positions.hashCode() * 31 + blockages.hashCode();
+        }
+        @Override public boolean equals(Object o) {
+            if (!(o instanceof CacheKey)) return false;
+            CacheKey other = (CacheKey) o;
+            return positions.equals(other.positions) && blockages.equals(other.blockages);
+        }
+        @Override public int hashCode() { return hash; }
+    }
+
     // Returns null if no path is found, empty list if from == to, otherwise returns the path
     public static List<Position> buildPath(Position from, Position to, List<PlannerBlockage> blockages) {
         // Check if either point is inside a blockage (not at endpoints)
@@ -132,25 +150,46 @@ public class PathBuilder {
     }
 
     public static Map<Position, Map<Position, Double>> generateDistances(List<Position> positions, List<PlannerBlockage> blockages) {
+        // --- Optimization: static cache for (positions, blockages) ---
+        // Only works if blockages are static and positions are the same objects each time
+        // For now, use a simple cache key based on hashCodes
+        CacheKey key = new CacheKey(positions, blockages);
+        if (StaticCacheHolder.cache.containsKey(key)) {
+            return StaticCacheHolder.cache.get(key);
+        }
+
         Map<Position, Map<Position, Double>> distances = new HashMap<>();
         for (Position position : positions) {
             distances.put(position, new HashMap<>());
         }
 
-        for (int i = 0; i < positions.size(); i++) {
+        boolean noBlockages = (blockages == null || blockages.isEmpty());
+        // Parallelize the outer loop
+        java.util.stream.IntStream.range(0, positions.size()).parallel().forEach(i -> {
             Position position = positions.get(i);
             for (int j = i + 1; j < positions.size(); j++) {
                 Position other = positions.get(j);
-                List<Position> path = buildPath(position, other, blockages);
-                double distance = (path != null) ? calculateDistance(path) : Double.POSITIVE_INFINITY;
-                
-                // Store distance in both directions since it's symmetric
-                distances.get(position).put(other, distance);
-                distances.get(other).put(position, distance);
+                double distance;
+                if (noBlockages) {
+                    // Fast path: Manhattan distance
+                    distance = Math.abs(position.x - other.x) + Math.abs(position.y - other.y);
+                } else {
+                    List<Position> path = buildPath(position, other, blockages);
+                    distance = (path != null) ? calculateDistance(path) : Double.POSITIVE_INFINITY;
+                }
+                synchronized (distances) {
+                    distances.get(position).put(other, distance);
+                    distances.get(other).put(position, distance);
+                }
             }
-        }
-
+        });
+        StaticCacheHolder.cache.put(key, distances);
         return distances;
+    }
+
+    // Static holder for cache
+    private static class StaticCacheHolder {
+        static final Map<CacheKey, Map<Position, Map<Position, Double>>> cache = new java.util.concurrent.ConcurrentHashMap<>();
     }
 
     private static boolean isPathBlocked(Position from, Position to, List<PlannerBlockage> blockages) {
