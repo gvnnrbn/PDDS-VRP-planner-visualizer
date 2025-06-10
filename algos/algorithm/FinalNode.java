@@ -1,6 +1,7 @@
-package domain;
+package algorithm;
 
-// Intended for the empty node at the end of the route
+import utils.Position;
+
 public class FinalNode extends Node {
     public Position position;
 

@@ -1,4 +1,6 @@
-package domain;
+package algorithm;
+
+import utils.Position;
 
 public class EmptyNode extends Node {
     public Position position;
@@ -23,3 +25,4 @@ public class EmptyNode extends Node {
         return position;
     }
 }
+

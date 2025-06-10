@@ -1,12 +1,19 @@
 package utils;
 
-// TODO: month handling is incorrect, it doesn't matter, just use days
-public class Time implements Comparable<Time> {
+public class Time implements Comparable<Time>, Cloneable {
     private int year;
     private int month;
     private int day;
     private int hour;
     private int min;
+
+    public Time(Time other) {   
+        this.year = other.year;
+        this.month = other.month;
+        this.day = other.day;
+        this.hour = other.hour;
+        this.min = other.min;
+    }
 
     public Time(int year,int month, int day, int hour, int min) {
         this.year = year;
@@ -14,6 +21,26 @@ public class Time implements Comparable<Time> {
         this.day = day;
         this.hour = hour;
         this.min = min;
+    }
+
+    public int getYear() {
+        return year;
+    }
+
+    public int getMonth() {
+        return month;
+    }
+
+    public int getDay() {
+        return day;
+    }
+
+    public int getHour() {
+        return hour;
+    }
+
+    public int getMinute() {
+        return min;
     }
 
     @Override
@@ -49,6 +76,10 @@ public class Time implements Comparable<Time> {
 
     public boolean isAfter(Time other) {
         return other.isBefore(this);
+    }
+
+    public boolean isAfterOrAt(Time other) {
+        return other.isBeforeOrAt(this);
     }
 
     public Time addMinutes(int minutes) {
@@ -113,12 +144,9 @@ public class Time implements Comparable<Time> {
     }
 
     public int minutesSince(Time other) {
-        return -other.minutesUntil(this);
+        return -this.minutesUntil(other);
     }
 
-    public int getHour() {
-        return this.hour;
-    }
     public Time copy() {
         return new Time(this.year, this.month, this.day, this.hour, this.min);
     }
@@ -151,5 +179,15 @@ public class Time implements Comparable<Time> {
 
     public boolean isSameDate(Time other) {
         return this.year == other.year && this.month == other.month && this.day == other.day;
+    }
+
+    @Override
+    public Time clone() {
+        try {
+            Time clone = (Time) super.clone();
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError(); // Can never happen
+        }
     }
 }

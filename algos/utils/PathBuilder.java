@@ -2,221 +2,383 @@ package utils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Set;
 
-import domain.Blockage;
-import domain.Position;
+import entities.PlannerBlockage;
 
 public class PathBuilder {
-    public static List<Position> buildPath(Position from, Position to, List<Blockage> blockages, 
-                                         int gridLength, int gridWidth) {
+    private static final double EPSILON = 1e-6;
+
+    // Static cache key for positions and blockages
+    private static class CacheKey {
+        final List<Position> positions;
+        final List<PlannerBlockage> blockages;
+        final int hash;
+        CacheKey(List<Position> positions, List<PlannerBlockage> blockages) {
+            this.positions = positions;
+            this.blockages = blockages;
+            this.hash = positions.hashCode() * 31 + blockages.hashCode();
+        }
+        @Override public boolean equals(Object o) {
+            if (!(o instanceof CacheKey)) return false;
+            CacheKey other = (CacheKey) o;
+            return positions.equals(other.positions) && blockages.equals(other.blockages);
+        }
+        @Override public int hashCode() { return hash; }
+    }
+
+    // Returns null if no path is found, empty list if from == to, otherwise returns the path
+    public static List<Position> buildPath(Position from, Position to, List<PlannerBlockage> blockages) {
+        // Check if either point is inside a blockage (not at endpoints)
+        if (isInsideBlockage(from, blockages) || isInsideBlockage(to, blockages)) {
+            return null;
+        }
+
+        if (from.equals(to)) {
+            return new ArrayList<>();
+        }
+
         List<Position> path = new ArrayList<>();
+        Position fromPos = from;
+        Position toPos = to;
 
-        if (from.x() == to.x() && from.y() == to.y()) {
-            return path;
+        // Handle non-integer start position
+        if (!from.isInteger()) {
+            Position roundedFrom = from.round();
+            // Check if direct path to rounded position is blocked
+            if (isPathBlocked(from, roundedFrom, blockages)) {
+                return null;
+            }
+            path.add(from);
+            fromPos = roundedFrom;
         }
 
-        Position adjustedFrom = new Position(Math.floor(from.x()), Math.floor(from.y()));
-        Position adjustedTo = new Position(Math.ceil(to.x()), Math.ceil(to.y()));
-
-        if (isManhattanAvailable(adjustedFrom, adjustedTo, gridLength, gridWidth)) {
-            path = buildManhattanPath(adjustedFrom, adjustedTo, blockages, gridLength, gridWidth);
-        } else {
-            path = buildAstarPath(adjustedFrom, adjustedTo, blockages, gridLength, gridWidth);
+        // Handle non-integer end position
+        if (!to.isInteger()) {
+            Position roundedTo = to.round();
+            // Check if direct path from rounded position is blocked
+            if (isPathBlocked(roundedTo, to, blockages)) {
+                return null;
+            }
+            toPos = roundedTo;
         }
 
-        if (from.x() != adjustedFrom.x() || from.y() != adjustedFrom.y()) {
-            path.addFirst(from);
+        // Try Manhattan path first with integer positions
+        List<Position> mainPath = buildManhattanPath(fromPos, toPos, blockages);
+        if (mainPath != null) {
+            // Verify the path doesn't cross any blockages
+            if (isPathValid(mainPath, blockages)) {
+                path.addAll(mainPath);
+                // Add final non-integer position if needed
+                if (!to.isInteger()) {
+                    path.add(to);
+                }
+                return compressPath(path);
+            }
         }
 
-        if (to.x() != adjustedTo.x() || to.y() != adjustedTo.y()) {
-            path.addLast(to);
+        // Try A* as a fallback with integer positions
+        mainPath = buildAstarPath(fromPos, toPos, blockages);
+        if (mainPath != null) {
+            // Verify the path doesn't cross any blockages
+            if (isPathValid(mainPath, blockages)) {
+                path.addAll(mainPath);
+                // Add final non-integer position if needed
+                if (!to.isInteger()) {
+                    path.add(to);
+                }
+                return compressPath(path);
+            }
         }
 
-        return path;
+        return null;
+    }
+
+    private static boolean isPathValid(List<Position> path, List<PlannerBlockage> blockages) {
+        if (path == null || path.size() < 2) return true;
+        
+        // Check each segment of the path
+        for (int i = 0; i < path.size() - 1; i++) {
+            Position current = path.get(i);
+            Position next = path.get(i + 1);
+            
+            // Check if this segment is blocked
+            if (isPathBlocked(current, next, blockages)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isInsideBlockage(Position pos, List<PlannerBlockage> blockages) {
+        for (PlannerBlockage blockage : blockages) {
+            for (int i = 0; i < blockage.vertices.size() - 1; i++) {
+                Position v1 = blockage.vertices.get(i);
+                Position v2 = blockage.vertices.get(i + 1);
+                
+                // Check if the point lies on the blockage line (but not at endpoints)
+                if (isPointOnLine(pos, v1, v2) && !isPointEqual(pos, v1) && !isPointEqual(pos, v2)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean isPointEqual(Position p1, Position p2) {
+        return Math.abs(p1.x - p2.x) < EPSILON && Math.abs(p1.y - p2.y) < EPSILON;
     }
 
     public static double calculateDistance(List<Position> path) {
+        if (path == null) {
+            return Double.POSITIVE_INFINITY;
+        }
+
+        if (path.isEmpty()) {
+            return 0;
+        }
+
         double distance = 0;
+        // Assume each path fragment is colinear
         for (int i = 0; i < path.size() - 1; i++) {
-            distance += Math.abs(path.get(i).x() - path.get(i + 1).x()) + Math.abs(path.get(i).y() - path.get(i + 1).y());
+            Position current = path.get(i);
+            Position next = path.get(i + 1);
+            distance += Math.abs(current.x - next.x) + Math.abs(current.y - next.y);
         }
         return distance;
     }
 
-    public static Map<Position, Map<Position, Double>> generateDistances(List<Position> positions, List<Blockage> blockages, int gridLength, int gridWidth) {
-        Map<Position, Map<Position, Double>> distances = new HashMap<>();
-
-        Set<Position> uniquePositions = new HashSet<>();
-        for (Position position : positions) {
-            uniquePositions.add(position);
+    public static Map<Position, Map<Position, Double>> generateDistances(List<Position> positions, List<PlannerBlockage> blockages) {
+        // --- Optimization: static cache for (positions, blockages) ---
+        // Only works if blockages are static and positions are the same objects each time
+        // For now, use a simple cache key based on hashCodes
+        CacheKey key = new CacheKey(positions, blockages);
+        if (StaticCacheHolder.cache.containsKey(key)) {
+            return StaticCacheHolder.cache.get(key);
         }
-        positions.addAll(uniquePositions);
 
+        Map<Position, Map<Position, Double>> distances = new HashMap<>();
         for (Position position : positions) {
             distances.put(position, new HashMap<>());
-            distances.get(position).put(position, 0.0);
         }
 
-        for (int i = 0; i < positions.size(); i++) {
+        boolean noBlockages = (blockages == null || blockages.isEmpty());
+        // Parallelize the outer loop
+        java.util.stream.IntStream.range(0, positions.size()).parallel().forEach(i -> {
             Position position = positions.get(i);
             for (int j = i + 1; j < positions.size(); j++) {
-                Position otherPosition = positions.get(j);
-
-                List<Position> path = buildPath(position, otherPosition, blockages, gridLength, gridWidth);
-                double distance = calculateDistance(path);
-
-                // Set distance in both directions
-                distances.get(position).put(otherPosition, distance);
-                distances.get(otherPosition).put(position, distance);
+                Position other = positions.get(j);
+                double distance;
+                if (noBlockages) {
+                    // Fast path: Manhattan distance
+                    distance = Math.abs(position.x - other.x) + Math.abs(position.y - other.y);
+                } else {
+                    List<Position> path = buildPath(position, other, blockages);
+                    distance = (path != null) ? calculateDistance(path) : Double.POSITIVE_INFINITY;
+                }
+                synchronized (distances) {
+                    distances.get(position).put(other, distance);
+                    distances.get(other).put(position, distance);
+                }
             }
-        }
-
+        });
+        StaticCacheHolder.cache.put(key, distances);
         return distances;
     }
 
-    private static double calculateManhattanDistance(Position a, Position b) {
-        return Math.abs(a.x() - b.x()) + Math.abs(a.y() - b.y());
+    // Static holder for cache
+    private static class StaticCacheHolder {
+        static final Map<CacheKey, Map<Position, Map<Position, Double>>> cache = new java.util.concurrent.ConcurrentHashMap<>();
     }
 
-    private static boolean isManhattanAvailable(Position from, Position to, int gridLength, int gridWidth) {
-        double distance = calculateManhattanDistance(from, to);
-        return distance <= gridLength && distance <= gridWidth;
-    }
-
-    private static boolean isPathBlocked(Position from, Position to, List<Blockage> blockages) {
-        if (blockages == null || blockages.isEmpty()) {
+    private static boolean isPathBlocked(Position from, Position to, List<PlannerBlockage> blockages) {
+        if (from.equals(to)) {
             return false;
         }
-        for (Blockage blockage : blockages) {
-            if (blockage != null && blockage.blocksRoute(from, to)) {
+
+        // First check if either point is on a vertex
+        for (PlannerBlockage blockage : blockages) {
+            List<Position> vertices = blockage.vertices;
+            if (vertices.size() < 2) continue;
+            
+            boolean fromOnVertex = false;
+            boolean toOnVertex = false;
+            Position fromVertex = null;
+            Position toVertex = null;
+            
+            for (Position vertex : vertices) {
+                if (isPointEqual(from, vertex)) {
+                    fromOnVertex = true;
+                    fromVertex = vertex;
+                }
+                if (isPointEqual(to, vertex)) {
+                    toOnVertex = true;
+                    toVertex = vertex;
+                }
+            }
+            
+            // If both points are on vertices of the same blockage
+            if (fromOnVertex && toOnVertex) {
+                // Check if these vertices are connected by a blockage line
+                for (int i = 0; i < vertices.size() - 1; i++) {
+                    Position v1 = vertices.get(i);
+                    Position v2 = vertices.get(i + 1);
+                    if ((isPointEqual(fromVertex, v1) && isPointEqual(toVertex, v2)) ||
+                        (isPointEqual(fromVertex, v2) && isPointEqual(toVertex, v1))) {
+                        return true; // Movement along blockage line between vertices
+                    }
+                }
+            }
+            
+            // If one point is on a vertex, check if the movement is along a blockage line
+            if (fromOnVertex || toOnVertex) {
+                for (int i = 0; i < vertices.size() - 1; i++) {
+                    Position v1 = vertices.get(i);
+                    Position v2 = vertices.get(i + 1);
+                    if (isPointOnLine(from, v1, v2) && isPointOnLine(to, v1, v2)) {
+                        return true; // Moving along the blockage line
+                    }
+                }
+            }
+        }
+
+        // Check if any point along the path is inside a blockage
+        if (Math.abs(from.x - to.x) < EPSILON) {
+            // Vertical movement
+            double minY = Math.min(from.y, to.y);
+            double maxY = Math.max(from.y, to.y);
+            for (double y = minY; y <= maxY; y += 1.0) {
+                Position pos = new Position(from.x, y);
+                if (isInsideBlockage(pos, blockages)) {
+                    return true;
+                }
+            }
+        } else if (Math.abs(from.y - to.y) < EPSILON) {
+            // Horizontal movement
+            double minX = Math.min(from.x, to.x);
+            double maxX = Math.max(from.x, to.x);
+            for (double x = minX; x <= maxX; x += 1.0) {
+                Position pos = new Position(x, from.y);
+                if (isInsideBlockage(pos, blockages)) {
+                    return true;
+                }
+            }
+        }
+
+        // Check if the path crosses or moves along any blockage
+        for (PlannerBlockage blockage : blockages) {
+            if (blockage.blocksRoute(from, to)) {
                 return true;
             }
         }
         return false;
     }
 
-    private static List<Position> buildManhattanPath(Position from, Position to, List<Blockage> blockages, int gridLength, int gridWidth) {
+    private static boolean isPointOnLine(Position p, Position lineStart, Position lineEnd) {
+        // Check if point p lies on the line segment between lineStart and lineEnd
+        if (Math.abs(lineStart.x - lineEnd.x) < EPSILON) {
+            // Vertical line
+            return Math.abs(p.x - lineStart.x) < EPSILON &&
+                   p.y >= Math.min(lineStart.y, lineEnd.y) - EPSILON &&
+                   p.y <= Math.max(lineStart.y, lineEnd.y) + EPSILON;
+        } else {
+            // Horizontal line
+            return Math.abs(p.y - lineStart.y) < EPSILON &&
+                   p.x >= Math.min(lineStart.x, lineEnd.x) - EPSILON &&
+                   p.x <= Math.max(lineStart.x, lineEnd.x) + EPSILON;
+        }
+    }
+
+    // Convention is that empty is for from = to, null is for no possible path
+    private static List<Position> buildManhattanPath(Position from, Position to, List<PlannerBlockage> blockages) {
+        if (from.equals(to)) {
+            return new ArrayList<>();
+        }
+
+        // Check if points are within grid boundaries
+        if (!isWithinBounds(from) || !isWithinBounds(to)) {
+            return null;
+        }
+
         List<Position> path = new ArrayList<>();
         path.add(from);
-        
-        // First try: Move horizontally then vertically
-        Position horizontalThenVertical = new Position(to.x(), from.y());
-        if (!isPathBlocked(from, horizontalThenVertical, blockages) && 
-            !isPathBlocked(horizontalThenVertical, to, blockages)) {
-            if (!from.equals(horizontalThenVertical)) {
-                path.add(horizontalThenVertical);
-            }
-            path.add(to);
-            return path;
-        }
-        
-        // Second try: Move vertically then horizontally
-        Position verticalThenHorizontal = new Position(from.x(), to.y());
-        if (!isPathBlocked(from, verticalThenHorizontal, blockages) && 
-            !isPathBlocked(verticalThenHorizontal, to, blockages)) {
-            if (!from.equals(verticalThenHorizontal)) {
-                path.add(verticalThenHorizontal);
-            }
+
+        // Try first L-shape: Move in Y direction first, then X
+        Position pivot1 = new Position(from.x, to.y);
+        if (isWithinBounds(pivot1) && !isPathBlocked(from, pivot1, blockages) && !isPathBlocked(pivot1, to, blockages)) {
+            path.add(pivot1);
             path.add(to);
             return path;
         }
 
-        return new ArrayList<>();
-    }
-
-    private static class AstarNode implements Comparable<AstarNode> {
-        final Position position;
-        final double f; // f = g + h (total cost)
-        @SuppressWarnings("unused") // g is used in the compareTo method
-        final double g; // cost from start to current node
-
-        AstarNode(Position position, double g, double h) {
-            this.position = position;
-            this.g = g;
-            this.f = g + h;
+        // Try second L-shape: Move in X direction first, then Y
+        path.clear();
+        path.add(from);
+        Position pivot2 = new Position(to.x, from.y);
+        if (isWithinBounds(pivot2) && !isPathBlocked(from, pivot2, blockages) && !isPathBlocked(pivot2, to, blockages)) {
+            path.add(pivot2);
+            path.add(to);
+            return path;
         }
 
-        @Override
-        public int compareTo(AstarNode other) {
-            return Double.compare(this.f, other.f);
-        }
+        return null;
     }
 
-    private static List<Position> getAstarNeighbors(Position pos, int gridLength, int gridWidth) {
-        List<Position> neighbors = new ArrayList<>();
-        int[][] directions = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}}; // up, right, down, left
-        
-        for (int[] dir : directions) {
-            int newX = (int)pos.x() + dir[0];
-            int newY = (int)pos.y() + dir[1];
-            
-            // Check if the new position is within grid boundaries
-            if (newX >= 0 && newX < gridLength && newY >= 0 && newY < gridWidth) {
-                neighbors.add(new Position(newX, newY));
-            }
-        }
-        
-        return neighbors;
+    private static boolean isWithinBounds(Position pos) {
+        return pos.x >= 0 && pos.x <= SimulationProperties.gridLength &&
+               pos.y >= 0 && pos.y <= SimulationProperties.gridWidth;
     }
 
-    private static List<Position> reconstructPath(Map<Position, Position> cameFrom, Position current) {
-        List<Position> path = new ArrayList<>();
-        path.add(current);
-        
-        while (cameFrom.containsKey(current)) {
-            current = cameFrom.get(current);
-            path.add(0, current); // Add to beginning to maintain order
-        }
-        
-        return path;
+    // Convention is that empty is for from = to, null is for no possible path
+    private static List<Position> buildAstarPath(Position from, Position to, List<PlannerBlockage> blockages) {
+        return AStarPathfinder.findPath(from, to, blockages);
     }
 
-    private static List<Position> buildAstarPath(Position from, Position to, List<Blockage> blockages, int gridLength, int gridWidth) {
-        // Priority queue for open nodes, sorted by f-score (g + h)
-        PriorityQueue<AstarNode> openSet = new PriorityQueue<>();
-        // Set to track visited nodes
-        Set<Position> closedSet = new HashSet<>();
-        // Map to store g-scores (cost from start to current)
-        Map<Position, Double> gScore = new HashMap<>();
-        // Map to store parent nodes for path reconstruction
-        Map<Position, Position> cameFrom = new HashMap<>();
+    private static List<Position> compressPath(List<Position> path) {
+        if (path.size() < 3) {
+            return path;
+        }
 
-        // Initialize g-score for start position
-        gScore.put(from, 0.0);
-        openSet.add(new AstarNode(from, 0.0, calculateManhattanDistance(from, to)));
+        List<Position> compressedPath = new ArrayList<>();
+        compressedPath.add(path.get(0));
 
-        while (!openSet.isEmpty()) {
-            AstarNode current = openSet.poll();
+        Position prev = path.get(0);
+        Position current;
+        Position next;
 
-            if (current.position.equals(to)) {
-                return reconstructPath(cameFrom, to);
+        for (int i = 1; i < path.size() - 1; i++) {
+            current = path.get(i);
+            next = path.get(i + 1);
+
+            // Skip if current point is same as previous or next point
+            if (Math.abs(current.x - prev.x) < EPSILON && Math.abs(current.y - prev.y) < EPSILON ||
+                Math.abs(current.x - next.x) < EPSILON && Math.abs(current.y - next.y) < EPSILON) {
+                continue;
             }
 
-            closedSet.add(current.position);
+            // Check if current point represents a direction change
+            boolean isDirectionChange = 
+                !((Math.abs((current.x - prev.x) - (next.x - current.x)) < EPSILON && 
+                   Math.abs((current.y - prev.y) - (next.y - current.y)) < EPSILON) || // Same direction
+                  (Math.abs(current.x - prev.x) < EPSILON && Math.abs(current.x - next.x) < EPSILON) || // Vertical line
+                  (Math.abs(current.y - prev.y) < EPSILON && Math.abs(current.y - next.y) < EPSILON));  // Horizontal line
 
-            // Generate neighbors (up, down, left, right)
-            for (Position neighbor : getAstarNeighbors(current.position, gridLength, gridWidth)) {
-                if (closedSet.contains(neighbor) || isPathBlocked(current.position, neighbor, blockages)) {
-                    continue;
-                }
-
-                // Calculate tentative g-score (each move costs 1)
-                double tentativeGScore = gScore.get(current.position) + 1.0;
-
-                if (!gScore.containsKey(neighbor) || tentativeGScore < gScore.get(neighbor)) {
-                    cameFrom.put(neighbor, current.position);
-                    gScore.put(neighbor, tentativeGScore);
-                    double hScore = calculateManhattanDistance(neighbor, to);
-                    openSet.add(new AstarNode(neighbor, tentativeGScore, hScore));
-                }
+            if (isDirectionChange) {
+                compressedPath.add(current);
+                prev = current;
             }
         }
 
-        return new ArrayList<>();
+        Position lastPoint = path.get(path.size() - 1);
+        Position lastCompressed = compressedPath.get(compressedPath.size() - 1);
+        
+        // Only add last point if it's different from the last compressed point
+        if (Math.abs(lastPoint.x - lastCompressed.x) > EPSILON || 
+            Math.abs(lastPoint.y - lastCompressed.y) > EPSILON) {
+            compressedPath.add(lastPoint);
+        }
+
+        return compressedPath;
     }
 }
