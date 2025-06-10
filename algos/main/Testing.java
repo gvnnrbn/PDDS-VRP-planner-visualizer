@@ -208,7 +208,9 @@ public class Testing {
             List<PlannerVehicle> activeVehicles = getActiveVehicles(vehicles, currTime);
 
             Environment environment = new Environment(activeVehicles, activeOrders, warehouses, activeBlockages, failures, activeMaintenances, currTime, minutesToSimulate);
-            System.out.println("Planning interval " + i + " started at " + currTime + " with " + activeVehicles.size() + " vehicles and " + activeOrders.size() + " orders");
+            if (SimulationProperties.isDebug) {
+                System.out.println("Planning interval " + i + " started at " + currTime + " with " + activeVehicles.size() + " vehicles and " + activeOrders.size() + " orders");
+            }
             Solution sol = Algorithm.run(environment, minutesToSimulate);
             System.out.println(sol.getReport());
 
@@ -224,7 +226,9 @@ public class Testing {
             }
 
             for (int iteration = 0; iteration < minutesToSimulate; iteration++) {
-                System.out.println("--- Time: " + currTime + " ---");
+                if (SimulationProperties.isDebug) {
+                    System.out.println("--- Time: " + currTime + " ---");
+                }
 
                 for (PlannerVehicle plannerVehicle : activeVehicles) {
                     if (plannerVehicle.state == PlannerVehicle.VehicleState.FINISHED) {
@@ -245,12 +249,16 @@ public class Testing {
                             continue;
                         }
                         // Has arrived at location
-                        System.out.println("Vehicle " + plannerVehicle.id + " has arrived at location of node " + nextNode);
+                        if (SimulationProperties.isDebug) {
+                            System.out.println("Vehicle " + plannerVehicle.id + " has arrived at location of node " + nextNode);
+                        }
                         plannerVehicle.processNode(nextNode, plannerVehicle, activeOrders, warehouses, currTime);
 
                         if (plannerVehicle.nextNodeIndex == route.size() - 1) {
                             // Just processed the FinalNode
-                            System.out.println("HAS REACHED FINAL NODE (base)");
+                            if (SimulationProperties.isDebug) {
+                                System.out.println("HAS REACHED FINAL NODE (base)");
+                            }
                             plannerVehicle.state = PlannerVehicle.VehicleState.FINISHED;
                             plannerVehicle.nextNodeIndex++; // Optional: move index past end
                             continue;
@@ -259,7 +267,9 @@ public class Testing {
                         // No need to build path here; will do so on next iteration if needed
                     } else {
                         if (plannerVehicle.waitTransition > 0) {
-                            System.out.println("Vehicle " + plannerVehicle.id + " is waiting for " + plannerVehicle.waitTransition + " minutes");
+                            if (SimulationProperties.isDebug) {
+                                System.out.println("Vehicle " + plannerVehicle.id + " is waiting for " + plannerVehicle.waitTransition + " minutes");
+                            }
                             plannerVehicle.waitTransition--;
                         } else {
                             // System.out.println("Vehicle " + plannerVehicle.id + " is advancing path");
@@ -283,12 +293,14 @@ public class Testing {
                         }
                     }
                 }
-                // draw(activeVehicles, activeBlockages, deliveryNodes, refillNodes, currTime.toString());
-                // try {
-                //     Thread.sleep();
-                // } catch (InterruptedException e) {
-                //     Thread.currentThread().interrupt();
-                // }
+                if (SimulationProperties.isDebug) {
+                    draw(activeVehicles, activeBlockages, deliveryNodes, refillNodes, currTime.toString());
+                    try {
+                        Thread.sleep(SimulationProperties.timeUnitMs);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
                 currTime = currTime.addMinutes(1);
             }
         }

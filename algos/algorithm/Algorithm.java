@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import utils.SimulationProperties;
+
 public class Algorithm {
     // Hyperparameters
     private static int maxTimeMs = 20 * 1000;
@@ -13,8 +15,6 @@ public class Algorithm {
     private static int maxNoImprovementFeasible = 500; 
     private static int tabuListSize = 2000;
     private static double aspirationCriteria = 0.01; // 5% improvement over best solution
-
-    private static final boolean isDebug = false;
 
     public Algorithm() {
     }
@@ -69,13 +69,13 @@ public class Algorithm {
             
             // Check termination conditions
             if (isFeasible && noImprovementCount >= maxNoImprovementFeasible) {
-                if (isDebug) {
+                if (SimulationProperties.isDebug) {
                     System.out.println("\nBreaking: No improvement for " + noImprovementCount + " iterations while solution is feasible");
                 }
                 break;
             }
             if (!isFeasible && noImprovementCount >= maxNoImprovement) {
-                if (isDebug) {
+                if (SimulationProperties.isDebug) {
                     System.out.println("\nBreaking: No improvement for " + noImprovementCount + " iterations while solution is not feasible");
                 }
                 break;
@@ -131,7 +131,7 @@ public class Algorithm {
                 noImprovementCount++;
             }
 
-            if (isDebug && iterations % 100 == 0) {
+            if (SimulationProperties.isDebug && iterations % 100 == 0) {
                 System.out.println("--------------------------------");
                 System.out.println("Iteration " + iterations + 
                         ": Current fitness: " + String.format("%.4f", currFitness) + 
