@@ -9,7 +9,7 @@ public class SimulationProperties {
     public static int gridWidth = 50; // km, grid unit
 
     public static int timeUnitMs = 100; // milliseconds
-    public static int minutesToSimulate = 30; // minutes
+    public static int minutesToSimulate = 60; // minutes
 
-    public static boolean isDebug = false;
+    public static boolean isDebug = true;
 }

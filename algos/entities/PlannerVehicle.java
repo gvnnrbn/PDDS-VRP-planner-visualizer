@@ -29,6 +29,7 @@ public class PlannerVehicle implements Cloneable {
     public Position initialPosition;
     public PlannerFailure failure;
     public int minutesUntilFailure;
+    public Time reincorporationTime;
     
     // Path and node information
     public List<Position> currentPath;
@@ -182,6 +183,7 @@ public class PlannerVehicle implements Cloneable {
         IDLE("no routes planned, AVAILABLE"),
         ONTHEWAY("has routes planned, AVAILABLE"),
         STUCK("failure occurred, AVAILABLE AS WAREHOUSE"),
+        RETURNING_TO_BASE("heading to base, NOT AVAILABLE"),
         REPAIR("inside main warehouse, NOT AVAILABLE until x shift according to failure type"),
         MAINTENANCE("heading to or in maintenance, NOT AVAILABLE until 23:59"),
         FINISHED("finished route for this planning interval");
@@ -203,6 +205,6 @@ public class PlannerVehicle implements Cloneable {
     }
 
     public boolean isActive(Time currentTime) {
-        return state != VehicleState.MAINTENANCE && state != VehicleState.REPAIR && state != VehicleState.STUCK;
+        return this.state == VehicleState.IDLE || this.state == VehicleState.FINISHED || this.state == VehicleState.ONTHEWAY;
     }
 }

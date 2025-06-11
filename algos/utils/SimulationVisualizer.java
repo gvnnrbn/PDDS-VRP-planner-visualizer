@@ -145,8 +145,8 @@ public class SimulationVisualizer {
             // Draw vehicle paths and positions
             if (vehicles != null) {
                 for (PlannerVehicle v : vehicles) {
-                    // Draw path
-                    if (v.currentPath != null && v.currentPath.size() > 1) {
+                    // Draw path only if vehicle is not STUCK
+                    if (v.currentPath != null && v.currentPath.size() > 1 && v.state != PlannerVehicle.VehicleState.STUCK) {
                         g2d.setColor(new Color(0, 180, 0, 180));
                         g2d.setStroke(new BasicStroke(2));
                         for (int i = 0; i < v.currentPath.size() - 1; i++) {
@@ -198,7 +198,7 @@ public class SimulationVisualizer {
                 visFrame.setVisible(true); 
             }
             List<PlannerBlockage> activeBlockages = blockages.stream()
-                .filter(blockage -> blockage.isActive(currentTime))
+                .filter(blockage -> blockage.isActive(currentTime, currentTime.addMinutes(SimulationProperties.minutesToSimulate)))
                 .collect(Collectors.toList());
             visPanel.warehouses = DataParser.parseWarehouses("main/warehouses.csv");
             visPanel.updateState(vehicles, activeBlockages, deliveryNodes, refillNodes, currentTime.toString());

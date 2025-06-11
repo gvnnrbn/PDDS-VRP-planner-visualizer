@@ -27,7 +27,7 @@ import utils.DataExporter;
 public class Testing {
     private static List<PlannerBlockage> getActiveBlockages(List<PlannerBlockage> blockages, Time time) {
         return blockages.stream()
-            .filter(blockage -> blockage.isActive(time))
+            .filter(blockage -> blockage.isActive(time, time.addMinutes(SimulationProperties.minutesToSimulate)))
             .collect(Collectors.toList());
     }
 
@@ -49,8 +49,8 @@ public class Testing {
             .collect(Collectors.toList());
     }
 
-    private static void debugPrint(String message, Time currentTime) {
-        if (SimulationProperties.isDebug) {
+    private static void debugPrint(String message, Time currentTime, boolean outsideDebug) {
+        if (SimulationProperties.isDebug || outsideDebug) {
             if (currentTime != null) {
                 System.out.println(currentTime + " | " + message);
             } else {
@@ -77,9 +77,9 @@ public class Testing {
             List<PlannerVehicle> activeVehicles = getActiveVehicles(vehicles, currTime);
 
             Environment environment = new Environment(activeVehicles, activeOrders, warehouses, activeBlockages, failures, activeMaintenances, currTime, SimulationProperties.minutesToSimulate);
-            debugPrint("Planning interval " + i + " started at " + currTime + " with " + activeVehicles.size() + " vehicles and " + activeOrders.size() + " orders", currTime);
+            debugPrint("Planning interval " + i + " started at " + currTime + " with " + activeVehicles.size() + " vehicles and " + activeOrders.size() + " orders", currTime, true);
             Solution sol = Algorithm.run(environment, SimulationProperties.minutesToSimulate);
-            debugPrint(sol.getReport(), currTime);
+            debugPrint(sol.getReport(), currTime, false);
 
             if (!sol.isFeasible(environment)) {
                 throw new RuntimeException("Solution is not feasible");
@@ -97,21 +97,21 @@ public class Testing {
             minuteData.vehicles.addAll(activeVehicles.stream().map(vehicle -> new DataChunk.VehicleData(vehicle.plaque, vehicle.position.clone(), vehicle.state)).collect(Collectors.toList()));
 
             for (int iteration = 0; iteration < SimulationProperties.minutesToSimulate; iteration++) {
-                debugPrint("--- Time: " + currTime + " ---", currTime);
+                debugPrint("--- Time: " + currTime + " ---", currTime, false);
 
                 for (PlannerVehicle plannerVehicle : vehicles) {
                     // If vehicle should pass to maintenance
                     if (plannerVehicle.state != PlannerVehicle.VehicleState.MAINTENANCE && activeMaintenances.stream().anyMatch(maintenance -> maintenance.vehiclePlaque.equals(plannerVehicle.plaque))) {
                         plannerVehicle.state = PlannerVehicle.VehicleState.MAINTENANCE;
                         plannerVehicle.currentMaintenance = activeMaintenances.stream().filter(maintenance -> maintenance.vehiclePlaque.equals(plannerVehicle.plaque)).findFirst().get();
-                        debugPrint("Vehicle " + plannerVehicle.id + " is going into maintenance: " + plannerVehicle.currentMaintenance, currTime);
+                        debugPrint("Vehicle " + plannerVehicle.id + " is going into maintenance: " + plannerVehicle.currentMaintenance, currTime, false);
                     } 
                     
                     // If vehicle should leave maintenance
                     if (plannerVehicle.state == PlannerVehicle.VehicleState.MAINTENANCE && plannerVehicle.currentMaintenance.endDate.isBefore(currTime)) {
                         plannerVehicle.state = PlannerVehicle.VehicleState.IDLE;
                         plannerVehicle.currentMaintenance = null;
-                        debugPrint("Vehicle " + plannerVehicle.id + " is leaving maintenance", currTime);
+                        debugPrint("Vehicle " + plannerVehicle.id + " is leaving maintenance", currTime, false);
                     }
 
                     // If vehicle should schedule a failure
@@ -135,7 +135,7 @@ public class Testing {
                             if (distance > 0) {
                                 plannerVehicle.minutesUntilFailure = distance;
                                 plannerVehicle.currentFailure = matchingFailure;
-                                debugPrint("Assigned failure to happen to vehicle " + plannerVehicle.id + " in " + plannerVehicle.minutesUntilFailure + " minutes", currTime);
+                                debugPrint("Assigned failure to happen to vehicle " + plannerVehicle.id + " in " + plannerVehicle.minutesUntilFailure + " minutes", currTime, false);
                             }
                         }
                     }
@@ -145,48 +145,105 @@ public class Testing {
                      plannerVehicle.state != PlannerVehicle.VehicleState.STUCK) {
                         plannerVehicle.state = PlannerVehicle.VehicleState.STUCK;
                         plannerVehicle.currentFailure.timeOccuredOn = currTime;
-                        debugPrint("Vehicle " + plannerVehicle.id + " has failed", currTime);
+                        plannerVehicle.currentPath = null;
+                        debugPrint("Vehicle " + plannerVehicle.id + " has failed", currTime, false);
                     } 
                     // If vehicle stuck time has ended
                     else if (plannerVehicle.state == PlannerVehicle.VehicleState.STUCK &&
                      plannerVehicle.currentFailure != null &&
                      plannerVehicle.currentFailure.timeOccuredOn.addMinutes(plannerVehicle.currentFailure.type.getMinutesStuck()).isBefore(currTime)) {
+                        PlannerWarehouse mainWarehouse = warehouses.stream().filter(warehouse -> warehouse.isMain).findFirst().orElse(null);
+                        if (mainWarehouse == null) {
+                            throw new RuntimeException("No main warehouse found");
+                        }
+                        List<Position> path = PathBuilder.buildPath(plannerVehicle.position, mainWarehouse.position, activeBlockages);
+
                         switch (plannerVehicle.currentFailure.type) {
                             case Ti1:
                                 plannerVehicle.state = PlannerVehicle.VehicleState.IDLE;
                                 plannerVehicle.currentFailure = null;
-                                debugPrint("Vehicle " + plannerVehicle.id + " has recovered from failure of type Ti1", currTime);
+                                debugPrint("Vehicle " + plannerVehicle.id + " has recovered from failure of type Ti1", currTime, false);
                                 break;
                             case Ti2:
-                                // TODO: Implement specific Ti2 repair
-                                plannerVehicle.state = PlannerVehicle.VehicleState.IDLE;
+                                plannerVehicle.state = PlannerVehicle.VehicleState.RETURNING_TO_BASE;
+                                Time failureTime = plannerVehicle.currentFailure.timeOccuredOn;
+                                Time reincorporationTime;
+                                
+                                // Determine reincorporation time based on the shift
+                                switch (plannerVehicle.currentFailure.shiftOccurredOn) {
+                                    case T1:  // 00:00-08:00
+                                        // Available in T3 of same day
+                                        reincorporationTime = new Time(
+                                            failureTime.getYear(),
+                                            failureTime.getMonth(),
+                                            failureTime.getDay(),
+                                            16,  // T3 starts at 16:00
+                                            0
+                                        );
+                                        break;
+                                    case T2:  // 08:00-16:00
+                                        // Available in T1 of next day
+                                        reincorporationTime = new Time(
+                                            failureTime.getYear(),
+                                            failureTime.getMonth(),
+                                            failureTime.getDay() + 1,
+                                            0,  // T1 starts at 00:00
+                                            0
+                                        );
+                                        break;
+                                    case T3:  // 16:00-24:00
+                                        // Available in T2 of next day
+                                        reincorporationTime = new Time(
+                                            failureTime.getYear(),
+                                            failureTime.getMonth(),
+                                            failureTime.getDay() + 1,
+                                            8,  // T2 starts at 08:00
+                                            0
+                                        );
+                                        break;
+                                    default:
+                                        throw new RuntimeException("Invalid shift");
+                                }
+                                
+                                plannerVehicle.reincorporationTime = reincorporationTime;
                                 plannerVehicle.currentFailure = null;
-                                debugPrint("Vehicle " + plannerVehicle.id + " has recovered from failure of type Ti2", currTime);
+                                debugPrint("Vehicle " + plannerVehicle.id + " has recovered from failure of type Ti2, will be available at " + reincorporationTime, currTime, false);
                                 break;
                             case Ti3:
-                                // TODO: Implement specific Ti3 repair
-                                plannerVehicle.state = PlannerVehicle.VehicleState.IDLE;
+                                plannerVehicle.state = PlannerVehicle.VehicleState.RETURNING_TO_BASE;
+                                plannerVehicle.reincorporationTime = new Time(
+                                    plannerVehicle.currentFailure.timeOccuredOn.getYear(),
+                                    plannerVehicle.currentFailure.timeOccuredOn.getMonth(),
+                                    plannerVehicle.currentFailure.timeOccuredOn.getDay() + 2,
+                                    0,
+                                    0
+                                );
                                 plannerVehicle.currentFailure = null;
-                                debugPrint("Vehicle " + plannerVehicle.id + " has recovered from failure of type Ti3", currTime);
+                                debugPrint("Vehicle " + plannerVehicle.id + " has recovered from failure of type Ti3", currTime, false);
                                 break;
                         }
+                        plannerVehicle.currentPath = path;
                     }
 
-                    // Advance vehicle failure counter
+                    if (plannerVehicle.state == PlannerVehicle.VehicleState.RETURNING_TO_BASE &&
+                    plannerVehicle.reincorporationTime.isSameDate(currTime)) {
+                        plannerVehicle.state = PlannerVehicle.VehicleState.IDLE;
+                        plannerVehicle.currentFailure = null;
+                        debugPrint("Vehicle " + plannerVehicle.id + " has finished repairing", currTime, false);
+                    }
+                    
                     if (plannerVehicle.minutesUntilFailure > 0) {
                         plannerVehicle.minutesUntilFailure--;
-                        debugPrint("Vehicle " + plannerVehicle.id + " has " + plannerVehicle.minutesUntilFailure + " minutes until failure", currTime);
+                        debugPrint("Vehicle " + plannerVehicle.id + " has " + plannerVehicle.minutesUntilFailure + " minutes until failure", currTime, false);
                     }
 
-                    if (plannerVehicle.state == PlannerVehicle.VehicleState.FINISHED ||
-                        plannerVehicle.state == PlannerVehicle.VehicleState.STUCK ||
-                        plannerVehicle.state == PlannerVehicle.VehicleState.MAINTENANCE ||
-                        !activeVehicles.contains(plannerVehicle)) {
+                    activeVehicles = getActiveVehicles(vehicles, currTime);
+                    if (!activeVehicles.contains(plannerVehicle)) {
                         continue;
                     }
 
                     // If no path or path is empty, check if at next node; if not, build path
-                    if (plannerVehicle.currentPath == null || plannerVehicle.currentPath.isEmpty()) {
+                    if (plannerVehicle.currentPath == null || plannerVehicle.currentPath.isEmpty() ) {
                         List<Node> route = sol.routes.get(plannerVehicle.id);
                         if (route == null || plannerVehicle.nextNodeIndex >= route.size()) {
                             continue;
@@ -199,12 +256,12 @@ public class Testing {
                             continue;
                         }
                         // Has arrived at location
-                        debugPrint("Vehicle " + plannerVehicle.id + " has arrived at location of node " + nextNode, currTime);
+                        debugPrint("Vehicle " + plannerVehicle.id + " has arrived at location of node " + nextNode, currTime, false);
                         plannerVehicle.processNode(nextNode, plannerVehicle, activeOrders, warehouses, currTime);
 
                         if (plannerVehicle.nextNodeIndex == route.size() - 1) {
                             // Just processed the FinalNode
-                            debugPrint("Vehicle " + plannerVehicle.id + " has reached final node", currTime);
+                            debugPrint("Vehicle " + plannerVehicle.id + " has reached final node", currTime, false);
                             plannerVehicle.state = PlannerVehicle.VehicleState.FINISHED;
                             plannerVehicle.nextNodeIndex++; // Optional: move index past end
                             continue;
@@ -213,9 +270,12 @@ public class Testing {
                         // No need to build path here; will do so on next iteration if needed
                     } else {
                         if (plannerVehicle.waitTransition > 0) {
-                            debugPrint("Vehicle " + plannerVehicle.id + " is waiting for " + plannerVehicle.waitTransition + " minutes", currTime);
+                            debugPrint("Vehicle " + plannerVehicle.id + " is waiting for " + plannerVehicle.waitTransition + " minutes", currTime, false);
                             plannerVehicle.waitTransition--;
                         } else {
+                            //DEBUG
+                            debugPrint(currTime + " Vehicle " + plannerVehicle.id + " is advancing path with state " + plannerVehicle.state, currTime, false);
+                            //DEBUG
                             plannerVehicle.advancePath(SimulationProperties.speed / 60.0);
                             plannerVehicle.state = PlannerVehicle.VehicleState.ONTHEWAY;
                         }
@@ -238,10 +298,11 @@ public class Testing {
                 }
 
                 minuteData = new DataChunk.MinuteData(currTime);
-                minuteData.vehicles.addAll(activeVehicles.stream().map(vehicle -> new DataChunk.VehicleData(vehicle.plaque, vehicle.position, vehicle.state)).collect(Collectors.toList()));
+                minuteData.vehicles.addAll(vehicles.stream().map(vehicle -> new DataChunk.VehicleData(vehicle.plaque, vehicle.position, vehicle.state)).collect(Collectors.toList()));
                 dataChunk.minutes.add(minuteData);
 
-                SimulationVisualizer.draw(activeVehicles, activeBlockages, deliveryNodes, refillNodes, currTime);
+                activeBlockages = getActiveBlockages(blockages, currTime);
+                SimulationVisualizer.draw(vehicles, activeBlockages, deliveryNodes, refillNodes, currTime);
                 try {
                     Thread.sleep(SimulationProperties.timeUnitMs);
                 } catch (InterruptedException e) {
