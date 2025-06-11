@@ -5,6 +5,7 @@ import { IncidenciaForm } from '../../components/IncidenciaForm'
 import { IncidenciaTable } from '../../components/IncidenciaTable'
 import type { Incidencia } from '../../core/types/incidencia'
 import { useQueryClient } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 
 export default function IncidenciasPhase() {
   const [showForm, setShowForm] = useState(false)
@@ -50,13 +51,9 @@ export default function IncidenciasPhase() {
           <Text fontSize="2xl" fontWeight="bold" textAlign="center" width="100%">
             Gestión de Incidencias
           </Text>
-          <Button 
-            onClick={handleNextPhase}
-            variant='primary'
-            width="15rem"
-          >
-            Siguiente: Vehiculos
-          </Button>
+          <Link to={'/vehiculos'}>
+                      <Button variant='primary'width="15rem">Siguiente: Vehículos</Button>
+                    </Link>
         </HStack>
 
         <HStack justify="flex-end">

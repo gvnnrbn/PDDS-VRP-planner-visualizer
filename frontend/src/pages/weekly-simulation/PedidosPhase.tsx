@@ -5,6 +5,7 @@ import { PedidoForm } from '../../components/PedidoForm'
 import { PedidoTable } from '../../components/PedidoTable'
 import { PedidoService } from '../../core/services/PedidoService'
 import { useQueryClient } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 
 export default function PedidosPhase() {
   const [showForm, setShowForm] = useState(false)
@@ -59,13 +60,9 @@ export default function PedidosPhase() {
           <Text fontSize="2xl" fontWeight="bold" textAlign="center" width="100%">
             Gestión de Pedidos
           </Text>
-          <Button 
-            variant='primary'
-            onClick={handleNextPhase}
-            width="15rem"
-          >
-            Siguiente: Incidencias
-          </Button>
+          <Link to={'/incidencias'}>
+            <Button variant='primary'width="15rem">Siguiente: Incidencias</Button>
+          </Link>
         </HStack>
 
         <HStack justify="flex-end" spacing={4}>

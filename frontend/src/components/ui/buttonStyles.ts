@@ -9,6 +9,14 @@ export const ButtonStyles = {
                 boxShadow: 'md',
             },
         },
+        secondary:{
+            bg: 'purple.200',
+            color: 'white',
+            _hover: {
+                backgroundColor: 'purple.300',
+                boxShadow: 'md',
+            },
+        },
         danger:{
             bg: 'red',
             color: 'white',

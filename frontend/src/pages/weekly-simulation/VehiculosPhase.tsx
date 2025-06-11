@@ -4,6 +4,7 @@ import { Box, VStack, HStack, Text, Button } from '@chakra-ui/react'
 import { VehiculoForm } from '../../components/VehiculosForm'
 import { VehiculoTable } from '../../components/VehiculosTable'
 import type { Vehiculo } from '../../core/types/vehiculo'
+import { Link } from 'react-router-dom'
 
 export default function VehiculosPhase() {
   const [showForm, setShowForm] = useState(false)
@@ -48,13 +49,9 @@ export default function VehiculosPhase() {
           <Text fontSize="2xl" fontWeight="bold" textAlign="center" flex={1}>
             Gestión de Vehículos
           </Text>
-          <Button 
-            onClick={handleNextPhase}
-            colorScheme="blue" 
-            width="15rem"
-          >
-            Siguiente: Almacen
-          </Button>
+          <Link to={'/almacenes'}>
+                      <Button variant='primary'width="15rem">Siguiente: Almacenes</Button>
+                    </Link>
         </HStack>
 
         <HStack justify="flex-end">
