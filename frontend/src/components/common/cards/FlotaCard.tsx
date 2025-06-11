@@ -12,18 +12,16 @@ export const FlotaCard = ({
     onClick,
 }:FlotaCardProps) => {
     const estado = vehiculo.estado;
-    const idPedido = vehiculo.rutaActual?.pop()?.idPedido || 0;// cambiar a como este el ultimo json
+    const idPedido = vehiculo.rutaActual?.pop()?.idEntidad || 0;// cambiar a como este el ultimo json
     const codigoPedido = `PE${idPedido.toString().padStart(3, '0')}`;
     let cardColor;
     let isFocus = false;
     let hasRoute = true;
     let combustiblePercentage = 0;
-    let isBroken = false;
 
     switch(estado.toUpperCase()){
             case 'AVERIADO': 
             cardColor = '#FFCFCF';
-            isBroken = true;
         break;
         case 'EN MANTENIMIENTO':
             cardColor = '#FFF9CD';
@@ -72,15 +70,7 @@ export const FlotaCard = ({
                 <Text id='pedidoId'>Pedido {codigoPedido}</Text>
                 <Flex direction={'row'} gap={1}>
 
-                {isBroken
-                ? <></>
-                :
-                    <>
-                    <Text id='eta'>ETA: {vehiculo.eta}</Text>
-                    |
-                    </>
-                }
-                <Text id='glp'>GLP: {vehiculo.glp}m³</Text>
+                <Text id='glp'>GLP: {vehiculo.rutaActual?.pop()?.cantidad}m³</Text>
                 |
                 <Text id='combustible'>Combustible: {combustiblePercentage}%</Text>
                 </Flex>

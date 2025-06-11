@@ -9,14 +9,14 @@ export interface Pedido {
 }
 
 export interface PedidoSimulado  {
-  idPedido: string;
+  idPedido: number;
   estado: string;
   glp: number;
-  posX: number;
-  posY: number;
   fechaLimite: string,
   vehiculosAtendiendo: Array<{
       placa: string,
       eta: string
   }>
+  posX: number;
+  posY: number;
 }

@@ -27,7 +27,7 @@ const getColorFromState = (estado: string): string => {
       return "red";
     case "REPAIR":
       return "orange";
-    case "MuevetePo":
+    case "Funcional":
       return "green";
     case "ONTHEWAY":
       return "blue";
@@ -54,104 +54,93 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
     const [image] = useImage(createIconUrl(faTruck, getColorFromState("asdas")));
     const shapeRef = useRef<Konva.Image | null>(null);
 
-    const ruta = vehiculo.rutaActual ?? [];
-    const puntosRuta = [
-      [vehiculo.posicionX, vehiculo.posicionY],
-      ...ruta.map((p) => [p.posX, p.posY]),
-    ];
-
     const [pos, setPos] = useState<[number, number]>([
       vehiculo.posicionX,
       vehiculo.posicionY,
     ]);
 
-    const [isTooltipVisible, setIsTooltipVisible] = useState(false);
-    const [currentIndex, setCurrentIndex] = useState(0); // 🆕 índice dinámico
-
-    //PROXIMIDAD
-    const estaCerca = (pos1: [number, number], pos2: [number, number], umbral: number = 5): boolean => {
-      const [x1, y1] = pos1;
-      const [x2, y2] = pos2;
-      const distancia = Math.hypot(x2 - x1, y2 - y1);
-      return distancia <= umbral;
-    };
-
     
 
+    const [isTooltipVisible, setIsTooltipVisible] = useState(false);
+
+    //PROXIMIDAD
+    const fullRuta: [number, number][] = [[vehiculo.posicionX, vehiculo.posicionY]];
+
+    vehiculo.rutaActual?.forEach(bloque => {
+      bloque.puntos.forEach(p => {
+        fullRuta.push([p.posX, p.posY]);
+      });
+    });
+    
+
+    // Animación de punto a punto
     useEffect(() => {
-      let index = 0;
-      let startTime: number | null = null;
+      // Construcción correcta de la ruta completa punto a punto
+      const ruta: [number, number][] = [[vehiculo.posicionX, vehiculo.posicionY]];
+      vehiculo.rutaActual?.forEach(bloque => {
+        bloque.puntos.forEach(p => {
+          ruta.push([p.posX, p.posY]);
+        });
+      });
+
+      if (ruta.length < 2) return;
+      console.log('Full ruta:', fullRuta);
+      let step = 0;
       let frameId: number;
 
-      if (puntosRuta.length < 2) return;
+      const stepDur = duration / (ruta.length - 1); // distribuir duración equitativamente
 
-      const stepDuration = duration / (puntosRuta.length - 1);
+      const animarPaso = (from: [number, number], to: [number, number], onFinish: () => void) => {
+        const start = performance.now();
 
-      const animateStep = (timestamp: number) => {
-        if (!startTime) startTime = timestamp;
-        const elapsed = timestamp - startTime;
+        const animate = (now: number) => {
+          const t = Math.min((now - start) / stepDur, 1);
+          const interp: [number, number] = [
+            from[0] + (to[0] - from[0]) * t,
+            from[1] + (to[1] - from[1]) * t,
+          ];
+          setPos(interp);
 
-        const t = Math.min(elapsed / stepDuration, 1);
-        const [fromX, fromY] = puntosRuta[index];
-        const [toX, toY] = puntosRuta[index + 1] || [fromX, fromY];
-
-        const interpX = fromX + (toX - fromX) * t;
-        const interpY = fromY + (toY - fromY) * t;
-
-        setPos([interpX, interpY]);
-
-        if (t < 1) {
-          frameId = requestAnimationFrame(animateStep);
-        } else {
-          index++;
-          if (index >= puntosRuta.length - 1) return;
-
-          const puntoAnterior = ruta[index - 1];
-          const { accion, traspasoGLP = 0, idPedido } = puntoAnterior || {};
-
-          const delay = accion === "Descarga" ? duration * 0.2 : 0;
-
-          setTimeout(() => {
-          // ⚡ Aplicar efectos DESPUÉS del delay
-          if (accion === "Descarga") {
-            actualizarPedido(idPedido, traspasoGLP);
-            actualizarVehiculo(vehiculo.idVehiculo, (prev) => ({
-              ...prev,
-              currGLP: Math.max(0, prev.currGLP - traspasoGLP),
-            }));
-            console.log(`Deposita en pedido ${idPedido} la cantidad de ${traspasoGLP}
-              \n GLP del nuevo vehiculo ahora: ${vehiculo.currGLP}` );
-          } else if (accion === "Recarga") {
-            // Buscar almacén cercano
-            const puntoActual = puntosRuta[index];
-            if (!puntoActual || puntoActual.length !== 2) return;
-            const almacenCercano = almacenes.find(a =>
-              a.posicion && estaCerca([a.posicion.posX, a.posicion.posY], puntoActual as [number, number])
-            );
-            if (almacenCercano) {
-              actualizarAlmacen(almacenCercano.idAlmacen, traspasoGLP);
-            }
-            actualizarVehiculo(vehiculo.idVehiculo, (prev) => ({
-              ...prev,
-              currGLP: prev.currGLP + traspasoGLP,
-            }));
-            console.log(`Recarga en almacen ${almacenCercano?.idAlmacen} con GLP ${almacenCercano?.currentGLP}
-              \n GLP del nuevo vehiculo ahora: ${vehiculo.currGLP} ` );
+          if (shapeRef.current) {
+            shapeRef.current.x(interp[0] * cellSize - cellSize / 2);
+            shapeRef.current.y((gridHeight - interp[1]) * cellSize - cellSize / 2);
+            shapeRef.current.getLayer()?.batchDraw();
           }
 
-          // Continuar con siguiente paso de animación
-          startTime = null;
-          frameId = requestAnimationFrame(animateStep);
-        }, delay);
-        }
+          if (t < 1) {
+            frameId = requestAnimationFrame(animate);
+          } else {
+            onFinish();
+          }
+        };
+
+        frameId = requestAnimationFrame(animate);
       };
 
-      frameId = requestAnimationFrame(animateStep);
+      const recorrerRuta = () => {
+        if (step >= ruta.length - 1) return;
+
+        const from = ruta[step];
+        const to = ruta[step + 1];
+
+        animarPaso(from, to, () => {
+          step++;
+          recorrerRuta();
+        });
+      };
+
+      recorrerRuta();
+
       return () => cancelAnimationFrame(frameId);
-    }, [JSON.stringify(ruta)]);
+    }, [JSON.stringify(vehiculo.rutaActual)]);
 
 
-    //NO
+    //RUTA
+    const rutaEnPixeles = fullRuta.map(([x, y]) => [
+      x * cellSize,
+      (gridHeight - y) * cellSize,
+    ]);
+    const flattened = rutaEnPixeles.flat();
 
     useEffect(() => {
       if (typeof ref === "function") {
@@ -166,15 +155,9 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
     const pixelX = pos[0] * cellSize;
     const pixelY = (gridHeight - pos[1]) * cellSize;
 
-    const rutaEnPixeles = puntosRuta.map(([x, y]) => [
-      x * cellSize,
-      (gridHeight - y) * cellSize,
-    ]);
-    const rutaRestante = rutaEnPixeles.slice(currentIndex);
-    const flattened = rutaRestante.flat();
 
     useEffect(() => {
-      if (shapeRef.current) {
+      if (image && shapeRef.current) {
         shapeRef.current.cache();
         shapeRef.current.drawHitFromCache();
       }
@@ -212,7 +195,7 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
               shadowOpacity={0.2}
             />
             <Text
-              text={`🚛 ${vehiculo.placa}\n📦 Pedido: ${vehiculo.rutaActual?.[0]?.idPedido ?? 'N/A'} \nGLP: ${vehiculo.currGLP}`}
+              text={`🚛 ${vehiculo.placa}\n📦 Pedido: ${vehiculo.rutaActual?.[0]?.idEntidad ?? 'N/A'} \nGLP: ${vehiculo.currGLP}`}
               fontSize={12}
               fill="black"
               padding={5}
@@ -236,9 +219,7 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
           onTap={() => setIsTooltipVisible((prev) => !prev)}
           listening={true}
           hitStrokeWidth={20}
-        />
-
-        
+        />  
       </>
     );
   }

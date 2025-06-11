@@ -16,20 +16,13 @@ export interface Vehiculo {
 export interface VehiculoSimulado  {
   idVehiculo: number;
   estado: string;
-  eta: string;
   tipo: string;
-  glp: number;
   combustible: number;
   maxCombustible: number;
-  currGLP: number;
   maxGLP: number;
+  currGLP: number;
   placa: string;
   posicionX: number;
   posicionY: number;
-  rutaActual?: Array<{ 
-    idPedido: string;
-    posX: number; 
-    posY: number
-    accion: string; 
-  }>;
+  rutaActual?: {accion: string; cantidad:number; idEntidad: number; puntos: {posX: number; posY:number}[]}[];
 }
