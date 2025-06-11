@@ -184,7 +184,7 @@ public class SimulationVisualizer {
     }
 
     public static void draw(List<PlannerVehicle> vehicles, List<PlannerBlockage> blockages, 
-                          List<Node> deliveryNodes, List<Node> refillNodes, Time currentTime) {
+                          List<Node> deliveryNodes, List<Node> refillNodes, Time currentTime, int minutesToSimulate) {
         int gridLength = SimulationProperties.gridLength;
         int gridWidth = SimulationProperties.gridWidth;
         SwingUtilities.invokeLater(() -> {
@@ -198,9 +198,9 @@ public class SimulationVisualizer {
                 visFrame.setVisible(true); 
             }
             List<PlannerBlockage> activeBlockages = blockages.stream()
-                .filter(blockage -> blockage.isActive(currentTime, currentTime.addMinutes(SimulationProperties.minutesToSimulate)))
+                .filter(blockage -> blockage.isActive(currentTime, currentTime.addMinutes(minutesToSimulate)))
                 .collect(Collectors.toList());
-            visPanel.warehouses = DataParser.parseWarehouses("main/warehouses.csv");
+            visPanel.warehouses = CSVDataParser.parseWarehouses("main/warehouses.csv");
             visPanel.updateState(vehicles, activeBlockages, deliveryNodes, refillNodes, currentTime.toString());
         });
     }

@@ -16,7 +16,7 @@ import java.lang.NumberFormatException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DataParser {
+public class CSVDataParser {
     private static int currentYear = 2025; 
     private static int currentMonth = 1;
 

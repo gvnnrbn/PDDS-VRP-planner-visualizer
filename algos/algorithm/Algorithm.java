@@ -14,10 +14,13 @@ public class Algorithm {
     private static int maxNoImprovement = 3000;
     private static int maxNoImprovementFeasible = 1000; 
 
-    public Algorithm() {
+    private boolean isDebug;
+
+    public Algorithm(boolean isDebug) {
+        this.isDebug = isDebug;
     }
 
-    public static Solution run(Environment environment, int minutes) {
+    public Solution run(Environment environment, int minutes) {
         Solution bestSolution = null;
         Solution bestFeasibleSolution = null;
         double bestFitness = Double.NEGATIVE_INFINITY;
@@ -59,7 +62,7 @@ public class Algorithm {
         return bestFeasibleSolution != null ? bestFeasibleSolution : bestSolution;
     }
 
-    private static Solution _run(Environment environment, int minutes) {
+    private Solution _run(Environment environment, int minutes) {
         Solution currSolution = environment.getRandomSolution();
         Solution bestSolution = currSolution.clone();
         double bestFitness = bestSolution.fitness(environment);
@@ -72,13 +75,13 @@ public class Algorithm {
 
             // Check termination conditions
             if (isFeasible && noImprovementCount >= maxNoImprovementFeasible) {
-                if (SimulationProperties.isDebug) {
+                if (isDebug) {
                     System.out.println("\nBreaking: No improvement for " + noImprovementCount + " iterations while solution is feasible");
                 }
                 break;
             }
             if (!isFeasible && noImprovementCount >= maxNoImprovement) {
-                if (SimulationProperties.isDebug) {
+                if (isDebug) {
                     System.out.println("\nBreaking: No improvement for " + noImprovementCount + " iterations while solution is not feasible");
                 }
                 break;
@@ -114,13 +117,13 @@ public class Algorithm {
                 }
             } else {
                 // No improvement found, stop (hill climbing terminates at local optimum)
-                if (SimulationProperties.isDebug) {
+                if (isDebug) {
                     System.out.println("No improving neighbor found, terminating hill climbing at iteration " + iterations);
                 }
                 break;
             }
 
-            if (SimulationProperties.isDebug && iterations % 100 == 0) {
+            if (isDebug && iterations % 100 == 0) {
                 System.out.println("--------------------------------");
                 System.out.println("Iteration " + iterations +
                         ": Current fitness: " + String.format("%.4f", currFitness) +

@@ -1,10 +1,25 @@
 package utils;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import data.DataChunk;
 
 public class DataExporter {
+    public static void clearSimulationData() {
+        File directory = new File("simulation_data");
+        if (directory.exists() && directory.isDirectory()) {
+            File[] files = directory.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isFile()) {
+                        file.delete();
+                    }
+                }
+            }
+        }
+    }
+
     public static void exportToJson(DataChunk dataChunk, Time currentTime) {
         try {
             String filename = "simulation_data/simulation_" + 
@@ -45,9 +60,6 @@ public class DataExporter {
             fileWriter.write("}\n");
             
             fileWriter.close();
-            if (SimulationProperties.isDebug) {
-                System.out.println("Simulation data written to: " + filename);
-            }
         } catch (IOException e) {
             e.printStackTrace();
         }
