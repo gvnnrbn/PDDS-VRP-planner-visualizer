@@ -35,5 +35,6 @@ export interface VehiculoSimulado  {
   placa: string;
   posicionX: number;
   posicionY: number;
-  rutaActual?: { posX: number; posY: number; estado: string; accion: string; idPedido: number }[];
+  idPedido: number;
+  rutaActual?: { posX: number; posY: number; estado: string; accion: string;  }[];
 }

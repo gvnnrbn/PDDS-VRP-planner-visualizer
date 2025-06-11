@@ -21,12 +21,12 @@ const createIconUrl = (icon: any, color: string = "red") => {
 };
 
 const getColorFromState = (estado: string): string => {
-  switch (estado) {
-    case "averiadoA":
+  switch (estado.toUpperCase()) {
+    case "AVERIADO":
       return "red";
-    case "REPAIR":
+    case "REPARACION":
       return "orange";
-    case "MuevetePo":
+    case "MOVIENDOSE":
       return "green";
     case "ONTHEWAY":
       return "blue";

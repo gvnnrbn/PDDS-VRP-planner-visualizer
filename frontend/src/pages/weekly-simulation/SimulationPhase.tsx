@@ -78,7 +78,7 @@ export default function SimulationPhase() {
   }, [minuto, speedMs, isPaused]);
 
   useEffect(() => {
-    console.log(`Minuto actual ${minuto} y total de minutos ${totalMinutos}`);
+    // console.log(`Minuto actual ${minuto} y total de minutos ${totalMinutos}`);
     if (minuto >= totalMinutos  && !isOpen && !simulacionFinalizada) {
       setSimulacionFinalizada(true);
       onOpen(); // solo una vez

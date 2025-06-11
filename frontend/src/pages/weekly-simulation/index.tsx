@@ -1,4 +1,4 @@
-import { Box, Button, Text, useColorModeValue, VStack } from '@chakra-ui/react'
+import { Box, Button, FormControl, FormLabel, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Stack, Text, useColorModeValue, VStack } from '@chakra-ui/react'
 import { Route, Routes, useLocation } from 'react-router-dom'
 import { SectionBar } from '../../components/common/SectionBar'
 import { useEffect, useState } from 'react'
@@ -238,61 +238,182 @@ const sections = [
   // },
 ]
 
+interface ScheduleChunk {
+  current?: any;
+  next?: any;
+}
+
+
 export default function WeeklySimulation() {
-  const { connected, subscribe, unsubscribe, publish } = useStomp('http://localhost:8080/ws');
-  const [log, setLog] = useState<string>();
-  // Add a button to trigger the simulation
-  const handleStartSimulation = () => {
-    if (connected) {
-      // Send a static date (you can modify this to use a dynamic date)
-      const now = new Date();
-      const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      
-      publish('/app/simulacion-start', formattedDate);
-      console.log('Sent date to backend:', formattedDate);
-    }
-  };
-
-  useEffect(() => {
-    if (!connected) return;
-    const suscribeUrl = '/topic/simulacion-start';
-    const handleSimulacion = (message: Message) => {
-      try {
-        const payload = JSON.parse(message.body);
-        // console.log('Received simulation data:', payload);
-        setLog(payload);
-      } catch (error) {
-        console.error('Error parsing message:', error);
-      }
-    };
-
-    subscribe(suscribeUrl, handleSimulacion);
-    return () => {
-      unsubscribe(suscribeUrl);
-    };
-  }, [connected, subscribe, unsubscribe]);
-
-  useEffect(() => {
-    if (connected) {
-      console.log(log);
-    }
-  },[log])
   const bgColor = useColorModeValue('white', '#1a1a1a')
   const [isCollapsed, setIsCollapsed] = useState(true)
   const [section, setSection] = useState(sections[0].title)
+  const [isSimulationLoading, setIsSimulationLoading] = useState(false);
+  const [ isSimulationCompleted, setIsSImulationCompleted ] = useState(false);
 
-  const currPath = useLocation().pathname.split('/').pop()
+  const [selectedDate, setSelectedDate] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(true);
+  const { connected, subscribe, unsubscribe, publish } = useStomp('http://localhost:8080/ws');
+  const [hasStarted, setHasStarted] = useState(false);
+  const [scheduleChunk, setScheduleChunk] = useState<ScheduleChunk>({});
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  const [isLoading, setIsLoading] = useState(false);
-  // agregar cuando sea necesario
+  const [dateValue, setDateValue] = useState<string>(() => {
+    const now = new Date();
+    return now.toISOString().split('T')[0];
+  });
+  const [hourValue, setHourValue] = useState<number>(new Date().getHours());
+  const [minuteValue, setMinuteValue] = useState<number>(new Date().getMinutes());
+
+  /**
+   * HANDLE DATE 
+   */
+  // Format the selected date/time into ISO format
+  const formatDateTime = () => {
+    const [year, month, day] = dateValue.split('-');
+    const formattedDate = `${year}-${month}-${day}T${String(hourValue).padStart(2, '0')}:${String(minuteValue).padStart(2, '0')}`;
+    setSelectedDate(formattedDate);
+  };
+
+  useEffect(() => {
+    formatDateTime();
+  }, [dateValue, hourValue, minuteValue]);
+  
+  
+  /**
+   * START SIMULATION
+  */
+
+  // delay after simulation starts
   // useEffect(() => {
-  //   if (currPath === "simulacion") {
-  //     setIsLoading(true);
-  //     const timer = setTimeout(() => setIsLoading(false), 10000); // 10s simulado
-  //     return () => clearTimeout(timer);
-  //   }
-  // }, [currPath]);
+  //   const timer = setTimeout(() => setIsSimulationLoading(false), 2000); // 2s simulado
+  //   return () => clearTimeout(timer);
+  // },[isSimulationLoading])
+ 
+  const handleSubmit = () => {
+    formatDateTime(); // Ensure we have the latest value
+    setIsModalOpen(false);
+    handleStartSimulation();
+    setIsSimulationLoading(true);
+  };
 
+  const handleStartSimulation = () => {
+    if (connected) {
+      publish('/app/simulation-start', selectedDate);
+      setHasStarted(true);
+      console.log('Sent date to backend:', selectedDate);
+    }
+  };
+
+   // 1. Handle incoming WebSocket messages
+  useEffect(() => {
+    if (!connected) return;
+
+    const handleIncomingData = (message: any) => {
+    console.log("receiving message:", message.body);
+
+    try {
+      // Verifica si parece un JSON válido
+      if (message.body.trim().startsWith('{') || message.body.trim().startsWith('[')) {
+        const data = JSON.parse(message.body);
+        console.log("Parsed data:", data);
+
+        setScheduleChunk(prev => {
+          if (!prev.current) {
+            return { current: data };
+          } else {
+            return { ...prev, next: data };
+          }
+        });
+        publish('/app/chunk-received', {});
+      } else {
+        console.warn("Received non-JSON message:", message.body);
+        // Aquí puedes manejar mensajes tipo "COMPLETED"
+        if (message.body === "COMPLETED") {
+          setIsSImulationCompleted(true);
+          console.log("Simulation completed");
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing simulation data:', error);
+    }
+    }; 
+    subscribe('/topic/simulation-data', handleIncomingData);
+    return () => {
+      unsubscribe('/topic/simulation-data');
+    };
+  }, [connected]);
+
+  // 2. Request next chunk when needed
+  useEffect(() => {
+    if (!connected || !selectedDate || !hasStarted) return;
+
+    // Caso 1: Primera vez que se solicita
+    if (!scheduleChunk.current) {
+      const timer = setTimeout(() => {
+        console.log("Solicitando primer chunk...");
+        publish('/app/request-chunk', JSON.stringify({}));
+      }, 500); // Delay para el backend
+
+      return () => clearTimeout(timer);
+    }
+
+    // Caso 2: Ya hay un chunk actual, pero nos acercamos al final
+    if (!scheduleChunk.next) {
+      const simulationLength = scheduleChunk.current.simulacion.length;
+      if (currentIndex >= simulationLength - 2) {
+        console.log('Solicitando siguiente chunk...');
+        publish('/app/request-chunk', JSON.stringify({}));
+      }
+    }
+  }, [connected, selectedDate, scheduleChunk, currentIndex, hasStarted]);
+
+  // 3. Handle chunk transition logic
+  useEffect(() => {
+    if (!scheduleChunk.current) return;
+
+    const simulationArray = scheduleChunk.current.simulacion;
+    const isLastElement = currentIndex >= simulationArray.length - 1;
+    const hasNextChunk = scheduleChunk.next;
+
+    if (isLastElement && hasNextChunk) {
+      // Espera un segundo extra para mostrar el último minuto
+      setTimeout(() => {
+        setScheduleChunk({
+          current: scheduleChunk.next,
+          next: undefined
+        });
+        setCurrentIndex(0);
+        console.log('Transitioned to next chunk');
+      }, 1000)
+    }
+  }, [currentIndex, scheduleChunk]);
+
+  // 4. Visualization timer (example)
+  useEffect(() => {
+    if (!scheduleChunk.current) return;
+
+    const timer = setInterval(() => {
+      setCurrentIndex(prev => {
+        // Prevent going beyond array bounds
+        if (prev >= scheduleChunk.current!.simulacion.length - 1) {
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, 2000); // Adjust timing as needed
+
+    return () => clearInterval(timer);
+  }, [scheduleChunk]);
+
+
+  // Render current simulation state
+  const currentMinute = scheduleChunk.current?.simulacion[currentIndex]?.minuto;
+  const currentData = scheduleChunk.current?.simulacion[currentIndex];
+  // console.log(currentData);
+  /*
+   * HANDLE PANEL SECTIONS
+   */
   const handleSectionChange = (section: string) => {
     setSection(section)
   }
@@ -312,17 +433,16 @@ export default function WeeklySimulation() {
           <Route
             path="simulacion"
             element={
-              isLoading ? <></> : <SimulationPhase />
+              isSimulationLoading ? <></> : <SimulationPhase />
             }
           />
         </Routes>
       </Box>
-
-      {currPath === "simulacion" && !isLoading && (
+            <Text fontSize="sm" color="gray.500" mt={2}>
+              Minuto actual: {currentMinute}
+            </Text>
+      {/*!isSimulationLoading && (
         <>
-          <Button variant={'primary'} onClick={handleStartSimulation} disabled={!connected}>
-          {connected ? 'Start Simulation' : 'Connecting...'}
-            </Button>
           <SectionBar
             sections={sections}
             onSectionChange={handleSectionChange}
@@ -335,9 +455,64 @@ export default function WeeklySimulation() {
 
           
         </>
-      )}
+      )*/}
+      <Modal isOpen={isModalOpen} onClose={()=>{}}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Seleccione la fecha de inicio de la simulación</ModalHeader>
+          <ModalBody pb={6}>
+            <Stack spacing={4}>
+              <FormControl>
+                <FormLabel>Fecha</FormLabel>
+                <Input
+                  type="date"
+                  value={dateValue}
+                  onChange={(e) => setDateValue(e.target.value)}
+                />
+              </FormControl>
 
-      <LoadingOverlay isVisible={currPath === "simulacion" && isLoading} />
+              <FormControl>
+                <FormLabel>Hora</FormLabel>
+                <NumberInput
+                  min={0}
+                  max={23}
+                  value={hourValue}
+                  onChange={(_, value) => setHourValue(value)}
+                >
+                  <NumberInputField />
+                  <NumberInputStepper>
+                    <NumberIncrementStepper />
+                    <NumberDecrementStepper />
+                  </NumberInputStepper>
+                </NumberInput>
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Minutos</FormLabel>
+                <NumberInput
+                  min={0}
+                  max={59}
+                  value={minuteValue}
+                  onChange={(_, value) => setMinuteValue(value)}
+                >
+                  <NumberInputField />
+                  <NumberInputStepper>
+                    <NumberIncrementStepper />
+                    <NumberDecrementStepper />
+                  </NumberInputStepper>
+                </NumberInput>
+              </FormControl>
+            </Stack>
+          </ModalBody>
+
+          <ModalFooter justifyContent={'center'}>
+            <Button variant={'primary'} mr={3} onClick={handleSubmit}>
+              Iniciar Simulación
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+      {/* <LoadingOverlay isVisible={isSimulationLoading} /> */}
     </Flex>
   );
 }
