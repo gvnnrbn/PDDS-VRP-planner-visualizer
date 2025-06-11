@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import utils.SimulationProperties;
-
 public class Algorithm {
     // Hyperparameters
     private static int maxTimeMs = 30 * 1000;
