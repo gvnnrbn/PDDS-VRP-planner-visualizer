@@ -254,6 +254,7 @@ export default function WeeklySimulation() {
   const [selectedDate, setSelectedDate] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(true);
   const { connected, subscribe, unsubscribe, publish } = useStomp('http://localhost:8080/ws');
+  const [hasStarted, setHasStarted] = useState(false);
   const [scheduleChunk, setScheduleChunk] = useState<ScheduleChunk>({});
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -299,67 +300,73 @@ export default function WeeklySimulation() {
   const handleStartSimulation = () => {
     if (connected) {
       publish('/app/simulation-start', selectedDate);
+      setHasStarted(true);
       console.log('Sent date to backend:', selectedDate);
     }
   };
-
-  // end simulation
-  // useEffect(() => {
-  //   if (!connected) return;
-  //   var finished = false;
-
-  //   const handleNoMoreChunks = (message: string) => {
-  //     if(message == "COMPLETED"){
-  //       finished = true;
-  //       console.log("simulation completed");
-  //     }
-  //   }
-  //   subscribe('/topic/simulation-data', handleNoMoreChunks);
-
-  //   return () => {
-  //     // Cleanup subscription if needed
-  //   };
-  // }, [connected, subscribe]);
 
    // 1. Handle incoming WebSocket messages
   useEffect(() => {
     if (!connected) return;
 
     const handleIncomingData = (message: any) => {
-      try {
-        console.log("receiving message");
-        const data: any = JSON.parse(message.body);
-        console.log("message: "+ data);
+    console.log("receiving message:", message.body);
+
+    try {
+      // Verifica si parece un JSON válido
+      if (message.body.trim().startsWith('{') || message.body.trim().startsWith('[')) {
+        const data = JSON.parse(message.body);
+        console.log("Parsed data:", data);
+
         setScheduleChunk(prev => {
-          // First message goes to current
           if (!prev.current) {
             return { current: data };
-          } 
-          // Subsequent messages go to next
-          else {
+          } else {
             return { ...prev, next: data };
           }
-          
         });
-      } catch (error) {
-        console.error('Error parsing simulation data:', error);
+        publish('/app/chunk-received', {});
+      } else {
+        console.warn("Received non-JSON message:", message.body);
+        // Aquí puedes manejar mensajes tipo "COMPLETED"
+        if (message.body === "COMPLETED") {
+          setIsSImulationCompleted(true);
+          console.log("Simulation completed");
+        }
       }
-    };
-
+    } catch (error) {
+      console.error('Error parsing simulation data:', error);
+    }
+    }; 
     subscribe('/topic/simulation-data', handleIncomingData);
-
     return () => {
-      // Cleanup subscription if needed
+      unsubscribe('/topic/simulation-data');
     };
-  }, [connected, subscribe]);
+  }, [connected]);
 
   // 2. Request next chunk when needed
   useEffect(() => {
-    if (connected && !scheduleChunk.next && !scheduleChunk.current) {
-      publish('/app/request-chunk', JSON.stringify({}));
-      console.log('Requested next chunk');
+    if (!connected || !selectedDate || !hasStarted) return;
+
+    // Caso 1: Primera vez que se solicita
+    if (!scheduleChunk.current) {
+      const timer = setTimeout(() => {
+        console.log("Solicitando primer chunk...");
+        publish('/app/request-chunk', JSON.stringify({}));
+      }, 500); // Delay para el backend
+
+      return () => clearTimeout(timer);
     }
-  }, [connected, scheduleChunk, publish]);
+
+    // Caso 2: Ya hay un chunk actual, pero nos acercamos al final
+    if (!scheduleChunk.next) {
+      const simulationLength = scheduleChunk.current.simulacion.length;
+      if (currentIndex >= simulationLength - 2) {
+        console.log('Solicitando siguiente chunk...');
+        publish('/app/request-chunk', JSON.stringify({}));
+      }
+    }
+  }, [connected, selectedDate, scheduleChunk, currentIndex, hasStarted]);
 
   // 3. Handle chunk transition logic
   useEffect(() => {
@@ -370,13 +377,15 @@ export default function WeeklySimulation() {
     const hasNextChunk = scheduleChunk.next;
 
     if (isLastElement && hasNextChunk) {
-      // Transition to next chunk
-      setScheduleChunk({
-        current: scheduleChunk.next,
-        next: undefined
-      });
-      setCurrentIndex(0);
-      console.log('Transitioned to next chunk');
+      // Espera un segundo extra para mostrar el último minuto
+      setTimeout(() => {
+        setScheduleChunk({
+          current: scheduleChunk.next,
+          next: undefined
+        });
+        setCurrentIndex(0);
+        console.log('Transitioned to next chunk');
+      }, 1000)
     }
   }, [currentIndex, scheduleChunk]);
 
@@ -392,15 +401,11 @@ export default function WeeklySimulation() {
         }
         return prev + 1;
       });
-    }, 1000); // Adjust timing as needed
+    }, 2000); // Adjust timing as needed
 
     return () => clearInterval(timer);
   }, [scheduleChunk]);
 
-  useEffect(()=> {
-    console.log(scheduleChunk);
-
-  },[scheduleChunk]);
 
   // Render current simulation state
   const currentMinute = scheduleChunk.current?.simulacion[currentIndex]?.minuto;
@@ -433,8 +438,10 @@ export default function WeeklySimulation() {
           />
         </Routes>
       </Box>
-
-      {!isSimulationLoading && (
+            <Text fontSize="sm" color="gray.500" mt={2}>
+              Minuto actual: {currentMinute}
+            </Text>
+      {/*!isSimulationLoading && (
         <>
           <SectionBar
             sections={sections}
@@ -448,7 +455,7 @@ export default function WeeklySimulation() {
 
           
         </>
-      )}
+      )*/}
       <Modal isOpen={isModalOpen} onClose={()=>{}}>
         <ModalOverlay />
         <ModalContent>
@@ -505,7 +512,7 @@ export default function WeeklySimulation() {
           </ModalFooter>
         </ModalContent>
       </Modal>
-      <LoadingOverlay isVisible={isSimulationLoading} />
+      {/* <LoadingOverlay isVisible={isSimulationLoading} /> */}
     </Flex>
   );
 }
