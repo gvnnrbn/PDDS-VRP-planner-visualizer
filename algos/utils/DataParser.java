@@ -235,6 +235,7 @@ public class DataParser {
         
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             String line;
+            int id = 1; // Use explicit ID counter instead of list size
             while ((line = reader.readLine()) != null) {
                 if (line.trim().isEmpty()) continue;
 
@@ -257,11 +258,23 @@ public class DataParser {
                     int maxGLP = Integer.parseInt(parts[2].trim());
                     
                     // Check if main warehouse
-                    boolean isMain = parts.length == 4 && parts[3].equals("main");
+                    boolean isMain = parts.length == 4 && parts[3].trim().equalsIgnoreCase("main");
+
+                    // Validate coordinates
+                    if (x < 0 || y < 0) {
+                        System.err.println("Invalid coordinates for warehouse " + id + ": (" + x + "," + y + ")");
+                        continue;
+                    }
+
+                    // Validate GLP capacity
+                    if (maxGLP <= 0) {
+                        System.err.println("Invalid GLP capacity for warehouse " + id + ": " + maxGLP);
+                        continue;
+                    }
 
                     // Create warehouse
                     PlannerWarehouse warehouse = new PlannerWarehouse(
-                        warehouses.size() + 1,  // Use sequential ID
+                        id++,  // Use explicit ID counter
                         new Position(x, y),
                         maxGLP,
                         maxGLP,  // Start with full GLP
@@ -274,6 +287,13 @@ public class DataParser {
                     continue;
                 }
             }
+
+            // Validate that there is exactly one main warehouse
+            long mainWarehouseCount = warehouses.stream().filter(w -> w.isMain).count();
+            if (mainWarehouseCount != 1) {
+                System.err.println("Warning: Found " + mainWarehouseCount + " main warehouses, expected exactly 1");
+            }
+
         } catch (IOException e) {
             System.err.println("Error reading warehouses file: " + e.getMessage());
         }
@@ -297,8 +317,13 @@ public class DataParser {
                 }
 
                 try {
-                    // Parse shift (1=00:00-08:00, 2=08:00-16:00, 3=16:00-24:00)
-                    int shift = Integer.parseInt(parts[0].trim());
+                    // Parse shift (T1=00:00-08:00, T2=08:00-16:00, T3=16:00-24:00)
+                    String shiftStr = parts[0].trim();
+                    if (!shiftStr.startsWith("T")) {
+                        System.err.println("Invalid shift format: " + shiftStr);
+                        continue;
+                    }
+                    int shift = Integer.parseInt(shiftStr.substring(1));
                     Shift shiftOccurredOn = switch (shift) {
                         case 1 -> Shift.T1;
                         case 2 -> Shift.T2;
@@ -309,8 +334,13 @@ public class DataParser {
                     // Parse vehicle plaque
                     String vehiclePlaque = parts[1].trim();
 
-                    // Parse failure type (1, 2, or 3)
-                    int typeInt = Integer.parseInt(parts[2].trim());
+                    // Parse failure type (TI1, TI2, TI3)
+                    String typeStr = parts[2].trim();
+                    if (!typeStr.startsWith("TI")) {
+                        System.err.println("Invalid failure type format: " + typeStr);
+                        continue;
+                    }
+                    int typeInt = Integer.parseInt(typeStr.substring(2));
                     FailureType type = switch (typeInt) {
                         case 1 -> FailureType.Ti1;
                         case 2 -> FailureType.Ti2;
@@ -324,8 +354,7 @@ public class DataParser {
                         type,
                         shiftOccurredOn,
                         vehiclePlaque,
-                        null,  // endStuckTime will be set when registered
-                        null   // endRepairTime will be set when registered
+                        null
                     );
                     failures.add(failure);
                 } catch (NumberFormatException e) {

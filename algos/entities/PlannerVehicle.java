@@ -27,6 +27,8 @@ public class PlannerVehicle implements Cloneable {
     public int currentGLP;
     public Position position;
     public Position initialPosition;
+    public PlannerFailure failure;
+    public int minutesUntilFailure;
     
     // Path and node information
     public List<Position> currentPath;
