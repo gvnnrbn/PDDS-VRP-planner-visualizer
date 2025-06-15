@@ -1,4 +1,4 @@
-import { Box, Button, FormControl, FormLabel, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Stack, Text, useColorModeValue, VStack } from '@chakra-ui/react'
+import { Box, Button, FormControl, FormLabel, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Stack, Text, useColorModeValue, VStack, HStack, useDisclosure, useToast } from '@chakra-ui/react'
 import { Route, Routes, useLocation } from 'react-router-dom'
 import { SectionBar } from '../../components/common/SectionBar'
 import { useEffect, useState } from 'react'
@@ -24,7 +24,8 @@ import type { PedidoSimulado } from '../../core/types/pedido'
 import type { IncidenciaSimulada } from '../../core/types/incidencia'
 import type { MantenimientoSimulado } from '../../core/types/manetenimiento'
 import { set } from 'date-fns'
-
+import { FaSort, FaFilter, FaRegClock } from 'react-icons/fa'
+import { IncidenciaForm } from '../../components/IncidenciaForm'
 interface ScheduleChunk {
   current?: any;
   next?: any;
@@ -265,20 +266,7 @@ export default function WeeklySimulation() {
   {
     title: 'Averias',
     content: (
-      <Box>
-        <VStack spacing={4} align="stretch">
-        <PanelSearchBar onSubmit={()=>console.log('searching...')}/>
-        {currentData?.incidencias?.map((incidencia: IncidenciaSimulada) => (
-          <Box key={incidencia.idIncidencia}>
-            <IncidenciaCard 
-              incidencia={incidencia} 
-              onClick={() => console.log('Enfocando vehiculo')}
-            />
-          </Box>
-      ))}
-
-        </VStack>
-      </Box>
+      <AveriasPanel currentData={currentData} />
     )
   },
   {
@@ -429,5 +417,72 @@ export default function WeeklySimulation() {
       </Modal>
       <LoadingOverlay isVisible={isSimulationLoading} />
     </Flex>
+  );
+}
+
+function AveriasPanel({ currentData }: { currentData: any }) {
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const toast = useToast();
+  const [showForm, setShowForm] = useState(false);
+  return (
+    <Box>
+      <VStack spacing={4} align="stretch">
+        <PanelSearchBar onSubmit={()=>console.log('searching...')}/>
+        <HStack spacing={2} mt={2}>
+          <Button
+            leftIcon={<FaSort />} colorScheme="purple" variant="outline" size="sm"
+            borderRadius="md" fontWeight="bold" borderWidth="2px" borderColor="purple.500"
+            color="purple.700" bg="white"
+            _hover={{ bg: 'purple.100', color: 'purple.700' }}
+            _active={{ bg: 'purple.500', color: 'white', borderColor: 'purple.700' }}
+          >
+            Ordenar
+          </Button>
+          <Button
+            leftIcon={<FaFilter />} colorScheme="purple" variant="outline" size="sm"
+            borderRadius="md" fontWeight="bold" borderWidth="2px" borderColor="purple.500"
+            color="purple.700" bg="white"
+            _hover={{ bg: 'purple.100', color: 'purple.700' }}
+            _active={{ bg: 'purple.500', color: 'white', borderColor: 'purple.700' }}
+          >
+            Filtrar
+          </Button>
+          <Button
+            leftIcon={<FaRegClock />}
+            colorScheme="purple"
+            variant="outline"
+            size="sm"
+            borderRadius="md"
+            fontWeight="bold"
+            borderWidth="2px"
+            borderColor="purple.500"
+            color="purple.700"
+            bg="white"
+            _hover={{ bg: 'purple.100', color: 'purple.700' }}
+            _active={{ bg: 'purple.600', color: 'white', borderColor: 'purple.700' }}
+            _expanded={{ bg: 'purple.600', color: 'white', borderColor: 'purple.700' }}
+            onClick={onOpen}
+          >
+            Programar
+          </Button>
+        </HStack>
+        {currentData?.incidencias?.map((incidencia: any) => (
+          <Box key={incidencia.idIncidencia}>
+            <IncidenciaCard 
+              incidencia={incidencia} 
+              onClick={() => console.log('Enfocando vehiculo')}
+            />
+          </Box>
+        ))}
+      </VStack>
+      <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalBody>
+            <IncidenciaForm onFinish={() => { onClose(); toast({ title: 'Incidencia programada', status: 'success', duration: 3000 }); }} onCancel={onClose} />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+    </Box>
   );
 }

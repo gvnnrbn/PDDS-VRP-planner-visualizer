@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Box, VStack, HStack, Text, Button, useToast } from '@chakra-ui/react'
+import { Box, VStack, HStack, Text, Button, Modal, ModalOverlay, ModalContent, ModalBody } from '@chakra-ui/react'
 import { PedidoForm } from '../../components/PedidoForm'
 import { PedidoTable } from '../../components/PedidoTable'
 import { PedidoService } from '../../core/services/PedidoService'
@@ -14,7 +14,6 @@ export default function PedidosPhase() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
-  const toast = useToast()
   const handleFormFinish = () => {
     setShowForm(false)
     setSelectedPedido(null)
@@ -30,21 +29,16 @@ export default function PedidosPhase() {
     setShowForm(true)
   }
 
-  const handleNextPhase = () => {
-    navigate('/weekly-simulation/incidencias')
-  }
   const pedidoService = new PedidoService()
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
-
     try {
       await pedidoService.importarPedidos(file)
       queryClient.invalidateQueries({ queryKey: ['pedidos'] })
-      toast({ title: 'Importación exitosa', status: 'success', duration: 3000, isClosable: true })
     } catch (error: any) {
-      toast({ title: 'Error', description: error.message, status: 'error', duration: 3000, isClosable: true })
+      // Manejo de error opcional
     }
   }
 
@@ -52,52 +46,41 @@ export default function PedidosPhase() {
     <Box p={4}>
       <VStack spacing={4} align="stretch">
         <HStack justify="space-between" align="center">
-          <Button 
-            variant='primary'
-            width="15rem"
-            opacity={0}
-          />
+          <Box />
           <Text fontSize="2xl" fontWeight="bold" textAlign="center" width="100%">
             Gestión de Pedidos
           </Text>
           <Link to={'/incidencias'}>
-            <Button variant='primary'width="15rem">Siguiente: Incidencias</Button>
+            <Button variant='primary' width="15rem">Siguiente: Incidencias</Button>
           </Link>
         </HStack>
-
-        <HStack justify="flex-end" spacing={4}>
-          <Button 
-            variant='primary'
-            onClick={() => {
-              setSelectedPedido(null)
-              setShowForm(true)
-            }}
-          >
-            Nuevo Pedido
-          </Button>
-          <Button colorScheme="teal" onClick={() => fileInputRef.current?.click()}>
-            Importar archivo
-          </Button>
-          <input
-            type="file"
-            accept=".txt"
-            ref={fileInputRef}
-            onChange={handleFileUpload}
-            hidden
-          />
-        </HStack>
-
-        {showForm ? (
-          <PedidoForm
-            pedido={selectedPedido}
-            onFinish={handleFormFinish}
-            onCancel={handleFormCancel}
-          />
-        ) : (
-          <PedidoTable
-            onPedidoSelect={handlePedidoSelect}
-          />
-        )}
+        <PedidoTable
+          onPedidoSelect={handlePedidoSelect}
+          onNuevoPedido={() => {
+            setSelectedPedido(null)
+            setShowForm(true)
+          }}
+          onImportarArchivo={() => fileInputRef.current?.click()}
+        />
+        <input
+          type="file"
+          accept=".txt"
+          ref={fileInputRef}
+          onChange={handleFileUpload}
+          hidden
+        />
+        <Modal isOpen={showForm} onClose={handleFormCancel} isCentered size="lg">
+          <ModalOverlay />
+          <ModalContent>
+            <ModalBody>
+              <PedidoForm
+                pedido={selectedPedido}
+                onFinish={handleFormFinish}
+                onCancel={handleFormCancel}
+              />
+            </ModalBody>
+          </ModalContent>
+        </Modal>
       </VStack>
     </Box>
   )

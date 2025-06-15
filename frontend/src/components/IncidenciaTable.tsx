@@ -12,22 +12,39 @@ import {
   Box,
   useToast,
   Button,
-  Select
+  Select,
+  InputGroup,
+  InputLeftElement,
+  Input,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  Flex
 } from '@chakra-ui/react'
 import { DeleteIcon, EditIcon } from '@chakra-ui/icons'
 import type { Incidencia } from '../core/types/incidencia'
 import { IncidenciaService } from '../core/services/IncidenciaService'
 import { format } from 'date-fns'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+import { FaSearch, FaSort } from 'react-icons/fa'
 
 const incidenciaService = new IncidenciaService()
 
 interface IncidenciaTableProps {
   onIncidenciaSelect?: (incidencia: Incidencia) => void
+  onNuevaIncidencia?: () => void
 }
 
-export const IncidenciaTable = ({ onIncidenciaSelect }: IncidenciaTableProps) => {
+const ORDER_OPTIONS = [
+  { label: 'Fecha más reciente', value: 'fecha-desc' },
+  { label: 'Fecha más lejana', value: 'fecha-asc' },
+  { label: 'Id vehículo mayor a menor', value: 'vehiculo-desc' },
+  { label: 'Id vehículo menor a mayor', value: 'vehiculo-asc' },
+]
+
+export const IncidenciaTable = ({ onIncidenciaSelect, onNuevaIncidencia }: IncidenciaTableProps) => {
   const queryClient = useQueryClient()
   const toast = useToast()
 
@@ -39,11 +56,57 @@ export const IncidenciaTable = ({ onIncidenciaSelect }: IncidenciaTableProps) =>
 
   const [currentPage, setCurrentPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(10)
+  const [searchValue, setSearchValue] = useState('')
+  const [orderBy, setOrderBy] = useState(ORDER_OPTIONS[0].value)
+  const [turnoFilter, setTurnoFilter] = useState('Todos')
+  const [ocurridoFilter, setOcurridoFilter] = useState('Todos')
 
+  // Filtrado por búsqueda, turno y ocurrido
+  const filteredIncidencias = useMemo(() => {
+    return (incidencias || []).filter(inc => {
+      // Búsqueda
+      const search = searchValue.toLowerCase()
+      const fechaStr = format(new Date(inc.fecha), 'yyyy-MM-dd')
+      const turnoStr = inc.turno?.toLowerCase() || ''
+      const vehiculoStr = inc.vehiculo?.id?.toString() || ''
+      const matchSearch =
+        fechaStr.includes(search) ||
+        turnoStr.includes(search) ||
+        vehiculoStr.includes(search)
+      // Filtro turno
+      const matchTurno = turnoFilter === 'Todos' || inc.turno === turnoFilter
+      // Filtro ocurrido
+      const matchOcurrido =
+        ocurridoFilter === 'Todos' ||
+        (ocurridoFilter === 'Sí' && inc.ocurrido) ||
+        (ocurridoFilter === 'No' && !inc.ocurrido)
+      return matchSearch && matchTurno && matchOcurrido
+    })
+  }, [incidencias, searchValue, turnoFilter, ocurridoFilter])
+
+  // Ordenado
+  const sortedIncidencias = useMemo(() => {
+    return [...filteredIncidencias].sort((a, b) => {
+      switch (orderBy) {
+        case 'fecha-desc':
+          return new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
+        case 'fecha-asc':
+          return new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
+        case 'vehiculo-desc':
+          return (b.vehiculo?.id || 0) - (a.vehiculo?.id || 0)
+        case 'vehiculo-asc':
+          return (a.vehiculo?.id || 0) - (b.vehiculo?.id || 0)
+        default:
+          return 0
+      }
+    })
+  }, [filteredIncidencias, orderBy])
+
+  // Paginación
   const indexOfLastRow = currentPage * rowsPerPage
   const indexOfFirstRow = indexOfLastRow - rowsPerPage
-  const currentIncidencias = incidencias?.slice(indexOfFirstRow, indexOfLastRow) || []
-  const totalPages = Math.ceil((incidencias?.length || 0) / rowsPerPage)
+  const currentIncidencias = sortedIncidencias.slice(indexOfFirstRow, indexOfLastRow)
+  const totalPages = Math.ceil(sortedIncidencias.length / rowsPerPage)
 
   const handleDelete = async (id: number) => {
     try {
@@ -77,6 +140,74 @@ export const IncidenciaTable = ({ onIncidenciaSelect }: IncidenciaTableProps) =>
 
   return (
     <Box>
+      {/* Barra de búsqueda, orden y filtros */}
+      <Flex mb={4} mt={4} align="center" gap={4} wrap="wrap">
+        <InputGroup maxW="300px">
+          <InputLeftElement pointerEvents="none">
+            <FaSearch color="gray.400" />
+          </InputLeftElement>
+          <Input
+            placeholder="Buscar por fecha, turno, vehículo..."
+            value={searchValue}
+            onChange={e => { setSearchValue(e.target.value); setCurrentPage(1); }}
+            borderRadius="md"
+            bg="white"
+            size="md"
+          />
+        </InputGroup>
+        <Menu>
+          <MenuButton as={Button} leftIcon={<FaSort />} colorScheme="purple" variant="solid" size="md">
+            Ordenar
+          </MenuButton>
+          <MenuList>
+            {ORDER_OPTIONS.map(opt => (
+              <MenuItem
+                key={opt.value}
+                onClick={() => { setOrderBy(opt.value); setCurrentPage(1); }}
+                color={orderBy === opt.value ? 'purple.600' : undefined}
+                fontWeight={orderBy === opt.value ? 'bold' : 'normal'}
+              >
+                {opt.label}
+              </MenuItem>
+            ))}
+          </MenuList>
+        </Menu>
+        <Text fontWeight="semibold" color="purple.700" ml={2}>Turno:</Text>
+        <Select
+          placeholder="Todos"
+          value={turnoFilter}
+          onChange={e => { setTurnoFilter(e.target.value); setCurrentPage(1); }}
+          maxW="120px"
+          size="md"
+          colorScheme="purple"
+          variant="outline"
+        >
+          <option value="Todos">Todos</option>
+          <option value="T1">T1</option>
+          <option value="T2">T2</option>
+          <option value="T3">T3</option>
+        </Select>
+        <Text fontWeight="semibold" color="purple.700" ml={2}>Ocurrido:</Text>
+        <Select
+          placeholder="Todos"
+          value={ocurridoFilter}
+          onChange={e => { setOcurridoFilter(e.target.value); setCurrentPage(1); }}
+          maxW="120px"
+          size="md"
+          colorScheme="purple"
+          variant="outline"
+        >
+          <option value="Todos">Todos</option>
+          <option value="Sí">Sí</option>
+          <option value="No">No</option>
+        </Select>
+        <Box flex="1" />
+        {onNuevaIncidencia && (
+          <Button colorScheme="purple" size="md" fontWeight="bold" onClick={onNuevaIncidencia}>
+            Nueva Incidencia
+          </Button>
+        )}
+      </Flex>
       <TableContainer overflowY="auto">
         <Table variant="simple">
           <Thead>
@@ -117,7 +248,6 @@ export const IncidenciaTable = ({ onIncidenciaSelect }: IncidenciaTableProps) =>
           </Tbody>
         </Table>
       </TableContainer>
-
       {/* Paginación alineada a la derecha */}
       <HStack justify="flex-end" mt={4} spacing={6}>
         <HStack>
@@ -128,7 +258,6 @@ export const IncidenciaTable = ({ onIncidenciaSelect }: IncidenciaTableProps) =>
             <option value="15">15</option>
           </Select>
         </HStack>
-
         <Button
           size="sm"
           onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}

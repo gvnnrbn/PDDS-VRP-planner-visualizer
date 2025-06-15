@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Box, VStack, HStack, Text, Button } from '@chakra-ui/react'
+import { Box, VStack, HStack, Text, Button, Modal, ModalOverlay, ModalContent, ModalBody } from '@chakra-ui/react'
 import { IncidenciaForm } from '../../components/IncidenciaForm'
 import { IncidenciaTable } from '../../components/IncidenciaTable'
 import type { Incidencia } from '../../core/types/incidencia'
@@ -52,31 +52,30 @@ export default function IncidenciasPhase() {
             Gestión de Incidencias
           </Text>
           <Link to={'/vehiculos'}>
-                      <Button variant='primary'width="15rem">Siguiente: Vehículos</Button>
-                    </Link>
+            <Button variant='primary'width="15rem">Siguiente: Vehículos</Button>
+          </Link>
         </HStack>
 
-        <HStack justify="flex-end">
-          <Button 
-            onClick={() => {
-              setSelectedIncidencia(undefined)
-              setShowForm(true)
-            }}
-            variant='primary'
-          >
-            Nueva Incidencia
-          </Button>
-        </HStack>
+        <IncidenciaTable 
+          onIncidenciaSelect={handleIncidenciaSelect}
+          onNuevaIncidencia={() => {
+            setSelectedIncidencia(undefined)
+            setShowForm(true)
+          }}
+        />
 
-        {showForm ? (
-          <IncidenciaForm
-            incidencia={selectedIncidencia}
-            onFinish={handleFormFinish}
-            onCancel={handleFormCancel}
-          />
-        ) : (
-          <IncidenciaTable onIncidenciaSelect={handleIncidenciaSelect} />
-        )}
+        <Modal isOpen={showForm} onClose={handleFormCancel} isCentered size="lg">
+          <ModalOverlay />
+          <ModalContent>
+            <ModalBody>
+              <IncidenciaForm
+                incidencia={selectedIncidencia}
+                onFinish={handleFormFinish}
+                onCancel={handleFormCancel}
+              />
+            </ModalBody>
+          </ModalContent>
+        </Modal>
       </VStack>
     </Box>
   )
