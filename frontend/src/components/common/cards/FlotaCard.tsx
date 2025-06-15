@@ -12,8 +12,9 @@ export const FlotaCard = ({
     onClick,
 }:FlotaCardProps) => {
     const estado = vehiculo.estado;
-    const idPedido = vehiculo.rutaActual?.pop()?.idPedido || 0;// cambiar a como este el ultimo json
+    const idPedido = vehiculo.idPedido || 0;// cambiar a como este el ultimo json
     const codigoPedido = `PE${idPedido.toString().padStart(3, '0')}`;
+    const hasOrder = idPedido > 0;
     let cardColor;
     let isFocus = false;
     let hasRoute = true;
@@ -69,7 +70,7 @@ export const FlotaCard = ({
             <></>
             :
             <>
-                <Text id='pedidoId'>Pedido {codigoPedido}</Text>
+               { hasOrder ? <Text id='pedidoId'>Pedido {codigoPedido}</Text> : <></>}
                 <Flex direction={'row'} gap={1}>
 
                 {isBroken
@@ -80,7 +81,7 @@ export const FlotaCard = ({
                     |
                     </>
                 }
-                <Text id='glp'>GLP: {vehiculo.glp}m³</Text>
+                <Text id='glp'>GLP: {vehiculo.currGLP}m³</Text>
                 |
                 <Text id='combustible'>Combustible: {combustiblePercentage}%</Text>
                 </Flex>

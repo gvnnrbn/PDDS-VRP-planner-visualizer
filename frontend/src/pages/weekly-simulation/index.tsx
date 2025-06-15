@@ -19,224 +19,11 @@ import { FilterSortButtons } from '../../components/common/cards/FilterSortButto
 import AlmacenPhase from './AlmacenPhase'
 import useStomp from './useStomp'
 import type { Message } from '@stomp/stompjs'
-
-// mock data
-const ordersOutput = [
-  {
-    id: 'PED-001',
-    state: 'En Proceso',
-    glp: 150,
-    deadline: '2023-10-15',
-    vehicles: [
-      { plaque: 'ABC123', eta: '2023-10-14 12:00' },
-      { plaque: 'XYZ789', eta: '2023-10-14 14:30' }
-    ]
-  },
-  {
-    id: 'PED-002',
-    state: 'Completado',
-    glp: 200,
-    deadline: '2023-10-16',
-    vehicles: [
-      { plaque: 'LMN456', eta: '2023-10-15 10:00' },
-    ]
-  },
-]
-
-const incidencias = [
-  {
-    id: 1,
-    estado: 'En Curso',
-    placa: 'ABC123',
-    turno: "T1",
-    tipo: "TI1",
-    fechaInicio: '2023-10-14 18:00',
-    fechaFin: '2023-10-14 22:00',
-  },
-  {
-    id: 2,
-    estado: 'Estimada',
-    placa: 'IJK123',
-    turno: "T1",
-    tipo: "TI2",
-    fechaInicio: '2023-10-14 18:00',
-    fechaFin: '2023-10-14 22:00',
-  },
-  {
-    id: 3,
-    estado: 'Resuelta',
-    placa: 'IJK123',
-    turno: "T1",
-    tipo: "TI2",
-    fechaInicio: '2023-10-14 18:00',
-    fechaFin: '2023-10-14 22:00',
-  },
-]
-
-const flota = [
-  {
-    id:1,
-    placa: 'ABC123',
-    estado: "Averiado",
-    eta: '2023-10-14 12:00',
-    glp: 50,
-    combustible: 180,
-    maxCombustible: 200,
-    pedidoId: 'PED-001',
-  },
-  {
-    id:2,
-    placa: 'XYZ098',
-    estado: "Entregando",
-    eta: '2023-10-14 12:00',
-    glp: 50,
-    combustible: 100,
-    maxCombustible: 200,
-    pedidoId: 'PED-002',
-  },
-  {
-    id:3,
-    placa: 'XSZ098',
-    estado: "Sin Programación",
-    eta: '2023-10-14 12:00',
-    glp: 50,
-    combustible: 100,
-    maxCombustible: 200,
-    pedidoId: 'PED-002',
-  },
-  {
-    id:4,
-    placa: 'XSZ098',
-    estado: "En Mantenimiento",
-    eta: '2023-10-14 12:00',
-    glp: 50,
-    combustible: 100,
-    maxCombustible: 200,
-    pedidoId: 'PED-002',
-  },
-]
-
-const mantenimientos = [
-  {
-    id: 1,
-    vehiculo: {
-      placa: 'ABC123',
-      tipo: 'TA',
-    },
-    estado: 'En Curso',
-    fechaInicio: '2023-10-14 00:00',
-    fechaFin: '2023-10-14 11:59',
-  },
-  {
-    id: 2,
-    vehiculo: {
-      placa: 'ABC123',
-      tipo: 'TA',
-    },
-    estado: 'Programado',
-    fechaInicio: '2023-10-14 00:00',
-    fechaFin: '2023-10-14 11:59',
-  },
-  {
-    id: 3,
-    vehiculo: {
-      placa: 'ABC123',
-      tipo: 'TA',
-    },
-    estado: 'Terminado',
-    fechaInicio: '2023-10-14 00:00',
-    fechaFin: '2023-10-14 11:59',
-  },
-]
-
-const sections = [
-  {
-    title: 'Pedidos',
-    content: (
-      <Box>
-        <VStack spacing={4} align="stretch">
-          <PanelSearchBar onSubmit={()=>console.log('searching...')}/>
-            {/* <FilterSortButtons entity={'Pedidos'}/> */}
-          {ordersOutput.map((order) => (
-            <Box key={order.id}>
-              <OrderCard 
-                orderCard={order} 
-                onClick={() => console.log('Enfocando pedido')}
-              />
-            </Box>
-          ))}
-        </VStack>
-      </Box>
-    )
-  },
-  {
-    title: 'Flota',
-    content: (
-      <Box>
-        <VStack spacing={4} align="stretch">
-        <PanelSearchBar onSubmit={()=>console.log('searching...')}/>
-        {flota.map((vehiculo) => (
-          <Box key={vehiculo.id}>
-            <FlotaCard 
-              flotaCard={vehiculo} 
-              onClick={() => console.log('Enfocando vehiculo')}
-            />
-          </Box>
-      ))}
-
-        </VStack>
-      </Box>
-    )
-  },
-  {
-    title: 'Averias',
-    content: (
-      <Box>
-        <VStack spacing={4} align="stretch">
-        <PanelSearchBar onSubmit={()=>console.log('searching...')}/>
-        {incidencias.map((incidencia) => (
-          <Box key={incidencia.id}>
-            <IncidenciaCard 
-              incidenciaCard={incidencia} 
-              onClick={() => console.log('Enfocando vehiculo')}
-            />
-          </Box>
-      ))}
-
-        </VStack>
-      </Box>
-    )
-  },
-  {
-    title: 'Mantenimiento',
-    content: (
-      <Box>
-        <VStack spacing={4} align="stretch">
-        <PanelSearchBar onSubmit={()=>console.log('searching...')}/>
-        {mantenimientos.map((mantenimiento) => (
-          <Box key={mantenimiento.id}>
-            <MantenimientoCard 
-              mantenimientoCard={mantenimiento} 
-              onClick={() => console.log('Enfocando vehiculo')}
-            />
-          </Box>
-      ))}
-
-        </VStack>
-      </Box>
-    )
-  },
-  // {
-  //   title: 'Indicadores',
-  //   content: (
-  //     <Box>
-  //       <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
-  //         contenido indicadores
-  //       </Text>
-  //     </Box>
-  //   )
-  // },
-]
+import type { VehiculoSimulado } from '../../core/types/vehiculo'
+import type { PedidoSimulado } from '../../core/types/pedido'
+import type { IncidenciaSimulada } from '../../core/types/incidencia'
+import type { MantenimientoSimulado } from '../../core/types/manetenimiento'
+import { set } from 'date-fns'
 
 interface ScheduleChunk {
   current?: any;
@@ -247,14 +34,15 @@ interface ScheduleChunk {
 export default function WeeklySimulation() {
   const bgColor = useColorModeValue('white', '#1a1a1a')
   const [isCollapsed, setIsCollapsed] = useState(true)
-  const [section, setSection] = useState(sections[0].title)
   const [isSimulationLoading, setIsSimulationLoading] = useState(false);
-  const [ isSimulationCompleted, setIsSImulationCompleted ] = useState(false);
+  const [ isSimulationCompleted, setIsSimulationCompleted ] = useState(false);
 
   const [selectedDate, setSelectedDate] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(true);
   const { connected, subscribe, unsubscribe, publish } = useStomp('http://localhost:8080/ws');
   const [hasStarted, setHasStarted] = useState(false);
+  const [ isPaused, setIsPaused ] = useState(false)
+  const [ speedMs, setSpeedMs ] = useState(1000)  
   const [scheduleChunk, setScheduleChunk] = useState<ScheduleChunk>({});
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -268,7 +56,6 @@ export default function WeeklySimulation() {
   /**
    * HANDLE DATE 
    */
-  // Format the selected date/time into ISO format
   const formatDateTime = () => {
     const [year, month, day] = dateValue.split('-');
     const formattedDate = `${year}-${month}-${day}T${String(hourValue).padStart(2, '0')}:${String(minuteValue).padStart(2, '0')}`;
@@ -284,17 +71,28 @@ export default function WeeklySimulation() {
    * START SIMULATION
   */
 
-  // delay after simulation starts
-  // useEffect(() => {
-  //   const timer = setTimeout(() => setIsSimulationLoading(false), 2000); // 2s simulado
-  //   return () => clearTimeout(timer);
-  // },[isSimulationLoading])
  
   const handleSubmit = () => {
+    if(!connected) return;
     formatDateTime(); // Ensure we have the latest value
     setIsModalOpen(false);
-    handleStartSimulation();
     setIsSimulationLoading(true);
+    const timer = setTimeout(() => {
+      setIsSimulationLoading(false);
+      setHasStarted(true);
+      handleStartSimulation();
+    }, 3000);
+    return () => clearTimeout(timer);
+    // if (connected) {
+      // handleStartSimulation();
+    // } else {
+    //   const waitUntilConnected = setInterval(() => {
+    //     if (connected) {
+    //       clearInterval(waitUntilConnected);
+    //       handleStartSimulation();
+    //     }
+    //   }, 250);
+    // }
   };
 
   const handleStartSimulation = () => {
@@ -310,13 +108,12 @@ export default function WeeklySimulation() {
     if (!connected) return;
 
     const handleIncomingData = (message: any) => {
-    console.log("receiving message:", message.body);
 
     try {
       // Verifica si parece un JSON válido
       if (message.body.trim().startsWith('{') || message.body.trim().startsWith('[')) {
         const data = JSON.parse(message.body);
-        console.log("Parsed data:", data);
+        console.log(data);
 
         setScheduleChunk(prev => {
           if (!prev.current) {
@@ -328,9 +125,8 @@ export default function WeeklySimulation() {
         publish('/app/chunk-received', {});
       } else {
         console.warn("Received non-JSON message:", message.body);
-        // Aquí puedes manejar mensajes tipo "COMPLETED"
         if (message.body === "COMPLETED") {
-          setIsSImulationCompleted(true);
+          setIsSimulationCompleted(true);
           console.log("Simulation completed");
         }
       }
@@ -340,7 +136,7 @@ export default function WeeklySimulation() {
     }; 
     subscribe('/topic/simulation-data', handleIncomingData);
     return () => {
-      unsubscribe('/topic/simulation-data');
+      unsubscribe("/topic/simulation-data");
     };
   }, [connected]);
 
@@ -361,7 +157,7 @@ export default function WeeklySimulation() {
     // Caso 2: Ya hay un chunk actual, pero nos acercamos al final
     if (!scheduleChunk.next) {
       const simulationLength = scheduleChunk.current.simulacion.length;
-      if (currentIndex >= simulationLength - 2) {
+      if (currentIndex >= simulationLength - 1) {
         console.log('Solicitando siguiente chunk...');
         publish('/app/request-chunk', JSON.stringify({}));
       }
@@ -370,7 +166,7 @@ export default function WeeklySimulation() {
 
   // 3. Handle chunk transition logic
   useEffect(() => {
-    if (!scheduleChunk.current) return;
+    if (!connected || !scheduleChunk.current) return;
 
     const simulationArray = scheduleChunk.current.simulacion;
     const isLastElement = currentIndex >= simulationArray.length - 1;
@@ -391,29 +187,132 @@ export default function WeeklySimulation() {
 
   // 4. Visualization timer (example)
   useEffect(() => {
-    if (!scheduleChunk.current) return;
+    if (!connected || !scheduleChunk.current) return;
 
     const timer = setInterval(() => {
       setCurrentIndex(prev => {
-        // Prevent going beyond array bounds
-        if (prev >= scheduleChunk.current!.simulacion.length - 1) {
-          return prev;
-        }
+        const isLast = prev >= scheduleChunk.current!.simulacion.length - 1;
+        if (isLast && !scheduleChunk.next) return prev; // Detener si no hay más datos
         return prev + 1;
       });
+
     }, 2000); // Adjust timing as needed
 
     return () => clearInterval(timer);
   }, [scheduleChunk]);
+  // 5. reset states on reload
+  useEffect(() => {
+  if (connected) {
+    // Reset all state on new connection if desired
+    setHasStarted(false);
+    setIsSimulationCompleted(false);
+    setCurrentIndex(0);
+    setScheduleChunk({});
+  }
+}, [connected]);
+
 
 
   // Render current simulation state
   const currentMinute = scheduleChunk.current?.simulacion[currentIndex]?.minuto;
   const currentData = scheduleChunk.current?.simulacion[currentIndex];
   // console.log(currentData);
+  
+  
   /*
    * HANDLE PANEL SECTIONS
    */
+
+  const sections = [
+  {
+    title: 'Pedidos',
+    content: (
+      <Box>
+        <VStack spacing={4} align="stretch">
+          <PanelSearchBar onSubmit={()=>console.log('searching...')}/>
+            {/* <FilterSortButtons entity={'Pedidos'}/> */}
+          {currentData?.pedidos?.map((pedido: PedidoSimulado) => (
+            <Box key={pedido.idPedido}>
+              <PedidoCard 
+                pedido={pedido} 
+                onClick={() => console.log('Enfocando pedido')}
+              />
+            </Box>
+          ))}
+        </VStack>
+      </Box>
+    )
+  },
+  {
+    title: 'Flota',
+    content: (
+      <Box>
+        <VStack spacing={4} align="stretch">
+        <PanelSearchBar onSubmit={()=>console.log('searching...')}/>
+        {currentData?.vehiculos?.map((vehiculo :VehiculoSimulado) => (
+          <Box key={vehiculo.idVehiculo}>
+            <FlotaCard 
+              vehiculo={vehiculo} 
+              onClick={() => console.log('Enfocando vehiculo')}
+            />
+          </Box>
+      ))}
+
+        </VStack>
+      </Box>
+    )
+  },
+  {
+    title: 'Averias',
+    content: (
+      <Box>
+        <VStack spacing={4} align="stretch">
+        <PanelSearchBar onSubmit={()=>console.log('searching...')}/>
+        {currentData?.incidencias?.map((incidencia: IncidenciaSimulada) => (
+          <Box key={incidencia.idIncidencia}>
+            <IncidenciaCard 
+              incidencia={incidencia} 
+              onClick={() => console.log('Enfocando vehiculo')}
+            />
+          </Box>
+      ))}
+
+        </VStack>
+      </Box>
+    )
+  },
+  {
+    title: 'Mantenimiento',
+    content: (
+      <Box>
+        <VStack spacing={4} align="stretch">
+        <PanelSearchBar onSubmit={()=>console.log('searching...')}/>
+        {currentData?.mantenimientos?.map((mantenimiento: MantenimientoSimulado) => (
+          <Box key={mantenimiento.idMantenimiento}>
+            <MantenimientoCard 
+              mantenimiento={mantenimiento} 
+              onClick={() => console.log('Enfocando vehiculo')}
+            />
+          </Box>
+      ))}
+
+        </VStack>
+      </Box>
+    )
+    },
+    // {
+    //   title: 'Indicadores',
+    //   content: (
+    //     <Box>
+    //       <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
+    //         contenido indicadores
+    //       </Text>
+    //     </Box>
+    //   )
+    // },
+  ]
+  const [section, setSection] = useState(sections[0].title)
+
   const handleSectionChange = (section: string) => {
     setSection(section)
   }
@@ -422,7 +321,6 @@ export default function WeeklySimulation() {
       setSection('')
     }
   }, [isCollapsed]);
-
 
   return (
     <Flex height="full" overflowY="auto" position="relative">
@@ -437,24 +335,27 @@ export default function WeeklySimulation() {
             element={
               isSimulationLoading 
               ? <></> 
-              : <SimulationPhase 
-                minuto={minuto}
+              : 
+              <>
+              {/* <SimulationPhase 
+                minuto={currentMinute}
                 // setMinuto={setMinuto} 
-                data={data}
+                data={currentData}
                 // isPaused={isPaused}
                 setIsPaused={setIsPaused}
                 // speedMs={speedMs}
                 setSpeedMs={setSpeedMs}
-                fechaVisual={fechaVisual}
-                />
+                fechaVisual={currentMinute}
+                /> */}
+                </>
             }
           />
         </Routes>
       </Box>
-            <Text fontSize="sm" color="gray.500" mt={2}>
+            <Text fontSize="sm" color="gray.500" mt={2} mr={20}>
               Minuto actual: {currentMinute}
             </Text>
-      {/*!isSimulationLoading && (
+      {!isSimulationLoading && (
         <>
           <SectionBar
             sections={sections}
@@ -469,7 +370,7 @@ export default function WeeklySimulation() {
 
           
         </>
-      )*/}
+      )}
       <Modal isOpen={isModalOpen} onClose={()=>{}}>
         <ModalOverlay />
         <ModalContent>
@@ -520,13 +421,13 @@ export default function WeeklySimulation() {
           </ModalBody>
 
           <ModalFooter justifyContent={'center'}>
-            <Button variant={'primary'} mr={3} onClick={handleSubmit}>
+            <Button variant={'primary'} mr={3} onClick={handleSubmit} disabled={!connected}>
               Iniciar Simulación
             </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
-      {/* <LoadingOverlay isVisible={isSimulationLoading} /> */}
+      <LoadingOverlay isVisible={isSimulationLoading} />
     </Flex>
   );
 }

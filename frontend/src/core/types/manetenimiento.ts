@@ -7,6 +7,6 @@ export interface MantenimientoSimulado {
         tipo: TipoVehiculo
     }
     estado: "En Curso" | "Programado" | "Terminado";
-    fechaInicio: string; // ISO string
-    fechaFin: string; // ISO string
+    fechaInicio: string;
+    fechaFin: string; 
 }

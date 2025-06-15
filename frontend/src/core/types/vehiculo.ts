@@ -18,7 +18,6 @@ export interface VehiculoSimulado  {
   estado: string;
   eta: string;
   tipo: string;
-  glp: number;
   combustible: number;
   maxCombustible: number;
   currGLP: number;
@@ -26,10 +25,9 @@ export interface VehiculoSimulado  {
   placa: string;
   posicionX: number;
   posicionY: number;
+  idPedido: number;
   rutaActual?: Array<{ 
-    idPedido: string;
     posX: number; 
     posY: number
-    accion: string; 
   }>;
 }

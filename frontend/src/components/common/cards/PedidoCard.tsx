@@ -35,7 +35,7 @@ export const PedidoCard = ({
         <Flex align='end'>
             <Box flex='1'>
                 <Flex gap={4} align='center'>
-                    <Text id='orderid' fontWeight={600} fontSize={18} color='purple.200'>{pedido.idPedido}</Text>
+                    <Text id='orderid' fontWeight={600} fontSize={18} color='purple.200'>{codigoPedido}</Text>
                     <Text id='state' variant='outline'>{pedido.estado}</Text>
                 </Flex>
                 
