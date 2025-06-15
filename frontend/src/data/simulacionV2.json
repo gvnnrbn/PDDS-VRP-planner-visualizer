@@ -100,30 +100,27 @@
           "placa": "TA123",
           "posicionX": 0,
           "posicionY": 0,
+          "estado": "Entregando",
           "rutaActual":[
             {
               "posX": 0,
               "posY": 15,
-              "estado": "Entregando",
               "accion": "Moviendose",
               "idPedido": 1
             },{
               "posX": 15,
               "posY": 15,
-              "estado": "Entregando",
               "accion": "Recarga",
               "traspasoGLP": 20,
               "idPedido": 1
             },{
               "posX": 30,
               "posY": 15,
-              "estado": "Entregando",
               "accion": "Moviendose",
               "idPedido": 1
             },{
               "posX": 30,
               "posY": 30,
-              "estado": "Entregando",
               "accion": "Descarga",
               "traspasoGLP": 12,
               "idPedido": 1
@@ -139,6 +136,7 @@
           "placa": "TA123",
           "posicionX": 13,
           "posicionY": 12,
+          "estado": "Averiado",
           "rutaActual":[]
         }
       ],
@@ -147,15 +145,15 @@
           "idPedido": 1,
           "estado":"Pendiente",
           "glp": 12,
-          "tiempoLimite": "yyyy-mm-dd hh:mm",
+          "fechaLimite": "2025-05-06T01:00:00",
           "vehiculosAtendiendo": [
             {
               "placa": "TA123",
-              "eta": "yyyy-mm-dd hh:mm"
+              "eta": "2025-05-06T00:01:15"
             },
             {
               "placa": "TD301",
-              "eta": "yyyy-mm-dd hh:mm"
+              "eta": "2025-05-06T00:02:15"
             }
           ],
           "posX": 30,
@@ -164,7 +162,7 @@
           "idPedido": 2,
           "estado":"Completado",
           "glp": 12,
-          "tiempoLimite": "yyyy-mm-dd hh:mm",
+          "fechaLimite": "2025-05-10T00:01:15",
           "vehiculosAtendiendo": [],
           "posX": 20,
           "posY": 20
@@ -172,7 +170,7 @@
           "idPedido": 3,
           "estado":"Completado",
           "glp": 20,
-          "tiempoLimite": "yyyy-mm-dd hh:mm",
+          "fechaLimite": "2025-05-08T00:11:15",
           "vehiculosAtendiendo": [],
           "posX": 20,
           "posY": 5
@@ -186,6 +184,30 @@
           "turno": "T1" ,
           "tipo": "TI1" ,
           "placa": "TA12",
+          "estado": "En curso"
+        }
+      ],
+      "mantenimientos":[
+        {
+          "idMantenimiento": 1,
+          "fechaInicio": "2025-05-04T00:00:00",
+          "fechaFin": "2025-05-04T01:00:00",
+          "vehiculo": {
+            "idVehiculo": 1,
+            "tipo": "TA",
+            "placa": "TA123"
+          },
+          "estado": "En curso"
+        },
+        {
+          "idMantenimiento": 2,
+          "fechaInicio": "2025-05-04T00:00:00",
+          "fechaFin": "2025-05-04T01:00:00",
+          "vehiculo": {
+            "idVehiculo": 2,
+            "tipo": "TB",
+            "placa": "TB456"
+          },
           "estado": "En curso"
         }
       ]
@@ -253,32 +275,29 @@
           "placa": "TA123",
           "posicionX": 30,
           "posicionY": 30,
+          "estado": "Entregando",
           "rutaActual":[
             {
               "posX": 20,
               "posY": 30,
-              "estado": "Entregando",
               "accion": "Moviendose",
               "idPedido": 2
             },
             {
               "posX": 20,
               "posY": 20,
-              "estado": "Entregando",
               "accion": "Descarga",
               "traspasoGLP": 12,
               "idPedido": 2
             },{
               "posX": 20,
               "posY": 10,
-              "estado": "Entregando",
               "accion": "Recarga",
               "traspasoGLP": 14,
               "idPedido": 3
             },{
               "posX": 20,
               "posY": 5,
-              "estado": "Entregando",
               "accion": "Descarga",
               "traspasoGLP": 20,
               "idPedido": 1
@@ -294,6 +313,7 @@
           "placa": "TA123",
           "posicionX": 13,
           "posicionY": 12,
+          "estado": "Averiado",
           "rutaActual":[]
         }
       ],
@@ -302,7 +322,7 @@
           "idPedido": 2,
           "estado":"Completado",
           "glp": 12,
-          "tiempoLimite": "yyyy-mm-dd hh:mm",
+          "fechaLimite": "yyyy-mm-dd hh:mm",
           "vehiculosAtendiendo": [],
           "posX": 20,
           "posY": 20
@@ -310,7 +330,7 @@
           "idPedido": 3,
           "estado":"Completado",
           "glp": 20,
-          "tiempoLimite": "yyyy-mm-dd hh:mm",
+          "fechaLimite": "yyyy-mm-dd hh:mm",
           "vehiculosAtendiendo": [],
           "posX": 20,
           "posY": 5
@@ -324,6 +344,19 @@
           "turno": "T1" ,
           "tipo": "TI1" ,
           "placa": "TA12",
+          "estado": "En curso"
+        }
+      ],
+      "mantenimientos":[
+        {
+          "idMantenimiento": 1,
+          "fechaInicio": "2025-05-04T00:00:00",
+          "fechaFin": "2025-05-04T01:00:00",
+          "vehiculo": {
+            "idVehiculo": 1,
+            "tipo": "TA",
+            "placa": "TA123"
+          },
           "estado": "En curso"
         }
       ]

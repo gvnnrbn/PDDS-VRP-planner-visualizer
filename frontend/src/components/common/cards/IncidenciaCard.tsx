@@ -1,21 +1,21 @@
 import { Box, Button, Flex, Text } from "@chakra-ui/react";
 import { faArrowsToDot } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import type { IIncidenciaCard } from "../../../core/types/incidencia.ts";
+import type { IncidenciaSimulada } from "../../../core/types/incidencia";
 
 interface IncidenciaCardProps {
-    incidenciaCard: IIncidenciaCard,
+    incidencia: IncidenciaSimulada,
     onClick: () => void,
 }
 export const IncidenciaCard = ({
-    incidenciaCard,
+    incidencia,
     onClick,
 }:IncidenciaCardProps) => {
     let cardColor;
     let isFocus = false;
     let isEstimada = false;
     const primaryTextSize = 18;
-    switch(incidenciaCard.estado.toUpperCase()){
+    switch(incidencia.estado.toUpperCase()){
             case 'EN CURSO': 
             cardColor = '#FFCFCF';
         break;
@@ -38,20 +38,20 @@ export const IncidenciaCard = ({
                 {isEstimada ?
                 <Flex gap={1} align='center'>
                     <Text id={"placa"} fontWeight={600} fontSize={primaryTextSize} color='purple.200'>
-                        {incidenciaCard.placa}
+                        {incidencia.placa}
                     </Text>
                     |
                     <Text id={"turno"} fontWeight={600} fontSize={primaryTextSize} color='purple.200'>
-                        {"Turno "+incidenciaCard.turno.replace("T", "")}
+                        {"Turno "+incidencia.turno.replace("T", "")}
                     </Text>
-                    <Text id='state' variant='outline' pl={4}>{incidenciaCard.estado}</Text>
+                    <Text id='state' variant='outline' pl={4}>{incidencia.estado}</Text>
                 </Flex>
                 :
                 <Flex gap={4} align='center'>
                     <Text id='fechaInicio' fontWeight={600} fontSize={primaryTextSize} color='purple.200'>
-                        {incidenciaCard.fechaInicio}
+                        {incidencia.fechaInicio}
                     </Text>
-                    <Text id='estado'>{incidenciaCard.estado}</Text>
+                    <Text id='estado'>{incidencia.estado}</Text>
                 </Flex>
                 }
                 
@@ -70,14 +70,14 @@ export const IncidenciaCard = ({
         <Flex gap={1} color='grey' fontSize={14}>
         {isEstimada 
         ?
-            <Text id='tipo'>Incidente tipo {incidenciaCard.tipo.replace("TI", "")}</Text>
+            <Text id='tipo'>Incidente tipo {incidencia.tipo.replace("TI", "")}</Text>
             :
             <>
-            <Text id='placa'>{incidenciaCard.placa}</Text>
+            <Text id='placa'>{incidencia.placa}</Text>
             |
-            <Text id='fechaFin'>Fin: {incidenciaCard.fechaFin}</Text>
+            <Text id='fechaFin'>Fin: {incidencia.fechaFin}</Text>
             |
-            <Text id='tipo'>Incidente Tipo {incidenciaCard.tipo.replace("TI", "")}</Text>
+            <Text id='tipo'>Incidente Tipo {incidencia.tipo.replace("TI", "")}</Text>
             </>
         }
         </Flex>

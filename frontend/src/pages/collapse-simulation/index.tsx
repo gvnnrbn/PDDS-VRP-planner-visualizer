@@ -7,8 +7,7 @@ import SimulationPhase from './SimulationPhase'
 import LegendPanel from '../../components/common/Legend'
 import BottomLeftControls from '../../components/common/MapActions'
 import PedidosPhaseCollapse from './PedidosPhase'
-import { OrderCard } from '../../components/common/cards/PedidoCard'
-import MyComponent from '../weekly-simulation/MyComponent'
+import { PedidoCard } from '../../components/common/cards/PedidoCard'
 
 const ordersOutput = [
   {
@@ -40,14 +39,6 @@ const sections = [
     content: (
       <Box>
         <VStack spacing={4} align="stretch">
-          {ordersOutput.map((order) => (
-            <Box key={order.id}>
-              <OrderCard 
-                orderCard={order} 
-                onClick={() => console.log('Enfocar pedido clicked')}
-              />
-            </Box>
-          ))}
         </VStack>
       </Box>
     )

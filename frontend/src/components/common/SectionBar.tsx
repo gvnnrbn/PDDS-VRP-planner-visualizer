@@ -18,7 +18,7 @@ export const SectionBar = ({
   onSectionChange, 
   currentSection,
   isCollapsed,
-  onToggleCollapse 
+  onToggleCollapse
 }: SectionBarProps) => {
   const selectedColor = useColorModeValue('#E5E5E5', '#1a1a1a')
   const notSelectedColor = useColorModeValue('#BDBDBD', '#BDBDBD')

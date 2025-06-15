@@ -1,19 +1,21 @@
 import { Box, Button, Flex, Text } from "@chakra-ui/react";
 import { faArrowsToDot } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import type { IOrderCard } from "../../../core/types/pedido";
+import type { PedidoSimulado } from "../../../core/types/pedido";
 
-interface OrderCardProps {
-    orderCard: IOrderCard,
+interface PedidoCardProps {
+    pedido: PedidoSimulado,
     onClick: () => void,
 }
-export const OrderCard = ({
-    orderCard,
+export const PedidoCard = ({
+    pedido,
     onClick,
-}:OrderCardProps) => {
+}:PedidoCardProps) => {
     let cardColor;
     let isFocus = false;
-    switch(orderCard.state.toUpperCase()){
+    const codigoPedido = `PE${pedido.idPedido.toString().padStart(3, '0')}`;
+
+    switch(pedido.estado.toUpperCase()){
             case 'EN CURSO': 
             cardColor = 'yellow';
         break;
@@ -33,8 +35,8 @@ export const OrderCard = ({
         <Flex align='end'>
             <Box flex='1'>
                 <Flex gap={4} align='center'>
-                    <Text id='orderid' fontWeight={600} fontSize={18} color='purple.200'>{orderCard.id}</Text>
-                    <Text id='state' variant='outline'>{orderCard.state}</Text>
+                    <Text id='orderid' fontWeight={600} fontSize={18} color='purple.200'>{codigoPedido}</Text>
+                    <Text id='state' variant='outline'>{pedido.estado}</Text>
                 </Flex>
                 
             </Box>
@@ -50,16 +52,17 @@ export const OrderCard = ({
             </Box>
         </Flex>
         <Flex gap={1}>
-            <Text id='glp'>GLP: {orderCard.glp}m³</Text>
+            <Text id='glp'>GLP: {pedido.glp}m³</Text>
             |
-            <Text id='deadline'>Fecha Límite: {orderCard.deadline}</Text>
+            <Text id='deadline'>Fecha Límite: {pedido.fechaLimite}</Text>
             </Flex>
             <Flex id='vehicles' direction='column'>
-            { orderCard.vehicles.map((vehicle) => (
-                <Flex id='vehicle' gap={1} color='grey' fontSize={14}>
-                <Text id='plaque'>{vehicle.plaque}</Text>
+            {
+            pedido.vehiculosAtendiendo.map((vehiculo) => (
+            <Flex key={`vehiculo-${pedido.idPedido}x${vehiculo.placa}`} gap={1} color='grey' fontSize={14}>
+                <Text>{vehiculo.placa}</Text>
                 |
-                <Text id='eta'>ETA: {vehicle.eta}</Text>
+                <Text>ETA: {vehiculo.eta}</Text>
             </Flex>
             ))}
         </Flex>

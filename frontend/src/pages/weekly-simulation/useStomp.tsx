@@ -18,14 +18,14 @@ const useStomp = (url: string) => {
       webSocketFactory: () => socket,
       reconnectDelay: 5000, // intenta reconectar cada 5s (si quieres mantener reconexión)
       onConnect: () => {
-        // console.log('STOMP connected');
+        console.log('STOMP connected');
         setConnected(true);
         subscriptions.current.forEach((callback, destination) => {
           stompClient.subscribe(destination, callback);
         });
       },
       onWebSocketClose: (evt) => {
-        // console.warn('WebSocket closed', evt);
+        console.warn('WebSocket closed', evt);
         setConnected(false);
       },
       onStompError: (frame) => {
@@ -72,20 +72,22 @@ const useStomp = (url: string) => {
   }, [client, connected]);
 
   const publish = useCallback(
-    (destination, body, headers = {}) => {
-      if (client && connected) {
-        client.publish({ destination, body, headers });
-      }
-    },
-    [client, connected]
-  );
+  (destination: string, body: string, headers = {}) => {
+    if (client && connected) {
+      client.publish({ destination, body, headers });
+    } else {
+      console.warn("Tried to publish before STOMP was connected", { destination });
+    }
+  },
+  [client, connected]
+);
 
 useEffect(() => {
   // Solo conectar una vez al montar
   connect();
-  return () => {
-    disconnect();
-  };
+  // return () => {
+  //   disconnect();
+  // };
 }, []);
 
   return { connected, subscribe, unsubscribe, publish };
