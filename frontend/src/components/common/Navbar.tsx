@@ -1,5 +1,7 @@
-import { Box, Flex, Link, useColorModeValue } from '@chakra-ui/react'
+import { Box, Flex, Link, useColorModeValue, IconButton } from '@chakra-ui/react'
+import { HamburgerIcon } from '@chakra-ui/icons'
 import { Link as RouterLink, useLocation } from 'react-router-dom'
+import { useSidebar } from './Sidebar'
 
 const NavLink = ({ to, children }: { to: string; children: React.ReactNode }) => {
   const location = useLocation()
@@ -36,6 +38,7 @@ const NavLink = ({ to, children }: { to: string; children: React.ReactNode }) =>
 export const Navbar = () => {
   const bgColor = useColorModeValue('purple.100', '#2d1c5b')
   const textColor = useColorModeValue('#e8edef', '#ffffff')
+  const { onOpen } = useSidebar();
 
   return (
     <Box
@@ -47,22 +50,31 @@ export const Navbar = () => {
       zIndex={20}
     >
       <Flex h="full" alignItems="center" justifyContent="space-between">
-        {/* Lado izquierdo: LOGO (sin hover ni estado activo) */}
-        <Link
-          as={RouterLink}
-          to="/"
-          h="full"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          px={6}
-          fontSize="lg"
-          fontWeight="bold"
-          _hover={{ textDecoration: "none" }}
-        >
-          PLG-PapuSystem
-        </Link>
-
+        {/* Lado izquierdo: ÍCONO + LOGO */}
+        <Flex alignItems="center" gap={2}>
+          <IconButton
+            aria-label="Menu"
+            icon={<HamburgerIcon />}
+            onClick={onOpen}
+            variant="ghost"
+            colorScheme="whiteAlpha"
+            size="md"
+          />
+          <Link
+            as={RouterLink}
+            to="/"
+            h="full"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            px={2}
+            fontSize="lg"
+            fontWeight="bold"
+            _hover={{ textDecoration: "none" }}
+          >
+            PLG-PapuSystem
+          </Link>
+        </Flex>
         {/* Lado derecho: NAV LINKS */}
         <Flex h="full" gap={4} alignItems="center">
           <NavLink to="/dia-a-dia">Operación día a día</NavLink>
