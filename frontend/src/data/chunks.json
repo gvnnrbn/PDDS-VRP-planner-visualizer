@@ -37,11 +37,20 @@
               "idPedido": 1,
               "rutaActual": [
                 {
-                  "posX": 2,
+                  "posX": 1,
                   "posY": 2
                 },
                 {
+                  "posX": 2,
+                  "posY": 2
+                },{
+                  "posX": 2,
+                  "posY": 3
+                },{
                   "posX": 3,
+                  "posY": 3
+                },{
+                  "posX": 4,
                   "posY": 3
                 }
               ]
