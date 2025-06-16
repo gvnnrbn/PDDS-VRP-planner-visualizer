@@ -13,6 +13,7 @@ public class Main {
         int weekTime = 7 * 24 * 60;
         Scheduler scheduler = new Scheduler(agent, initialTime, weekTime, 60);
         scheduler.setDebug(true);
+        scheduler.setVisualize(true);
         scheduler.run();
     }
 }

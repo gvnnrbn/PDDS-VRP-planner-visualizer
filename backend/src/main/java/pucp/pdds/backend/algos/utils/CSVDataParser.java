@@ -244,7 +244,7 @@ public class CSVDataParser {
 
                 // Split line by commas
                 String[] parts = line.split(",");
-                if (parts.length < 3 || parts.length > 4) {
+                if (parts.length != 3 && parts.length != 4) {
                     System.err.println("Invalid warehouse format: " + line);
                     continue;
                 }

@@ -268,4 +268,152 @@ public class DataChunk {
     public void setSimulacion(List<SimulacionMinuto> simulacion) {
         this.simulacion = simulacion;
     }
+
+    public static List<Bloqueo> convertBlockagesToDataChunk(List<pucp.pdds.backend.algos.entities.PlannerBlockage> activeBlockages) {
+        return activeBlockages.stream()
+            .map(blockage -> {
+                Bloqueo bloqueo = new Bloqueo(
+                    blockage.id,
+                    blockage.startTime.toLocalDateTime(),
+                    blockage.endTime.toLocalDateTime()
+                );
+                // Add segments if they exist
+                if (blockage.vertices != null) {
+                    List<Bloqueo.Segmento> segmentos = blockage.vertices.stream()
+                        .map(vertex -> new Bloqueo.Segmento(
+                            (int)vertex.x,
+                            (int)vertex.y
+                        ))
+                        .collect(java.util.stream.Collectors.toList());
+                    bloqueo.setSegmentos(segmentos);
+                }
+                return bloqueo;
+            })
+            .collect(java.util.stream.Collectors.toList());
+    }
+
+    public static List<Vehiculo> convertVehiclesToDataChunk(List<pucp.pdds.backend.algos.entities.PlannerVehicle> vehicles, java.util.Map<Integer, List<pucp.pdds.backend.algos.algorithm.Node>> routes) {
+        return vehicles.stream()
+            .map(vehicle -> {
+                Vehiculo vehiculo = new Vehiculo(
+                    vehicle.id,
+                    vehicle.type,
+                    (int)vehicle.currentFuel,
+                    vehicle.maxFuel,
+                    vehicle.maxGLP,
+                    vehicle.currentGLP,
+                    vehicle.plaque,
+                    (int)vehicle.position.x,
+                    (int)vehicle.position.y
+                );
+                // Map route points if they exist
+                if (vehicle.currentPath != null) {
+                    List<RutaPunto> rutaActual = vehicle.currentPath.stream()
+                        .map(point -> {
+                            int glpAmount = 0;
+                            // Only try to get next node if vehicle is still active
+                            if (routes.containsKey(vehicle.id) && vehicle.nextNodeIndex < routes.get(vehicle.id).size()) {
+                                pucp.pdds.backend.algos.algorithm.Node nextNode = routes.get(vehicle.id).get(vehicle.nextNodeIndex);
+                                if (nextNode instanceof pucp.pdds.backend.algos.algorithm.OrderDeliverNode) {
+                                    glpAmount = ((pucp.pdds.backend.algos.algorithm.OrderDeliverNode)nextNode).order.amountGLP;
+                                } else if (nextNode instanceof pucp.pdds.backend.algos.algorithm.ProductRefillNode) {
+                                    glpAmount = ((pucp.pdds.backend.algos.algorithm.ProductRefillNode)nextNode).amountGLP;
+                                }
+                            }
+                            return new RutaPunto(
+                                (int)point.x,
+                                (int)point.y, 
+                                vehicle.state.toString(),
+                                vehicle.state.toString(),
+                                routes.containsKey(vehicle.id) && vehicle.nextNodeIndex < routes.get(vehicle.id).size() ? 
+                                    (routes.get(vehicle.id).get(vehicle.nextNodeIndex) instanceof pucp.pdds.backend.algos.algorithm.OrderDeliverNode ? 
+                                        ((pucp.pdds.backend.algos.algorithm.OrderDeliverNode) routes.get(vehicle.id).get(vehicle.nextNodeIndex)).order.id : 0) : 0,
+                                glpAmount
+                            );
+                        })
+                        .collect(java.util.stream.Collectors.toList());
+                    vehiculo.setRutaActual(rutaActual);
+                }
+                return vehiculo;
+            })
+            .collect(java.util.stream.Collectors.toList());
+    }
+
+    public static List<Almacen> convertWarehousesToDataChunk(List<pucp.pdds.backend.algos.entities.PlannerWarehouse> warehouses) {
+        return warehouses.stream()
+            .map(warehouse -> new Almacen(
+                warehouse.id,
+                (int)warehouse.position.x,
+                (int)warehouse.position.y,
+                warehouse.currentGLP,
+                warehouse.maxGLP,
+                warehouse.isMain,
+                warehouse.wasVehicle
+            ))
+            .collect(java.util.stream.Collectors.toList());
+    }
+
+    public static List<Pedido> convertOrdersToDataChunk(List<pucp.pdds.backend.algos.entities.PlannerOrder> activeOrders, 
+            List<pucp.pdds.backend.algos.entities.PlannerVehicle> activeVehicles,
+            java.util.Map<Integer, List<pucp.pdds.backend.algos.algorithm.Node>> routes,
+            pucp.pdds.backend.algos.utils.Time currTime) {
+        return activeOrders.stream()
+            .map(order -> {
+                Pedido pedido = new Pedido(
+                    order.id,
+                    order.isDelivered() ? "Completado" : "Pendiente",
+                    order.amountGLP,
+                    order.deadline.toString(),
+                    (int)order.position.x,
+                    (int)order.position.y
+                );
+                // Map attending vehicles if they exist
+                List<VehiculoAtendiendo> vehiculosAtendiendo = new ArrayList<>();
+                for (pucp.pdds.backend.algos.entities.PlannerVehicle vehicle : activeVehicles) {
+                    if (vehicle.currentPath != null && !vehicle.currentPath.isEmpty()) {
+                        pucp.pdds.backend.algos.algorithm.Node nextNode = routes.get(vehicle.id).get(vehicle.nextNodeIndex);
+                        if (nextNode instanceof pucp.pdds.backend.algos.algorithm.OrderDeliverNode && 
+                            ((pucp.pdds.backend.algos.algorithm.OrderDeliverNode) nextNode).order.id == order.id) {
+                            vehiculosAtendiendo.add(new VehiculoAtendiendo(
+                                vehicle.plaque,
+                                currTime.toString()
+                            ));
+                        }
+                    }
+                }
+                pedido.setVehiculosAtendiendo(vehiculosAtendiendo);
+                return pedido;
+            })
+            .collect(java.util.stream.Collectors.toList());
+    }
+
+    public static List<Incidencia> convertIncidentsToDataChunk(
+            List<pucp.pdds.backend.algos.entities.PlannerFailure> failures,
+            List<pucp.pdds.backend.algos.entities.PlannerMaintenance> activeMaintenances) {
+        List<Incidencia> incidencias = new ArrayList<>();
+        
+        // Add failures as incidents
+        failures.forEach(failure -> incidencias.add(new Incidencia(
+            failure.id,
+            failure.timeOccuredOn != null ? failure.timeOccuredOn.toString() : "",
+            failure.timeOccuredOn != null ? failure.timeOccuredOn.toString() : "",
+            failure.shiftOccurredOn.toString(),
+            failure.type.toString(),
+            failure.vehiclePlaque,
+            failure.timeOccuredOn != null ? "FINISHED" : "ACTIVE"
+        )));
+
+        // Add maintenances as incidents
+        activeMaintenances.forEach(maintenance -> incidencias.add(new Incidencia(
+            maintenance.id,
+            maintenance.startDate.toString(),
+            maintenance.endDate.toString(),
+            "T1", // Default shift since it's not specified in PlannerMaintenance
+            "MAINTENANCE",
+            maintenance.vehiclePlaque,
+            "ACTIVE"
+        )));
+
+        return incidencias;
+    }
 }
