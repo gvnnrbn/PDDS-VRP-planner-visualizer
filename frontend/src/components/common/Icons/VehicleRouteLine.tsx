@@ -39,6 +39,7 @@ export const VehicleRouteLine: React.FC<Props> = ({
       pointerWidth={10}
       fill="blue"
       lineCap="round"
+      listening={false}
     />
   );
 };

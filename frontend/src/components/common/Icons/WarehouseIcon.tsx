@@ -45,7 +45,7 @@ export const WarehouseIcon: React.FC<Props> = ({ almacen, cellSize, gridHeight }
     if (!almacen.isMain) {
       icon = faIndustry;
       if (almacen.currentGLP !== undefined && almacen.maxGLP !== undefined) {
-        color = almacen.currentGLP < almacen.maxGLP / 2 ? "red" : "green";
+        color = almacen.currentGLP==0 ? "red" : "green";
         setGlpLabel(`${almacen.currentGLP}/${almacen.maxGLP}`);
       } else {
         setGlpLabel("N/A");
