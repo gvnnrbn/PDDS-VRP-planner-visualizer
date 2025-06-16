@@ -16,12 +16,11 @@ export interface Vehiculo {
 export interface VehiculoSimulado  {
   idVehiculo: number;
   estado: string;
-  eta: string;
   tipo: string;
   combustible: number;
   maxCombustible: number;
-  currGLP: number;
   maxGLP: number;
+  currGLP: number;
   placa: string;
   posicionX: number;
   posicionY: number;

@@ -19,12 +19,10 @@ export const FlotaCard = ({
     let isFocus = false;
     let hasRoute = true;
     let combustiblePercentage = 0;
-    let isBroken = false;
 
     switch(estado.toUpperCase()){
             case 'AVERIADO': 
             cardColor = '#FFCFCF';
-            isBroken = true;
         break;
         case 'EN MANTENIMIENTO':
             cardColor = '#FFF9CD';

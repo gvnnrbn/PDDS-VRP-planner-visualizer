@@ -41,12 +41,16 @@ interface Props {
   cellSize: number;
   gridHeight: number;
   duration: number;
-  onStep?: (index: number) => void;
+  recorridoHastaAhora: number;
 }
 
 
 export const VehicleIcon = forwardRef<Konva.Image, Props>(
-  ({ vehiculo, cellSize, gridHeight, duration, onStep }, ref) => {
+  ({ vehiculo, cellSize, gridHeight, duration }, ref) => {
+    const { actualizarVehiculo } = useSimulacion();
+    const { actualizarPedido} = useSimulacion();
+    const {actualizarAlmacen} = useSimulacion();
+    const { almacenes } = useSimulacion();
     const [image] = useImage(createIconUrl(faTruck, getColorFromState("asdas")));
     const shapeRef = useRef<Konva.Image | null>(null);
 
@@ -122,28 +126,49 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
 
     const [isTooltipVisible, setIsTooltipVisible] = useState(false);
 
+    //PROXIMIDAD
+    const fullRuta: [number, number][] = [[vehiculo.posicionX, vehiculo.posicionY]];
+
+    vehiculo.rutaActual?.forEach(bloque => {
+      bloque.puntos.forEach(p => {
+        fullRuta.push([p.posX, p.posY]);
+      });
+    });
+    
+
+    // Animación de punto a punto
     useEffect(() => {
-      let index = 0;
-      let startTime: number | null = null;
+      // Construcción correcta de la ruta completa punto a punto
+      const ruta: [number, number][] = [[vehiculo.posicionX, vehiculo.posicionY]];
+      vehiculo.rutaActual?.forEach(bloque => {
+        bloque.puntos.forEach(p => {
+          ruta.push([p.posX, p.posY]);
+        });
+      });
+
+      if (ruta.length < 2) return;
+      console.log('Full ruta:', fullRuta);
+      let step = 0;
       let frameId: number;
 
-      if (puntosRuta.length < 2) return;
+      const stepDur = duration / (ruta.length - 1); // distribuir duración equitativamente
 
-      const stepDuration = duration / (puntosRuta.length - 1);
+      const animarPaso = (from: [number, number], to: [number, number], onFinish: () => void) => {
+        const start = performance.now();
 
-      const animateStep = (timestamp: number) => {
-        if (!startTime) startTime = timestamp;
-        const elapsed = timestamp - startTime;
+        const animate = (now: number) => {
+          const t = Math.min((now - start) / stepDur, 1);
+          const interp: [number, number] = [
+            from[0] + (to[0] - from[0]) * t,
+            from[1] + (to[1] - from[1]) * t,
+          ];
+          setPos(interp);
 
-        const t = Math.min(elapsed / stepDuration, 1);
-        const [fromX, fromY] = puntosRuta[index];
-        const [toX, toY] = puntosRuta[index + 1] || [fromX, fromY];
-
-        const interpX = fromX + (toX - fromX) * t;
-        const interpY = fromY + (toY - fromY) * t;
-
-        setPos([interpX, interpY]);
-        onStep?.(index);
+          if (shapeRef.current) {
+            shapeRef.current.x(interp[0] * cellSize - cellSize / 2);
+            shapeRef.current.y((gridHeight - interp[1]) * cellSize - cellSize / 2);
+            shapeRef.current.getLayer()?.batchDraw();
+          }
 
         if (t < 1) {
           frameId = requestAnimationFrame(animateStep);
@@ -155,20 +180,39 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
 
       frameId = requestAnimationFrame(animateStep);
       return () => cancelAnimationFrame(frameId);
-    }, [JSON.stringify(ruta)]);
+    }, [JSON.stringify(vehiculo.rutaActual)]);
+
+
+    //RUTA
+    const rutaEnPixeles = fullRuta.map(([x, y]) => [
+      x * cellSize,
+      (gridHeight - y) * cellSize,
+    ]);
+    const flattened = rutaEnPixeles.flat();
 
     useEffect(() => {
       if (typeof ref === "function") {
         ref(shapeRef.current);
       } else if (ref) {
-        (ref as React.MutableRefObject<Konva.Image | null>).current = shapeRef.current;
+        ref.current = shapeRef.current;
       }
     }, [ref]);
 
-    if (!image) return null;
+    
 
     const pixelX = pos[0] * cellSize;
     const pixelY = (gridHeight - pos[1]) * cellSize;
+
+
+    useEffect(() => {
+      if (image && shapeRef.current) {
+        shapeRef.current.cache();
+        shapeRef.current.drawHitFromCache();
+      }
+    }, [image]);
+
+    if (!image) return null;
+    
 
     return (
       <>
@@ -205,11 +249,7 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
         />
 
         {isTooltipVisible && (
-          <Label
-            x={pixelX}
-            y={pixelY - cellSize / 2 - 10}
-            listening={false}
-          >
+          <Label x={pixelX} y={pixelY - cellSize / 2 - 10} listening={false}>
             <Tag
               fill="white"
               stroke="black"
@@ -231,6 +271,23 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
             />
           </Label>
         )}
+
+        <KonvaImage
+          ref={shapeRef}
+          image={image}
+          x={pixelX - cellSize / 2}
+          y={pixelY - cellSize / 2}
+          width={cellSize}
+          height={cellSize}
+          onClick={(e) => {
+            console.log('SE CLICKEO')
+            e.cancelBubble = true;
+            setIsTooltipVisible((prev) => !prev);
+          }}
+          onTap={() => setIsTooltipVisible((prev) => !prev)}
+          listening={true}
+          hitStrokeWidth={20}
+        />  
       </>
     );
   }
