@@ -3,7 +3,7 @@ import { Stage, Layer, Line, Label, Tag } from "react-konva";
 import { VehicleIcon } from "./Icons/VehicleIcon";
 import type {VehiculoSimulado} from "../../core/types/vehiculo";
 import type { PedidoSimulado } from "../../core/types/pedido";
-import type { IncidenciaSimulado } from "../../core/types/incidencia";
+import type { IncidenciaSimulada } from "../../core/types/incidencia";
 import { OrderIcon} from "./Icons/OrderIcon"
 import type { AlmacenSimulado } from "../../core/types/almacen";
 import type { BloqueoSimulado } from "../../core/types/bloqueos";
@@ -22,46 +22,30 @@ interface MinutoSimulacion {
   vehiculos: VehiculoSimulado[];
   pedidos: PedidoSimulado[];
   almacenes: AlmacenSimulado[];
-  incidencias: IncidenciaSimulado[];
+  incidencias: IncidenciaSimulada[];
 }
 
-interface SimulacionJson {
-  fechaInicio: string;
-  simulacion: MinutoSimulacion[];
-  bloqueos: BloqueoSimulado[];
-}
 
 interface MapGridProps {
   minuto: number;
-  data: any;
+  data: MinutoSimulacion;
+  speedMs: number;
 }
 
-export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
+export const MapGrid: React.FC<MapGridProps> = ({ minuto, data, speedMs }) => {
     if (minuto < 0) return null;
 
     const stageRef = useRef<any>(null);
     const [scale, setScale] = useState(1);
     const [position, setPosition] = useState({ x: 0, y: 0 });
 
-    const minutoActual = data.simulacion.find((m) => m.minuto === minuto);
+    const vehiculosActuales = data.vehiculos || [];
 
-    const vehiculosActuales = minutoActual?.vehiculos || [];
-
-    const pedidos = minutoActual?.pedidos || [];
-    const almacenes = minutoActual?.almacenes || [];
+    const pedidos = data.pedidos || [];
+    const almacenes = data.almacenes || [];
 
     const vehicleRefs = useRef<Record<number, Konva.Image | null>>({});
     const [progresoVehiculos, setProgresoVehiculos] = useState<Record<number, number>>({});
-
-    const fechaSimulacionInicio = new Date(data.fechaInicio);
-    const fechaActual = new Date(fechaSimulacionInicio);
-    fechaActual.setDate(fechaSimulacionInicio.getDate() + minuto);
-    //Bloqueos activos
-    const bloqueosVisibles = data.bloqueos?.filter((b) => {
-      const inicio = new Date(b.fechaInicio);
-      const fin = new Date(b.fechaFin);
-      return fechaActual >= inicio && fechaActual <= fin;
-    }) || [];
 
     // Referencias
     useEffect(() => {
@@ -99,6 +83,16 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
     return lines;
   };
 
+  useEffect(() => {
+    const container = stageRef.current?.container();
+    if (container) {
+      container.tabIndex = 1;
+      container.focus(); // evita que eventos no lleguen
+    }
+  }, []);
+
+  const BASE_DURATION = 31250;
+  const BASE_SPEED_MS = 31250;
 
   return (
     <Stage
@@ -150,29 +144,18 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
     >
       <Layer>
         {gridLines()}
-        {vehiculosActuales.map((v) => {
-          const avance = progresoVehiculos[v.idVehiculo] ?? 0;
-          
-          return (
-            <React.Fragment key={v.idVehiculo}>
-              <VehicleRouteLine
-                vehiculo={v}
-                cellSize={CELL_SIZE}
-                gridHeight={GRID_HEIGHT}
-                recorridoHastaAhora={avance}
-              />
-              <VehicleIcon
-                ref={(node) => {
-                  vehicleRefs.current[v.idVehiculo] = node;
-                }}
-                vehiculo={v}
-                cellSize={CELL_SIZE}
-                gridHeight={GRID_HEIGHT}
-                duration={31250}
-              />
-            </React.Fragment>
-          );
-        })}
+        {vehiculosActuales.map((v) => (
+          <VehicleIcon
+            key={v.idVehiculo}
+            ref={(node) => {
+              vehicleRefs.current[v.idVehiculo] = node;
+            }}
+            vehiculo={v}
+            cellSize={CELL_SIZE}
+            gridHeight={GRID_HEIGHT}
+            duration={BASE_DURATION * (BASE_SPEED_MS / speedMs)}
+          />
+        ))}
         {pedidos.map((v) => (
           <OrderIcon
             key={v.idPedido}
@@ -191,7 +174,7 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
           />
         ))}
 
-        {bloqueosVisibles.map((bloqueo) => {
+        { /*bloqueosVisibles.map((bloqueo) => {
           const puntos = bloqueo.segmentos
             .map((p) => [
               p.posX * CELL_SIZE,
@@ -209,7 +192,7 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data }) => {
               lineJoin="round"
             />
           );
-        })}
+        })*/}
       </Layer>
     </Stage>
   );

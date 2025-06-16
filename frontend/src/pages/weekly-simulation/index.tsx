@@ -38,7 +38,7 @@ export default function WeeklySimulation() {
   const [ isSimulationCompleted, setIsSimulationCompleted ] = useState(false);
 
   const [selectedDate, setSelectedDate] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { connected, subscribe, unsubscribe, publish } = useStomp('http://localhost:8080/ws');
   const [hasStarted, setHasStarted] = useState(false);
   const [ isPaused, setIsPaused ] = useState(false)
@@ -337,16 +337,16 @@ export default function WeeklySimulation() {
               ? <></> 
               : 
               <>
-              {/* <SimulationPhase 
+              {<SimulationPhase 
                 minuto={currentMinute}
                 // setMinuto={setMinuto} 
                 data={currentData}
                 // isPaused={isPaused}
                 setIsPaused={setIsPaused}
-                // speedMs={speedMs}
+                speedMs={speedMs}
                 setSpeedMs={setSpeedMs}
                 fechaVisual={currentMinute}
-                /> */}
+                /> }
                 </>
             }
           />
