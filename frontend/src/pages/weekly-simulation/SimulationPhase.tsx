@@ -95,7 +95,7 @@ export default function SimulationPhase(
   
   return (
     <div>
-      <MapGrid minuto={minuto} data={data} speedMs={speedMs}/>
+      <MapGrid minuto={minuto} data={data} speedMs={6000}/>
       <BottomLeftControls variant="full" date={displayDate} 
       onSpeedChange={(s) => {
         if (s in SPEED_MS_MAPPING) {
