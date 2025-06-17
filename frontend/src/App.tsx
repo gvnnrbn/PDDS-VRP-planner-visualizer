@@ -6,6 +6,8 @@ import { SidebarProvider } from './components/common/Sidebar'
 import WeeklySimulation from './pages/weekly-simulation'
 import CollapseSimulation from './pages/collapse-simulation'
 import DailyOperation from './pages/daily-operation'
+
+
 import { customTheme } from './components/ui/theme'
 import PedidosPhase from './pages/weekly-simulation/PedidosPhase'
 import IncidenciasPhase from './pages/weekly-simulation/IncidenciasPhase'
