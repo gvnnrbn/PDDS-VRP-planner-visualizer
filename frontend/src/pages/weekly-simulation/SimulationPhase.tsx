@@ -31,79 +31,90 @@ export default function SimulationPhase(
     fechaVisual // valor por defecto si no se pasa 
   } : PhaseProps) {
     
-  const minutoPrueba= DataMapaPrueba.chunks[0].simulacion[0].minuto;
-  const parseDateString = (dateString: string): Date => {
-  const [datePart, timePart] = dateString.split(' ');
-  const [day, month, year] = datePart.split('/');
-  // Formato ISO para Date constructor: YYYY-MM-DDTHH:MM:SS
-  const isoDateString = `${year}-${month}-${day}T${timePart}:00`;
-  const parsedDate = new Date(isoDateString);
-  // Valida si la fecha fue parseada correctamente
-  if (isNaN(parsedDate.getTime())) {
-    console.error("Fecha inválida parseada:", dateString);
-    return new Date(); // Retorna una fecha por defecto si hay un error
-  }
-  return parsedDate;
-  };
-
-  fechaVisual= parseDateString(DataMapaPrueba.chunks[0].simulacion[0].minuto);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [simulacionFinalizada, setSimulacionFinalizada] = useState(false);
+
+  // Estado actual del índice de simulación
+  const [indiceActual, setIndiceActual] = useState(0);
+
+  // Dataset completo
+  const simulacion = DataMapaPrueba.chunks[0].simulacion;
+
+  // Datos del paso actual
+  const simData = simulacion[indiceActual];
+  const minutoPrueba = indiceActual; // puede ser otro valor si tu lógica lo requiere
+
+  const parseDateString = (dateString: string): Date => {
+    const [datePart, timePart] = dateString.split(" ");
+    const [day, month, year] = datePart.split("/");
+    const isoDateString = `${year}-${month}-${day}T${timePart}:00`;
+    const parsedDate = new Date(isoDateString);
+    if (isNaN(parsedDate.getTime())) {
+      console.error("Fecha inválida parseada:", dateString);
+      return new Date();
+    }
+    return parsedDate;
+  };
+
+  const [visualDate, setVisualDate] = useState(parseDateString(simData.minuto));
+
+  const TiempoIntervalo=6000;
+
+  // ⏱️ Avanzar al siguiente paso cada 6000 ms
   useEffect(() => {
-    console.log('Minuto simulation:', minutoPrueba);
-  },[minuto])
+    const interval = setInterval(() => {
+      setIndiceActual((prev) => {
+        const siguiente = prev + 1;
+        if (siguiente < simulacion.length) {
+          setVisualDate(parseDateString(simulacion[siguiente].minuto));
+          return siguiente;
+        } else {
+          setSimulacionFinalizada(true);
+          setIsPaused(true);
+          onOpen();
+          clearInterval(interval);
+          return prev; // no avanza más
+        }
+      });
+    }, TiempoIntervalo);
 
+    return () => clearInterval(interval);
+  }, [setIsPaused, simulacion, onOpen]);
 
-  const fechaInicio = new Date(jsonData.fechaInicio);
-  
-  // ➕ Cálculo de fecha actual (usado por BottomLeftControls)
-  const fechaActual = new Date(fechaInicio);
-  fechaActual.setMinutes(fechaInicio.getMinutes() + minuto * 75);
-  
-  // ➕ Cálculo de fecha fin
-  const fechaFin = new Date(fechaInicio);
-  
-    
-  
-  const displayDate = fechaVisual instanceof Date
-  ? `${fechaVisual.toLocaleDateString()} | ${fechaVisual.toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit'
-    })}`
-  : 'Fecha inválida';
-  
-  //Funciones de acció
+  const SPEED_MS_MAPPING: Record<string, number> = {
+    "Velocidad x1": 31250,
+    "Velocidad x2": 15625,
+  };
+
+  const displayDate =
+    visualDate instanceof Date
+      ? `${visualDate.toLocaleDateString()} | ${visualDate.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}`
+      : "Fecha inválida";
+
   const handleStop = () => {
     setIsPaused(true);
-    setSimulacionFinalizada(true); // importante aquí también
+    setSimulacionFinalizada(true);
     onOpen();
   };
 
-  data=DataMapaPrueba.chunks[0].simulacion[0];
-  
-  const SPEED_MS_MAPPING: Record<string, number> = {
-    'Velocidad x1': 31250,
-    'Velocidad x2': 15625,
-  };
-
-  const handleSpeedChange = (label: string) => {
-    const speed = SPEED_MS_MAPPING[label];
-    if (speed) {
-      setSpeedMs(speed);
-    }
-  };
-  
   return (
     <div>
-      <MapGrid minuto={minuto} data={data} speedMs={speedMs}/>
-      <BottomLeftControls variant="full" date={displayDate} 
-      onSpeedChange={(s) => {
-        if (s in SPEED_MS_MAPPING) {
-          setSpeedMs(SPEED_MS_MAPPING[s as keyof typeof SPEED_MS_MAPPING]);
-        }
-      }}
-      onStop={handleStop}/>
-      {/* ✅ Modal al finalizar */}
+      <MapGrid minuto={minuto} data={simData} speedMs={TiempoIntervalo} />
+
+      <BottomLeftControls
+        variant="full"
+        date={displayDate}
+        onSpeedChange={(s) => {
+          if (s in SPEED_MS_MAPPING) {
+            setSpeedMs(SPEED_MS_MAPPING[s as keyof typeof SPEED_MS_MAPPING]);
+          }
+        }}
+        onStop={handleStop}
+      />
+
       <SimulationCompleteModal
         isOpen={isOpen}
         onClose={onClose}
@@ -114,8 +125,6 @@ export default function SimulationPhase(
         consumoPetroleo={456}
         tiempoPlanificacion="00:25:35"
       />
-            
-      
     </div>
   );
 }
