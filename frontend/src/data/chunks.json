@@ -37,21 +37,23 @@
               "idPedido": 1,
               "rutaActual": [
                 {
-                  "posX": 1,
-                  "posY": 2
-                },
-                {
-                  "posX": 2,
-                  "posY": 2
-                },{
-                  "posX": 2,
-                  "posY": 3
-                },{
-                  "posX":7,
-                  "posY":3
-                },{
-                  "posX":7,
-                  "posY":5
+                  "puntos":[
+                    {
+                      "posX":1, 
+                      "posY":2
+                    },{
+                      "posX":2, 
+                      "posY":2
+                    },{
+                      "posX":2, 
+                      "posY":3
+                    },{
+                      "posX":5, 
+                      "posY":3
+                    }
+                  ],
+                  "accion": "Entrega",
+                  "cantidad": 10
                 }
               ]
             }
@@ -69,7 +71,7 @@
           ],
           "mantenimientos": [
             {
-              "idMantenimiento": "1",
+              "idMantenimiento": 1,
               "vehiculo": {
                 "placa": "TA001",
                 "tipo": "TA"
@@ -105,7 +107,7 @@
           ]
         },
         {
-          "minuto": "08/05/2025 08:01",
+          "minuto": "08/05/2025 09:00",
           "vehiculos": [
             {
               "idVehiculo": 1,
@@ -122,12 +124,34 @@
               "idPedido": 1,
               "rutaActual": [
                 {
-                  "posX": 7,
-                  "posY": 3
-                },
+                  "puntos":[
+                    {
+                      "posX":7, 
+                      "posY":3
+                    },{
+                      "posX":7, 
+                      "posY":5
+                    }
+                  ],
+                  "accion": "Entrega",
+                  "cantidad": 10
+                  
+                }
+              ]
+            }
+          ],
+          "pedidos": [
+            {
+              "idPedido": 1,
+              "estado": "Pendiente",
+              "glp": 10,
+              "posX": 7,
+              "posY": 5,
+              "fechaLimite": "12/06/2025 19:00",
+              "vehiculosAtendiendo": [
                 {
-                  "posX": 7,
-                  "posY": 5
+                  "placa": "TA001",
+                  "eta": "12/06/2025 12:00"
                 }
               ]
             }
@@ -145,7 +169,7 @@
           ],
           "mantenimientos": [
             {
-              "idMantenimiento": "1",
+              "idMantenimiento": 1,
               "vehiculo": {
                 "placa": "TA001",
                 "tipo": "TA"
@@ -222,7 +246,7 @@
           ],
           "mantenimientos": [
             {
-              "idMantenimiento": "1",
+              "idMantenimiento": 1,
               "vehiculo": {
                 "placa": "TA001",
                 "tipo": "TA"
@@ -305,7 +329,7 @@
           ],
           "mantenimientos": [
             {
-              "idMantenimiento": "1",
+              "idMantenimiento": 1,
               "vehiculo": {
                 "placa": "TA001",
                 "tipo": "TA"
@@ -373,14 +397,6 @@
               "posicionY": 5,
               "idPedido": 0,
               "rutaActual": [
-                {
-                  "posX": 4,
-                  "posY": 4
-                },
-                {
-                  "posX": 3,
-                  "posY": 3
-                }
               ]
             }
           ],
@@ -397,7 +413,7 @@
           ],
           "mantenimientos": [
             {
-              "idMantenimiento": "1",
+              "idMantenimiento": 1,
               "vehiculo": {
                 "placa": "TA001",
                 "tipo": "TA"
