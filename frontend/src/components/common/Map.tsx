@@ -17,9 +17,9 @@ const GRID_WIDTH = 70; // Número de celdas a lo ancho
 const GRID_HEIGHT = 50; // Número de celdas a lo alto
 
 interface MinutoSimulacion {
-  minuto: number;
+  minuto: string;
   vehiculos: VehiculoSimulado[];
-  pedidos: PedidoSimulado[];
+  pedidos?: PedidoSimulado[];
   almacenes: AlmacenSimulado[];
   incidencias: IncidenciaSimulada[];
 }
