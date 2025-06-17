@@ -1,0 +1,45 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Premise
+- This is an application for scheduling vehicle routes to deliver GLP packages with blockages, warehouses, maintenances and failures
+- The scheduling algorithm should be metaheuristic
+
+# Architecture
+- This is a full-stack application with separate frontend and backend
+- Frontend: React + TypeScript + Vite + Chakra UI + Konva
+- Backend: Spring Boot + Java 21 + PostgreSQL + WebSocket
+- Follow client-server architecture with real-time capabilities
+- Never include new dependencies or modify project structure without heavily asking
+
+# Code Organization
+- Keep frontend and backend code separate
+- Maintain proper separation of concerns
+- Use consistent file naming conventions
+- Follow directory structure as defined in project
+
+# Basic data flow for non real-time (for each entity)
+- DB Should be abstracted with models: java/pucp/pdds/backend/model
+- A repository should be implemented for data retrieval and update: java/pucp/pdds/backend/repository
+- A controller should be implemented for exposing CRUDs to the frontend
+- A frontend model should be implemented to handle data from the frontend
+- A service should handle data CRUD operations from the frontend mapping all controller methods
+
+# Real-time Communication
+- Use WebSocket for real-time updates of route planning
+- Implement STOMP protocol for structured messaging
+- Handle connection state and reconnection scenarios
+- Maintain message ordering for route updates
+
+# Visualization
+- Use Konva for route visualization
+- Implement proper scaling for map views
+- Handle user interactions for route inspection
+
+# Philosophy and discipline
+- Use always the simplest approach possible to solve problems
+- Prioritize code maintainability and readability
+- Document complex algorithms and business logic
+- Prioritize working code instead of overoptimized unreadable

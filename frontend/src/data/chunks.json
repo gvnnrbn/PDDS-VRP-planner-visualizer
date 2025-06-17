@@ -37,12 +37,21 @@
               "idPedido": 1,
               "rutaActual": [
                 {
-                  "posX": 2,
+                  "posX": 1,
                   "posY": 2
                 },
                 {
-                  "posX": 3,
+                  "posX": 2,
+                  "posY": 2
+                },{
+                  "posX": 2,
                   "posY": 3
+                },{
+                  "posX":7,
+                  "posY":3
+                },{
+                  "posX":7,
+                  "posY":5
                 }
               ]
             }
@@ -108,16 +117,16 @@
               "currGLP": 20,
               "maxGLP": 20,
               "placa": "TA001",
-              "posicionX": 3,
+              "posicionX": 5,
               "posicionY": 3,
               "idPedido": 1,
               "rutaActual": [
                 {
-                  "posX": 4,
-                  "posY": 4
+                  "posX": 7,
+                  "posY": 3
                 },
                 {
-                  "posX": 5,
+                  "posX": 7,
                   "posY": 5
                 }
               ]

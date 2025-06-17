@@ -1,24 +1,18 @@
 import { MapGrid } from '../../components/common/Map'
 import { useState, useEffect } from 'react';
 import jsonData from "../../data/simulacionV2.json";
+import DataMapaPrueba from "../../data/chunks.json";
 import BottomLeftControls from '../../components/common/MapActions';
 import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalBody,
-  Text,
-  useDisclosure,
-  ModalHeader, VStack, Flex,
-  Button
+  useDisclosure, 
 } from "@chakra-ui/react";
-import { formatDateTime } from '../../utils/dateFormatter';
+import SimulationCompleteModal from '../../components/common/SimulationCompletionModal';
 
 interface PhaseProps {
   minuto: number
   // setMinuto: (min: number) => void
   data: any 
-  // speedMs: number
+  speedMs: number
   setSpeedMs: (speed: number) => void
   // isPaused: boolean
   setIsPaused: (paused: boolean) => void
@@ -30,104 +24,107 @@ export default function SimulationPhase(
     minuto, 
     // setMinuto,
     data,
-    // speedMs,
+    speedMs,
     setSpeedMs,
     // isPaused,
     setIsPaused,
-    fechaVisual = new Date(jsonData.fechaInicio) // valor por defecto si no se pasa 
+    fechaVisual // valor por defecto si no se pasa 
   } : PhaseProps) {
     
-    const { isOpen, onOpen, onClose } = useDisclosure();
-    const [simulacionFinalizada, setSimulacionFinalizada] = useState(false);
-    useEffect(() => {
-      console.log('Minuto simulation:', minuto);
-    },[minuto])
-    const totalMinutos = jsonData.simulacion.length;
-    const fechaInicio = new Date(jsonData.fechaInicio);
-  
-    // ➕ Cálculo de fecha actual (usado por BottomLeftControls)
-    const fechaActual = new Date(fechaInicio);
-    fechaActual.setMinutes(fechaInicio.getMinutes() + minuto * 75);
-  
-    // ➕ Cálculo de fecha fin
-    const fechaFin = new Date(fechaInicio);
-    fechaFin.setDate(fechaInicio.getDate() + totalMinutos - 1);
-  
-    
-    useEffect(() => {
-      // console.log(`Minuto actual ${minuto} y total de minutos ${totalMinutos}`);
-      if (minuto >= totalMinutos  && !isOpen && !simulacionFinalizada) {
-        setSimulacionFinalizada(true);
-        onOpen(); // solo una vez
-      }
-    }, [minuto, totalMinutos, isOpen, simulacionFinalizada]);
-  
-    const displayDate = `${fechaVisual.toLocaleDateString()} | ${fechaVisual.toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit'
-    })}`;
-  
-    //Funciones de acción
-  
-    const handleSpeedChange = (newSpeed: string) => {
-      if (newSpeed === "Velocidad x1") {
-        setSpeedMs(31250);
-      } else if (newSpeed === "Velocidad x2") {
-        setSpeedMs(15625);
-      }
-    };
-  
-    const handleStop = () => {
-      setIsPaused(true);
-      setSimulacionFinalizada(true); // importante aquí también
-      onOpen();
-    };
-  
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [simulacionFinalizada, setSimulacionFinalizada] = useState(false);
+
+  // Estado actual del índice de simulación
+  const [indiceActual, setIndiceActual] = useState(0);
+
+  // Dataset completo
+  const simulacion = DataMapaPrueba.chunks[0].simulacion;
+
+  // Datos del paso actual
+  const simData = simulacion[indiceActual];
+  const minutoPrueba = indiceActual; // puede ser otro valor si tu lógica lo requiere
+
+  const parseDateString = (dateString: string): Date => {
+    const [datePart, timePart] = dateString.split(" ");
+    const [day, month, year] = datePart.split("/");
+    const isoDateString = `${year}-${month}-${day}T${timePart}:00`;
+    const parsedDate = new Date(isoDateString);
+    if (isNaN(parsedDate.getTime())) {
+      console.error("Fecha inválida parseada:", dateString);
+      return new Date();
+    }
+    return parsedDate;
+  };
+
+  const [visualDate, setVisualDate] = useState(parseDateString(simData.minuto));
+
+  const TiempoIntervalo=6000;
+
+  // ⏱️ Avanzar al siguiente paso cada 6000 ms
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIndiceActual((prev) => {
+        const siguiente = prev + 1;
+        if (siguiente < simulacion.length) {
+          setVisualDate(parseDateString(simulacion[siguiente].minuto));
+          return siguiente;
+        } else {
+          setSimulacionFinalizada(true);
+          setIsPaused(true);
+          onOpen();
+          clearInterval(interval);
+          return prev; // no avanza más
+        }
+      });
+    }, TiempoIntervalo);
+
+    return () => clearInterval(interval);
+  }, [setIsPaused, simulacion, onOpen]);
+
+  const SPEED_MS_MAPPING: Record<string, number> = {
+    "Velocidad x1": 31250,
+    "Velocidad x2": 15625,
+  };
+
+  const displayDate =
+    visualDate instanceof Date
+      ? `${visualDate.toLocaleDateString()} | ${visualDate.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}`
+      : "Fecha inválida";
+
+  const handleStop = () => {
+    setIsPaused(true);
+    setSimulacionFinalizada(true);
+    onOpen();
+  };
+
   return (
     <div>
-      <MapGrid minuto={minuto} data={data} />
-      <BottomLeftControls variant="full" date={displayDate} onSpeedChange={handleSpeedChange} onStop={handleStop}/>
+      <MapGrid minuto={minuto} data={simData} speedMs={TiempoIntervalo} />
 
-      {/* ✅ Modal al finalizar */}
-      <Modal isOpen={isOpen} onClose={onClose} isCentered size="xl">
-        <ModalOverlay bg="blackAlpha.700" />
-        <ModalContent bg="white" textAlign="center" p={8}>
-          <ModalHeader>
-            <Text fontSize="2xl" fontWeight="extrabold">
-              ✅ Simulación completada
-            </Text>
-          </ModalHeader>
-          <hr />
-          <ModalBody>
-            <VStack align="start" spacing={3} fontSize="md">
-              <Text>
-                <strong>Fecha y Hora de inicio:</strong> {formatDateTime(fechaInicio)}
-              </Text>
-              <Text>
-                <strong>Fecha y Hora de fin:</strong> {formatDateTime(fechaFin)}
-              </Text>
-              <Text>
-                <strong>Duración:</strong> {totalMinutos} días
-              </Text>
-              <Text>
-                <strong>Pedidos entregados:</strong> 504 {/* reemplazar dinámico si deseas */}
-              </Text>
-              <Text>
-                <strong>Consumo en petróleo:</strong> 456 {/* reemplazar dinámico si deseas */}
-              </Text>
-              <Text>
-                <strong>Tiempo de planificación:</strong> 00:25:35 {/* opcional */}
-              </Text>
-            </VStack>
+      <BottomLeftControls
+        variant="full"
+        date={displayDate}
+        onSpeedChange={(s) => {
+          if (s in SPEED_MS_MAPPING) {
+            setSpeedMs(SPEED_MS_MAPPING[s as keyof typeof SPEED_MS_MAPPING]);
+          }
+        }}
+        onStop={handleStop}
+      />
 
-            <Flex justify="flex-end" mt={6}>
-              <Button colorScheme="purple" onClick={onClose}>
-                Aceptar
-              </Button>
-            </Flex>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
+      <SimulationCompleteModal
+        isOpen={isOpen}
+        onClose={onClose}
+        fechaInicio="10/06/2025 08:00"
+        fechaFin="12/06/2025 18:00"
+        duracion="3 días"
+        pedidosEntregados={504}
+        consumoPetroleo={456}
+        tiempoPlanificacion="00:25:35"
+      />
     </div>
   );
 }
