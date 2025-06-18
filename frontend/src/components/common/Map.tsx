@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Stage, Layer, Line} from "react-konva";
 import { VehicleIcon } from "./Icons/VehicleIcon";
-import type {VehiculoSimulado} from "../../core/types/vehiculo";
+import type { VehiculoSimuladoV2, VehiculoSimulado} from "../../core/types/vehiculo";
 import type { PedidoSimulado } from "../../core/types/pedido";
 import type { IncidenciaSimulada } from "../../core/types/incidencia";
 import { OrderIcon} from "./Icons/OrderIcon"
@@ -10,6 +10,7 @@ import type { BloqueoSimulado } from "../../core/types/bloqueos";
 import { WarehouseIcon } from "./Icons/WarehouseIcon";
 import React from "react";
 import type Konva from "konva";
+import type { MantenimientoSimulado } from "../../core/types/manetenimiento";
 
 
 const CELL_SIZE = 20; // Tamaño de cada celda
@@ -18,10 +19,11 @@ const GRID_HEIGHT = 50; // Número de celdas a lo alto
 
 interface MinutoSimulacion {
   minuto: string;
-  vehiculos: VehiculoSimulado[];
+  vehiculos: VehiculoSimuladoV2[];
   pedidos?: PedidoSimulado[];
   almacenes: AlmacenSimulado[];
   incidencias: IncidenciaSimulada[];
+  mantenimientos: MantenimientoSimulado[]
 }
 
 

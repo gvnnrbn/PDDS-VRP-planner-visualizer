@@ -9,7 +9,7 @@ interface MapGridProps {
   }
 }
 
-export const MapGrid = ({ data }: MapGridProps) => {
+export const MapGridV2 = ({ data }: MapGridProps) => {
   return (
     <Box
       w="full"

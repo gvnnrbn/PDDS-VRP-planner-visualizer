@@ -1,6 +1,5 @@
 import { MapGrid } from '../../components/common/Map'
-import { useState, useEffect } from 'react';
-import jsonData from "../../data/simulacionV2.json";
+import { useState, useEffect, useMemo } from 'react';
 import DataMapaPrueba from "../../data/chunks.json";
 import BottomLeftControls from '../../components/common/MapActions';
 import {
@@ -34,65 +33,79 @@ export default function SimulationPhase(
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [simulacionFinalizada, setSimulacionFinalizada] = useState(false);
 
-  // Estado actual del índice de simulación
+  const simulacion = DataMapaPrueba.chunks[0].simulacion.slice(0, 2);
+
   const [indiceActual, setIndiceActual] = useState(0);
-
-  // Dataset completo
-  const simulacion = DataMapaPrueba.chunks[0].simulacion;
-
-  // Datos del paso actual
-  const simData = simulacion[indiceActual];
-  const minutoPrueba = indiceActual; // puede ser otro valor si tu lógica lo requiere
+  const simData = useMemo(() => simulacion[indiceActual], [simulacion, indiceActual]);
 
   const parseDateString = (dateString: string): Date => {
     const [datePart, timePart] = dateString.split(" ");
     const [day, month, year] = datePart.split("/");
-    const isoDateString = `${year}-${month}-${day}T${timePart}:00`;
-    const parsedDate = new Date(isoDateString);
-    if (isNaN(parsedDate.getTime())) {
-      console.error("Fecha inválida parseada:", dateString);
-      return new Date();
-    }
-    return parsedDate;
+    return new Date(`${year}-${month}-${day}T${timePart}:00`);
   };
 
-  const [visualDate, setVisualDate] = useState(parseDateString(simData.minuto));
+  const [visualDate, setVisualDate] = useState(() =>
+    parseDateString(simulacion[0].minuto)
+  );
 
-  const TiempoIntervalo=6000;
+  const TiempoIntervalo = 45000;
+  const TiempoSimuladoMs = 60 * 60 * 1000;
 
-  // ⏱️ Avanzar al siguiente paso cada 6000 ms
+  // 👇 Avanza hasta el penúltimo índice
   useEffect(() => {
-    const interval = setInterval(() => {
-      setIndiceActual((prev) => {
-        const siguiente = prev + 1;
-        if (siguiente < simulacion.length) {
-          setVisualDate(parseDateString(simulacion[siguiente].minuto));
-          return siguiente;
-        } else {
-          setSimulacionFinalizada(true);
-          setIsPaused(true);
-          onOpen();
-          clearInterval(interval);
-          return prev; // no avanza más
-        }
-      });
+    const timeout = setTimeout(() => {
+      const siguiente = indiceActual + 1;
+
+      if (siguiente < simulacion.length) {
+        console.log('🕒 Tiempo agotado, avanzando a índice', siguiente);
+        setIndiceActual(siguiente);
+        setVisualDate(parseDateString(simulacion[siguiente].minuto));
+      } else {
+        console.log('🏁 Simulación terminada');
+        setSimulacionFinalizada(true);
+        setIsPaused(true);
+        onOpen();
+      }
     }, TiempoIntervalo);
 
-    return () => clearInterval(interval);
-  }, [setIsPaused, simulacion, onOpen]);
+    return () => clearTimeout(timeout);
+  }, [indiceActual, simulacion, setIsPaused, onOpen]);
 
   const SPEED_MS_MAPPING: Record<string, number> = {
     "Velocidad x1": 31250,
     "Velocidad x2": 15625,
   };
 
-  const displayDate =
-    visualDate instanceof Date
-      ? `${visualDate.toLocaleDateString()} | ${visualDate.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        })}`
-      : "Fecha inválida";
+  const [displayDate, setDisplayDate] = useState<string>("");
+  useEffect(() => {
+    if (!visualDate) return;
+
+    let frameId: number;
+    const start = performance.now();
+
+    const tick = (now: number) => {
+      const elapsed = now - start;
+      const progreso = Math.min(elapsed / TiempoIntervalo, 1); // 0 a 1
+      const tiempoSimulado = TiempoSimuladoMs * progreso;
+
+      const fechaActualSimulada = new Date(visualDate.getTime() + tiempoSimulado);
+
+      const formateado = `${fechaActualSimulada.toLocaleDateString()} | ${fechaActualSimulada.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`;
+
+      setDisplayDate(formateado);
+
+      if (progreso < 1) {
+        frameId = requestAnimationFrame(tick);
+      }
+    };
+
+    frameId = requestAnimationFrame(tick);
+
+    return () => cancelAnimationFrame(frameId);
+  }, [visualDate, TiempoIntervalo]);
 
   const handleStop = () => {
     setIsPaused(true);
@@ -100,10 +113,16 @@ export default function SimulationPhase(
     onOpen();
   };
 
+  const handleCloseModal = () => {
+    console.log('🔒 Cerrar modal');
+    setSimulacionFinalizada(false);   // Desactiva flag
+    onClose();                         // Cierra modal
+    setIndiceActual(0);               // (opcional) reinicia la simulación
+  };
+
   return (
     <div>
       <MapGrid minuto={minuto} data={simData} speedMs={TiempoIntervalo} />
-
       <BottomLeftControls
         variant="full"
         date={displayDate}
@@ -115,16 +134,22 @@ export default function SimulationPhase(
         onStop={handleStop}
       />
 
-      <SimulationCompleteModal
+      {<SimulationCompleteModal
         isOpen={isOpen}
-        onClose={onClose}
+        onClose={handleCloseModal}
         fechaInicio="10/06/2025 08:00"
         fechaFin="12/06/2025 18:00"
         duracion="3 días"
         pedidosEntregados={504}
         consumoPetroleo={456}
         tiempoPlanificacion="00:25:35"
-      />
+      />}
+
+      <button onClick={() => {
+        const siguiente = indiceActual + 1;
+        console.log('👉 Botón: Avanzar a', siguiente);
+        setIndiceActual(siguiente);
+      }}>Avanzar 1 paso</button>
     </div>
   );
 }

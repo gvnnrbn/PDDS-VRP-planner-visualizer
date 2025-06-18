@@ -1,6 +1,6 @@
 import { faTruck } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import  type { VehiculoSimulado} from "../../../core/types/vehiculo";
+import  type { VehiculoSimuladoV2} from "../../../core/types/vehiculo";
 import { Image as KonvaImage } from "react-konva";
 import useImage from "use-image";
 import { useEffect, useRef, forwardRef, useState } from "react";
@@ -37,7 +37,7 @@ const getColorFromState = (estado: string): string => {
 };
 
 interface Props {
-  vehiculo: VehiculoSimulado;
+  vehiculo: VehiculoSimuladoV2;
   cellSize: number;
   gridHeight: number;
   velocidad: number;
@@ -51,24 +51,27 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
     const [image] = useImage(createIconUrl(faTruck, getColorFromState("asdas")));
     const shapeRef = useRef<Konva.Image | null>(null);
 
-    const puntosRuta = [
-      [vehiculo.posicionX, vehiculo.posicionY],
-      ...((vehiculo.rutaActual ?? []).map((p) => [p.posX, p.posY])),
-    ];
-
     const [pos, setPos] = useState<[number, number]>([
       vehiculo.posicionX,
       vehiculo.posicionY,
-
     ]);
 
+    const [paradaActual, setParadaActual] = useState(0);
     const [recorridoHastaAhora, setRecorridoHastaAhora] = useState(0);
+    const [isTooltipVisible, setIsTooltipVisible] = useState(false);
 
-
+    //MOVER VEHICULO
     useEffect(() => {
+      const rutas = vehiculo.rutaActual ?? [];
+
+      if (paradaActual >= rutas.length) return;
+
+      const puntos = rutas[paradaActual].puntos;
+      if (!puntos || puntos.length < 1) return;
+
       const fullRuta: [number, number][] = [
-        [vehiculo.posicionX, vehiculo.posicionY],
-        ...(vehiculo.rutaActual?.map(p => [p.posX, p.posY] as [number, number]) ?? [])
+        [pos[0], pos[1]],
+        ...puntos.map(p => [p.posX, p.posY] as [number, number]),
       ];
 
       if (fullRuta.length < 2) return;
@@ -77,9 +80,8 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
       let frameId: number;
       let tiempoTranscurrido = 0;
 
-      const calcularDistancia = ([x1, y1]: [number, number], [x2, y2]: [number, number]) => {
-        return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-      };
+      const calcularDistancia = ([x1, y1]: [number, number], [x2, y2]: [number, number]) =>
+        Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
 
       const recorrerRuta = () => {
         if (step >= fullRuta.length - 1) return;
@@ -89,13 +91,20 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
         const distancia = calcularDistancia(from, to);
         const stepDurMs = (distancia / velocidad) * 1000;
 
+        const tiempoRestante = tiempoLimiteMs - tiempoTranscurrido;
+
+        // ⚠️ Si no hay tiempo suficiente para completar el tramo
+        if (tiempoRestante <= 0) return;
+        
         const start = performance.now();
 
         const animate = (now: number) => {
-          const t = Math.min((now - start) / stepDurMs, 1);
+          const elapsed = now - start;
+          const progreso = Math.min(elapsed / stepDurMs, tiempoRestante / stepDurMs, 1);
+
           const interp: [number, number] = [
-            from[0] + (to[0] - from[0]) * t,
-            from[1] + (to[1] - from[1]) * t,
+            from[0] + (to[0] - from[0]) * progreso,
+            from[1] + (to[1] - from[1]) * progreso,
           ];
           setPos(interp);
 
@@ -105,15 +114,19 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
             shapeRef.current.getLayer()?.batchDraw();
           }
 
-          if (t < 1) {
+          const tiempoRealConsumido = progreso * stepDurMs;
+
+          if (progreso < 1 && tiempoRealConsumido < tiempoRestante) {
             frameId = requestAnimationFrame(animate);
           } else {
-            tiempoTranscurrido += stepDurMs;
-            if (tiempoTranscurrido < tiempoLimiteMs) {
+            tiempoTranscurrido += tiempoRealConsumido;
+
+            if (progreso === 1) {
               step++;
-              recorrerRuta();
+              setRecorridoHastaAhora(step); // ✅ avanzar índice de celda solo si llegó
+              recorrerRuta(); // ⏭️ continuar con siguiente paso
             }
-            // si no, se queda quieto
+            // 🚫 Si no llegó, se queda donde está
           }
         };
 
@@ -123,61 +136,23 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
       recorrerRuta();
 
       return () => cancelAnimationFrame(frameId);
-    }, [JSON.stringify(vehiculo.rutaActual), velocidad, tiempoLimiteMs]);
+    }, [vehiculo.rutaActual, paradaActual, velocidad, tiempoLimiteMs]);
 
-    const [isTooltipVisible, setIsTooltipVisible] = useState(false);
-
+    //CAMBIAR RUTA
     useEffect(() => {
-      if (puntosRuta.length < 2) return;
+      const ruta = vehiculo.rutaActual ?? [];
+      if (paradaActual >= ruta.length) return;
 
-      let index = 0;
-      let frameId: number;
-      let tiempoTranscurrido = 0;
+      const puntos = ruta[paradaActual].puntos;
+      const numPuntos = puntos?.length ?? 0;
 
-      const calcularDistancia = ([x1, y1]: [number, number], [x2, y2]: [number, number]) => {
-        return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-      };
+      if (recorridoHastaAhora >= numPuntos) {
+        // 🚏 Pasar a la siguiente parada
+        setParadaActual((prev) => prev + 1);
+        setRecorridoHastaAhora(0); // reinicia paso interno
+      }
+    }, [recorridoHastaAhora, vehiculo.rutaActual, paradaActual]);
 
-      const recorrerTramo = () => {
-        if (index >= puntosRuta.length - 1) return;
-
-        const from = puntosRuta[index] as [number, number]; // <--- ¡Corrección aquí!
-        const to = puntosRuta[index + 1] as [number, number];   // <--- ¡Y aquí!
-        const distancia = calcularDistancia(from, to);
-        const duracionTramoMs = (distancia / velocidad) * 1000;
-
-        const start = performance.now();
-
-        const animar = (timestamp: number) => {
-          const elapsed = timestamp - start;
-          const t = Math.min(elapsed / duracionTramoMs, 1);
-
-          const interpX = from[0] + (to[0] - from[0]) * t;
-          const interpY = from[1] + (to[1] - from[1]) * t;
-          setPos([interpX, interpY]);
-
-          onStep?.(index);
-          setRecorridoHastaAhora(index);
-
-          if (t < 1 && tiempoTranscurrido + elapsed < tiempoLimiteMs) {
-            frameId = requestAnimationFrame(animar);
-          } else {
-            tiempoTranscurrido += duracionTramoMs;
-            index++;
-            if (tiempoTranscurrido < tiempoLimiteMs && index < puntosRuta.length - 1) {
-              recorrerTramo();
-            }
-            // Si se termina tiempo o ruta, se queda quieto
-          }
-        };
-
-        frameId = requestAnimationFrame(animar);
-      };
-
-      recorrerTramo();
-
-      return () => cancelAnimationFrame(frameId);
-    }, [JSON.stringify(puntosRuta), velocidad, tiempoLimiteMs]);
 
     useEffect(() => {
       if (typeof ref === "function") {
@@ -193,25 +168,27 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
     const pixelY = (gridHeight - pos[1]) * cellSize;
 
 
-    const puntosRestantes = puntosRuta.slice(recorridoHastaAhora);
 
     return (
       <>
-        {puntosRestantes.length > 0 && (
-          <Arrow
-            points={puntosRestantes.flatMap(([x, y]) => [
-              x * cellSize,
-              (gridHeight - y) * cellSize
-            ])}
-            stroke="blue"
-            strokeWidth={3}
-            pointerLength={10}
-            pointerWidth={10}
-            fill="blue"
-            lineCap="round"
-            listening={false}
-          />
-    )}
+        {vehiculo.rutaActual?.[paradaActual]?.puntos && (
+        <Arrow
+          points={[
+            [pos[0], pos[1]], // ← posición actual animada
+            ...vehiculo.rutaActual[paradaActual].puntos
+              .slice(recorridoHastaAhora)
+              .map(p => [p.posX, p.posY] as [number, number])
+          ]
+            .flatMap(([x, y]) => [x * cellSize, (gridHeight - y) * cellSize])}
+          stroke="blue"
+          strokeWidth={3}
+          pointerLength={10}
+          pointerWidth={10}
+          fill="blue"
+          lineCap="round"
+          listening={false}
+        />
+      )}
         <KonvaImage
           ref={shapeRef}
           image={image}
