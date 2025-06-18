@@ -60,18 +60,21 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
     const [recorridoHastaAhora, setRecorridoHastaAhora] = useState(0);
     const [isTooltipVisible, setIsTooltipVisible] = useState(false);
 
-    //MOVER VEHICULO
+    const TiempoSimuladoMs = 60 * 60 * 10;
+    const [pausadoEnParada, setPausadoEnParada] = useState(false);
+
+    // MOVER VEHICULO (único useEffect responsable de todo)
     useEffect(() => {
       const rutas = vehiculo.rutaActual ?? [];
 
-      if (paradaActual >= rutas.length) return;
+      if (pausadoEnParada || paradaActual >= rutas.length) return;
 
       const puntos = rutas[paradaActual].puntos;
       if (!puntos || puntos.length < 1) return;
 
       const fullRuta: [number, number][] = [
         [pos[0], pos[1]],
-        ...puntos.map(p => [p.posX, p.posY] as [number, number]),
+        ...puntos.map(p => [p.posX, p.posY] as [number, number])
       ];
 
       if (fullRuta.length < 2) return;
@@ -92,10 +95,8 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
         const stepDurMs = (distancia / velocidad) * 1000;
 
         const tiempoRestante = tiempoLimiteMs - tiempoTranscurrido;
-
-        // ⚠️ Si no hay tiempo suficiente para completar el tramo
         if (tiempoRestante <= 0) return;
-        
+
         const start = performance.now();
 
         const animate = (now: number) => {
@@ -123,10 +124,33 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
 
             if (progreso === 1) {
               step++;
-              setRecorridoHastaAhora(step); // ✅ avanzar índice de celda solo si llegó
-              recorrerRuta(); // ⏭️ continuar con siguiente paso
+              setRecorridoHastaAhora(step);
+
+              // 📍 LLEGÓ al final de la parada
+              if (step >= fullRuta.length - 1) {
+                const parada = rutas[paradaActual];
+
+                if (parada?.accion?.toLowerCase() === "entrega") {
+                  const tiempoDeEntregaMs = TiempoSimuladoMs * 0.25;
+
+                  setPausadoEnParada(true);
+                  console.log("📦 Pausa por entrega iniciada...");
+
+                  setTimeout(() => {
+                    console.log("✅ Entrega finalizada, avanzando parada...");
+                    setParadaActual(prev => prev + 1);
+                    setRecorridoHastaAhora(0);
+                    setPausadoEnParada(false); // 🔓 reactivar avance
+                  }, tiempoDeEntregaMs);
+                } else {
+                  // avanzar inmediatamente
+                  setParadaActual(prev => prev + 1);
+                  setRecorridoHastaAhora(0);
+                }
+              } else {
+                recorrerRuta(); // ⏭️ continuar dentro de la misma parada
+              }
             }
-            // 🚫 Si no llegó, se queda donde está
           }
         };
 
@@ -136,22 +160,8 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
       recorrerRuta();
 
       return () => cancelAnimationFrame(frameId);
-    }, [vehiculo.rutaActual, paradaActual, velocidad, tiempoLimiteMs]);
+    }, [vehiculo.rutaActual, paradaActual, velocidad, tiempoLimiteMs, pausadoEnParada]);
 
-    //CAMBIAR RUTA
-    useEffect(() => {
-      const ruta = vehiculo.rutaActual ?? [];
-      if (paradaActual >= ruta.length) return;
-
-      const puntos = ruta[paradaActual].puntos;
-      const numPuntos = puntos?.length ?? 0;
-
-      if (recorridoHastaAhora >= numPuntos) {
-        // 🚏 Pasar a la siguiente parada
-        setParadaActual((prev) => prev + 1);
-        setRecorridoHastaAhora(0); // reinicia paso interno
-      }
-    }, [recorridoHastaAhora, vehiculo.rutaActual, paradaActual]);
 
 
     useEffect(() => {
@@ -172,23 +182,23 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
     return (
       <>
         {vehiculo.rutaActual?.[paradaActual]?.puntos && (
-        <Arrow
-          points={[
-            [pos[0], pos[1]], // ← posición actual animada
-            ...vehiculo.rutaActual[paradaActual].puntos
-              .slice(recorridoHastaAhora)
-              .map(p => [p.posX, p.posY] as [number, number])
-          ]
-            .flatMap(([x, y]) => [x * cellSize, (gridHeight - y) * cellSize])}
-          stroke="blue"
-          strokeWidth={3}
-          pointerLength={10}
-          pointerWidth={10}
-          fill="blue"
-          lineCap="round"
-          listening={false}
-        />
-      )}
+          <Arrow
+            points={[
+              [pos[0], pos[1]],
+              ...vehiculo.rutaActual[paradaActual].puntos
+                .slice(recorridoHastaAhora)
+                .map(p => [p.posX, p.posY] as [number, number])
+            ]
+              .flatMap(([x, y]) => [x * cellSize, (gridHeight - y) * cellSize])}
+            stroke="blue"
+            strokeWidth={3}
+            pointerLength={10}
+            pointerWidth={10}
+            fill="blue"
+            lineCap="round"
+            listening={false}
+          />
+        )}
         <KonvaImage
           ref={shapeRef}
           image={image}
