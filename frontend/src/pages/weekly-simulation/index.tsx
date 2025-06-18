@@ -238,9 +238,14 @@ const sections = [
   // },
 ]
 
-interface ScheduleChunk {
-  current?: any;
-  next?: any;
+interface SimulacionMinuto {
+  minuto: string,
+  bloqueos: any[],
+  almacenes: any[],
+  vehiculos: any[],
+  pedidos: any[],
+  incidencias: any[],
+  mantenimientos: any[],
 }
 
 
@@ -249,14 +254,12 @@ export default function WeeklySimulation() {
   const [isCollapsed, setIsCollapsed] = useState(true)
   const [section, setSection] = useState(sections[0].title)
   const [isSimulationLoading, setIsSimulationLoading] = useState(false);
-  const [ isSimulationCompleted, setIsSImulationCompleted ] = useState(false);
 
   const [selectedDate, setSelectedDate] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(true);
   const { connected, subscribe, unsubscribe, publish } = useStomp('http://localhost:8080/ws');
   const [hasStarted, setHasStarted] = useState(false);
-  const [scheduleChunk, setScheduleChunk] = useState<ScheduleChunk>({});
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isSimulationCompleted, setIsSimulationCompleted] = useState(false);
 
   const [dateValue, setDateValue] = useState<string>(() => {
     const now = new Date();
@@ -266,9 +269,8 @@ export default function WeeklySimulation() {
   const [minuteValue, setMinuteValue] = useState<number>(new Date().getMinutes());
 
   /**
-   * HANDLE DATE 
+   * HANDLE DATE
    */
-  // Format the selected date/time into ISO format
   const formatDateTime = () => {
     const [year, month, day] = dateValue.split('-');
     const formattedDate = `${year}-${month}-${day}T${String(hourValue).padStart(2, '0')}:${String(minuteValue).padStart(2, '0')}`;
@@ -278,23 +280,14 @@ export default function WeeklySimulation() {
   useEffect(() => {
     formatDateTime();
   }, [dateValue, hourValue, minuteValue]);
-  
-  
+
   /**
    * START SIMULATION
-  */
-
-  // delay after simulation starts
-  // useEffect(() => {
-  //   const timer = setTimeout(() => setIsSimulationLoading(false), 2000); // 2s simulado
-  //   return () => clearTimeout(timer);
-  // },[isSimulationLoading])
- 
+   */
   const handleSubmit = () => {
-    formatDateTime(); // Ensure we have the latest value
+    formatDateTime();
     setIsModalOpen(false);
     handleStartSimulation();
-    setIsSimulationLoading(true);
   };
 
   const handleStartSimulation = () => {
@@ -304,113 +297,36 @@ export default function WeeklySimulation() {
       console.log('Sent date to backend:', selectedDate);
     }
   };
+  const [minuteBuffer, setMinuteBuffer] = useState<SimulacionMinuto[]>([]);
+  const [currentMinuteData, setCurrentMinuteData] = useState<SimulacionMinuto | null>(null);
 
-   // 1. Handle incoming WebSocket messages
   useEffect(() => {
     if (!connected) return;
 
     const handleIncomingData = (message: any) => {
-    console.log("receiving message:", message.body);
-
-    try {
-      // Verifica si parece un JSON válido
-      if (message.body.trim().startsWith('{') || message.body.trim().startsWith('[')) {
-        const data = JSON.parse(message.body);
-        console.log("Parsed data:", data);
-
-        setScheduleChunk(prev => {
-          if (!prev.current) {
-            return { current: data };
-          } else {
-            return { ...prev, next: data };
-          }
-        });
-        publish('/app/chunk-received', {});
-      } else {
-        console.warn("Received non-JSON message:", message.body);
-        // Aquí puedes manejar mensajes tipo "COMPLETED"
-        if (message.body === "COMPLETED") {
-          setIsSImulationCompleted(true);
-          console.log("Simulation completed");
-        }
-      }
-    } catch (error) {
-      console.error('Error parsing simulation data:', error);
-    }
-    }; 
-    subscribe('/topic/simulation-data', handleIncomingData);
-    return () => {
-      unsubscribe('/topic/simulation-data');
+      const data: SimulacionMinuto = JSON.parse(message.body);
+      setMinuteBuffer(prev => [...prev, data]); // agregamos al buffer
+      console.log(data)
     };
+
+    subscribe('/topic/simulation', handleIncomingData);
+    return () => unsubscribe('/topic/simulation');
   }, [connected]);
 
-  // 2. Request next chunk when needed
+  // cada 2 segundos, consume del buffer
   useEffect(() => {
-    if (!connected || !selectedDate || !hasStarted) return;
-
-    // Caso 1: Primera vez que se solicita
-    if (!scheduleChunk.current) {
-      const timer = setTimeout(() => {
-        console.log("Solicitando primer chunk...");
-        publish('/app/request-chunk', JSON.stringify({}));
-      }, 500); // Delay para el backend
-
-      return () => clearTimeout(timer);
-    }
-
-    // Caso 2: Ya hay un chunk actual, pero nos acercamos al final
-    if (!scheduleChunk.next) {
-      const simulationLength = scheduleChunk.current.simulacion.length;
-      if (currentIndex >= simulationLength - 2) {
-        console.log('Solicitando siguiente chunk...');
-        publish('/app/request-chunk', JSON.stringify({}));
-      }
-    }
-  }, [connected, selectedDate, scheduleChunk, currentIndex, hasStarted]);
-
-  // 3. Handle chunk transition logic
-  useEffect(() => {
-    if (!scheduleChunk.current) return;
-
-    const simulationArray = scheduleChunk.current.simulacion;
-    const isLastElement = currentIndex >= simulationArray.length - 1;
-    const hasNextChunk = scheduleChunk.next;
-
-    if (isLastElement && hasNextChunk) {
-      // Espera un segundo extra para mostrar el último minuto
-      setTimeout(() => {
-        setScheduleChunk({
-          current: scheduleChunk.next,
-          next: undefined
-        });
-        setCurrentIndex(0);
-        console.log('Transitioned to next chunk');
-      }, 1000)
-    }
-  }, [currentIndex, scheduleChunk]);
-
-  // 4. Visualization timer (example)
-  useEffect(() => {
-    if (!scheduleChunk.current) return;
-
-    const timer = setInterval(() => {
-      setCurrentIndex(prev => {
-        // Prevent going beyond array bounds
-        if (prev >= scheduleChunk.current!.simulacion.length - 1) {
-          return prev;
-        }
-        return prev + 1;
+    if (!connected) return;
+    const interval = setInterval(() => {
+      setMinuteBuffer(prev => {
+        if (prev.length === 0) return prev;
+        const [nextMinute, ...rest] = prev;
+        setCurrentMinuteData(nextMinute);
+        return rest;
       });
-    }, 2000); // Adjust timing as needed
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [connected])
 
-    return () => clearInterval(timer);
-  }, [scheduleChunk]);
-
-
-  // Render current simulation state
-  const currentMinute = scheduleChunk.current?.simulacion[currentIndex]?.minuto;
-  const currentData = scheduleChunk.current?.simulacion[currentIndex];
-  // console.log(currentData);
   /*
    * HANDLE PANEL SECTIONS
    */
@@ -425,22 +341,26 @@ export default function WeeklySimulation() {
   return (
     <Flex height="full" overflowY="auto" position="relative">
       <Box flex={1} p={4} bg={bgColor} h="full">
-        <Routes>
-          {/* <Route path="pedidos" element={<PedidosPhase />} />
-          <Route path="incidencias" element={<IncidenciasPhase />} />
-          <Route path="vehiculos" element={<VehiculosPhase />} />
-          <Route path="almacen" element={<AlmacenPhase />} /> */}
+        {/*<Routes>
           <Route
             path="simulacion"
             element={
               isSimulationLoading ? <></> : <SimulationPhase />
             }
           />
-        </Routes>
+        </Routes>*/}
       </Box>
-            <Text fontSize="sm" color="gray.500" mt={2}>
-              Minuto actual: {currentMinute}
-            </Text>
+            {isSimulationCompleted && <div>✅ Simulación completada</div>}
+
+            {!currentMinuteData && <div>Cargando minuto actual...</div>}
+
+            {currentMinuteData && (
+              <div>
+                <h2>Minuto: {currentMinuteData.minuto}</h2>
+                <pre>{JSON.stringify(currentMinuteData, null, 2)}</pre>
+                {/* Aquí puedes renderizar visualmente bloqueos, almacenes, vehículos, etc. */}
+              </div>
+            )}
       {/*!isSimulationLoading && (
         <>
           <SectionBar
