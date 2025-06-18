@@ -1,5 +1,5 @@
 import { Arrow } from "react-konva";
-import React from "react";
+import React, { useMemo } from "react";
 import type { VehiculoSimulado } from "../../../core/types/vehiculo";
 
 
@@ -18,11 +18,10 @@ export const VehicleRouteLine: React.FC<Props> = ({
 }) => {
   const ruta = vehiculo.rutaActual ?? [];
 
-  const puntosRuta = [
+  const puntosRuta = useMemo(() => [
     [vehiculo.posicionX * cellSize, (gridHeight - vehiculo.posicionY) * cellSize],
     ...ruta.map((p) => [p.posX * cellSize, (gridHeight - p.posY) * cellSize]),
-  ];
-
+  ], [vehiculo, cellSize, gridHeight]);
   // ⚡ Elimina los puntos que ya fueron recorridos
   const puntosRestantes = puntosRuta.slice(recorridoHastaAhora);
 

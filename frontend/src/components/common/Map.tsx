@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Stage, Layer, Line, Label, Tag } from "react-konva";
+import { Stage, Layer, Line} from "react-konva";
 import { VehicleIcon } from "./Icons/VehicleIcon";
-import type {VehiculoSimulado} from "../../core/types/vehiculo";
+import type { VehiculoSimuladoV2, VehiculoSimulado} from "../../core/types/vehiculo";
 import type { PedidoSimulado } from "../../core/types/pedido";
 import type { IncidenciaSimulada } from "../../core/types/incidencia";
 import { OrderIcon} from "./Icons/OrderIcon"
@@ -9,8 +9,8 @@ import type { AlmacenSimulado } from "../../core/types/almacen";
 import type { BloqueoSimulado } from "../../core/types/bloqueos";
 import { WarehouseIcon } from "./Icons/WarehouseIcon";
 import React from "react";
-import { VehicleRouteLine } from "./Icons/VehicleRouteLine";
 import type Konva from "konva";
+import type { MantenimientoSimulado } from "../../core/types/manetenimiento";
 
 
 const CELL_SIZE = 20; // Tamaño de cada celda
@@ -18,11 +18,12 @@ const GRID_WIDTH = 70; // Número de celdas a lo ancho
 const GRID_HEIGHT = 50; // Número de celdas a lo alto
 
 interface MinutoSimulacion {
-  minuto: number;
-  vehiculos: VehiculoSimulado[];
-  pedidos: PedidoSimulado[];
+  minuto: string;
+  vehiculos: VehiculoSimuladoV2[];
+  pedidos?: PedidoSimulado[];
   almacenes: AlmacenSimulado[];
   incidencias: IncidenciaSimulada[];
+  mantenimientos: MantenimientoSimulado[]
 }
 
 
@@ -45,7 +46,6 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data, speedMs }) => {
     const almacenes = data.almacenes || [];
 
     const vehicleRefs = useRef<Record<number, Konva.Image | null>>({});
-    const [progresoVehiculos, setProgresoVehiculos] = useState<Record<number, number>>({});
 
     // Referencias
     useEffect(() => {
@@ -91,8 +91,6 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data, speedMs }) => {
     }
   }, []);
 
-  const BASE_DURATION = 31250;
-  const BASE_SPEED_MS = 31250;
 
   return (
     <Stage
@@ -153,7 +151,8 @@ export const MapGrid: React.FC<MapGridProps> = ({ minuto, data, speedMs }) => {
             vehiculo={v}
             cellSize={CELL_SIZE}
             gridHeight={GRID_HEIGHT}
-            duration={BASE_DURATION * (BASE_SPEED_MS / speedMs)}
+            velocidad={1}
+            tiempoLimiteMs={speedMs}
           />
         ))}
         {pedidos.map((v) => (
