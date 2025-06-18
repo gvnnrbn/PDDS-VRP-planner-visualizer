@@ -26,26 +26,30 @@ import type { MantenimientoSimulado } from '../../core/types/manetenimiento'
 import { set } from 'date-fns'
 import { FaSort, FaFilter, FaRegClock } from 'react-icons/fa'
 import { IncidenciaForm } from '../../components/IncidenciaForm'
-interface ScheduleChunk {
-  current?: any;
-  next?: any;
+import { MapGrid } from '../../components/common/Map'
+interface SimulacionMinuto {
+  minuto: string,
+  bloqueos: any[],
+  almacenes: any[],
+  vehiculos: any[],
+  pedidos: any[],
+  incidencias: any[],
+  mantenimientos: any[],
 }
-
 
 export default function WeeklySimulation() {
   const bgColor = useColorModeValue('white', '#1a1a1a')
   const [isCollapsed, setIsCollapsed] = useState(true)
   const [isSimulationLoading, setIsSimulationLoading] = useState(false);
-  const [ isSimulationCompleted, setIsSimulationCompleted ] = useState(false);
+  const [ isSimulationCompleted, setIsSImulationCompleted ] = useState(false);
 
   const [selectedDate, setSelectedDate] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(true);
   const { connected, subscribe, unsubscribe, publish } = useStomp('http://localhost:8080/ws');
   const [hasStarted, setHasStarted] = useState(false);
   const [ isPaused, setIsPaused ] = useState(false)
-  const [ speedMs, setSpeedMs ] = useState(1000)  
-  const [scheduleChunk, setScheduleChunk] = useState<ScheduleChunk>({});
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [ speedMs, setSpeedMs ] = useState(1000);
+  
 
   const [dateValue, setDateValue] = useState<string>(() => {
     const now = new Date();
@@ -55,7 +59,7 @@ export default function WeeklySimulation() {
   const [minuteValue, setMinuteValue] = useState<number>(new Date().getMinutes());
 
   /**
-   * HANDLE DATE 
+   * HANDLE DATE
    */
   const formatDateTime = () => {
     const [year, month, day] = dateValue.split('-');
@@ -66,35 +70,27 @@ export default function WeeklySimulation() {
   useEffect(() => {
     formatDateTime();
   }, [dateValue, hourValue, minuteValue]);
-  
-  
+
   /**
    * START SIMULATION
   */
 
+  const [pendingStart, setPendingStart] = useState(false);
+
+useEffect(() => {
+  if (connected && pendingStart) {
+    handleStartSimulation();
+    setPendingStart(false);
+  }
+}, [connected, pendingStart]);
+
+const handleSubmit = () => {
+  formatDateTime();
+  setIsModalOpen(false);
+  setIsSimulationLoading(true);
+  setPendingStart(true); // ⏳ esperar conexión
+};
  
-  const handleSubmit = () => {
-    if(!connected) return;
-    formatDateTime(); // Ensure we have the latest value
-    setIsModalOpen(false);
-    setIsSimulationLoading(true);
-    const timer = setTimeout(() => {
-      setIsSimulationLoading(false);
-      setHasStarted(true);
-      handleStartSimulation();
-    }, 3000);
-    return () => clearTimeout(timer);
-    // if (connected) {
-      // handleStartSimulation();
-    // } else {
-    //   const waitUntilConnected = setInterval(() => {
-    //     if (connected) {
-    //       clearInterval(waitUntilConnected);
-    //       handleStartSimulation();
-    //     }
-    //   }, 250);
-    // }
-  };
 
   const handleStartSimulation = () => {
     if (connected) {
@@ -103,123 +99,44 @@ export default function WeeklySimulation() {
       console.log('Sent date to backend:', selectedDate);
     }
   };
+  const [minuteBuffer, setMinuteBuffer] = useState<SimulacionMinuto[]>([]);
+  const [currentMinuteData, setCurrentMinuteData] = useState<SimulacionMinuto | null>(null);
 
-   // 1. Handle incoming WebSocket messages
   useEffect(() => {
     if (!connected) return;
 
     const handleIncomingData = (message: any) => {
+      const data: SimulacionMinuto = JSON.parse(message.body);
+      setMinuteBuffer(prev => [...prev, data]);
+      console.log(data)
+    };
 
-    try {
-      // Verifica si parece un JSON válido
-      if (message.body.trim().startsWith('{') || message.body.trim().startsWith('[')) {
-        const data = JSON.parse(message.body);
-        console.log(data);
+    subscribe('/topic/simulation', handleIncomingData);
+    return () => unsubscribe('/topic/simulation');
+  }, [connected]);
 
-        setScheduleChunk(prev => {
-          if (!prev.current) {
-            return { current: data };
-          } else {
-            return { ...prev, next: data };
-          }
+  // Espera 3 segundos antes de consumir el buffer, luego consume cada 2 segundos
+  useEffect(() => {
+    if (!connected) return;
+    let interval: NodeJS.Timeout;
+    const timeout = setTimeout(() => {
+      setIsSimulationLoading(false);
+      interval = setInterval(() => {
+        setMinuteBuffer(prev => {
+          if (prev.length === 0) return prev;
+          const [nextMinute, ...rest] = prev;
+          setCurrentMinuteData(nextMinute);
+          return rest;
         });
-        publish('/app/chunk-received', {});
-      } else {
-        console.warn("Received non-JSON message:", message.body);
-        if (message.body === "COMPLETED") {
-          setIsSimulationCompleted(true);
-          console.log("Simulation completed");
-        }
-      }
-    } catch (error) {
-      console.error('Error parsing simulation data:', error);
-    }
-    }; 
-    subscribe('/topic/simulation-data', handleIncomingData);
+      }, 2000);
+    }, 3000);
+
     return () => {
-      unsubscribe("/topic/simulation-data");
+      clearTimeout(timeout);
+      if (interval) clearInterval(interval);
     };
   }, [connected]);
 
-  // 2. Request next chunk when needed
-  useEffect(() => {
-    if (!connected || !selectedDate || !hasStarted) return;
-
-    // Caso 1: Primera vez que se solicita
-    if (!scheduleChunk.current) {
-      const timer = setTimeout(() => {
-        console.log("Solicitando primer chunk...");
-        publish('/app/request-chunk', JSON.stringify({}));
-      }, 500); // Delay para el backend
-
-      return () => clearTimeout(timer);
-    }
-
-    // Caso 2: Ya hay un chunk actual, pero nos acercamos al final
-    if (!scheduleChunk.next) {
-      const simulationLength = scheduleChunk.current.simulacion.length;
-      if (currentIndex >= simulationLength - 1) {
-        console.log('Solicitando siguiente chunk...');
-        publish('/app/request-chunk', JSON.stringify({}));
-      }
-    }
-  }, [connected, selectedDate, scheduleChunk, currentIndex, hasStarted]);
-
-  // 3. Handle chunk transition logic
-  useEffect(() => {
-    if (!connected || !scheduleChunk.current) return;
-
-    const simulationArray = scheduleChunk.current.simulacion;
-    const isLastElement = currentIndex >= simulationArray.length - 1;
-    const hasNextChunk = scheduleChunk.next;
-
-    if (isLastElement && hasNextChunk) {
-      // Espera un segundo extra para mostrar el último minuto
-      setTimeout(() => {
-        setScheduleChunk({
-          current: scheduleChunk.next,
-          next: undefined
-        });
-        setCurrentIndex(0);
-        console.log('Transitioned to next chunk');
-      }, 1000)
-    }
-  }, [currentIndex, scheduleChunk]);
-
-  // 4. Visualization timer (example)
-  useEffect(() => {
-    if (!connected || !scheduleChunk.current) return;
-
-    const timer = setInterval(() => {
-      setCurrentIndex(prev => {
-        const isLast = prev >= scheduleChunk.current!.simulacion.length - 1;
-        if (isLast && !scheduleChunk.next) return prev; // Detener si no hay más datos
-        return prev + 1;
-      });
-
-    }, 2000); // Adjust timing as needed
-
-    return () => clearInterval(timer);
-  }, [scheduleChunk]);
-  // 5. reset states on reload
-  useEffect(() => {
-  if (connected) {
-    // Reset all state on new connection if desired
-    setHasStarted(false);
-    setIsSimulationCompleted(false);
-    setCurrentIndex(0);
-    setScheduleChunk({});
-  }
-}, [connected]);
-
-
-
-  // Render current simulation state
-  const currentMinute = scheduleChunk.current?.simulacion[currentIndex]?.minuto;
-  const currentData = scheduleChunk.current?.simulacion[currentIndex];
-  // console.log(currentData);
-  
-  
   /*
    * HANDLE PANEL SECTIONS
    */
@@ -232,7 +149,7 @@ export default function WeeklySimulation() {
         <VStack spacing={4} align="stretch">
           <PanelSearchBar onSubmit={()=>console.log('searching...')}/>
             {/* <FilterSortButtons entity={'Pedidos'}/> */}
-          {currentData?.pedidos?.map((pedido: PedidoSimulado) => (
+          {currentMinuteData?.pedidos?.map((pedido: PedidoSimulado) => (
             <Box key={pedido.idPedido}>
               <PedidoCard 
                 pedido={pedido} 
@@ -250,7 +167,7 @@ export default function WeeklySimulation() {
       <Box>
         <VStack spacing={4} align="stretch">
         <PanelSearchBar onSubmit={()=>console.log('searching...')}/>
-        {currentData?.vehiculos?.map((vehiculo :VehiculoSimulado) => (
+        {currentMinuteData?.vehiculos?.map((vehiculo :VehiculoSimulado) => (
           <Box key={vehiculo.idVehiculo}>
             <FlotaCard 
               vehiculo={vehiculo} 
@@ -266,7 +183,7 @@ export default function WeeklySimulation() {
   {
     title: 'Averias',
     content: (
-      <AveriasPanel currentData={currentData} />
+      <AveriasPanel currentMinuteData={currentMinuteData} />
     )
   },
   {
@@ -275,7 +192,7 @@ export default function WeeklySimulation() {
       <Box>
         <VStack spacing={4} align="stretch">
         <PanelSearchBar onSubmit={()=>console.log('searching...')}/>
-        {currentData?.mantenimientos?.map((mantenimiento: MantenimientoSimulado) => (
+        {currentMinuteData?.mantenimientos?.map((mantenimiento: MantenimientoSimulado) => (
           <Box key={mantenimiento.idMantenimiento}>
             <MantenimientoCard 
               mantenimiento={mantenimiento} 
@@ -313,36 +230,7 @@ export default function WeeklySimulation() {
   return (
     <Flex height="full" overflowY="auto" position="relative">
       <Box flex={1} p={4} bg={bgColor} h="full">
-        <Routes>
-          {/* <Route path="pedidos" element={<PedidosPhase />} />
-          <Route path="incidencias" element={<IncidenciasPhase />} />
-          <Route path="vehiculos" element={<VehiculosPhase />} />
-          <Route path="almacen" element={<AlmacenPhase />} /> */}
-          <Route
-            path="simulacion"
-            element={
-              isSimulationLoading 
-              ? <></> 
-              : 
-              <>
-              {<SimulationPhase 
-                minuto={currentMinute}
-                // setMinuto={setMinuto} 
-                data={currentData}
-                // isPaused={isPaused}
-                setIsPaused={setIsPaused}
-                speedMs={speedMs}
-                setSpeedMs={setSpeedMs}
-                fechaVisual={currentMinute}
-                /> }
-                </>
-            }
-          />
-        </Routes>
       </Box>
-            <Text fontSize="sm" color="gray.500" mt={2} mr={20}>
-              Minuto actual: {currentMinute}
-            </Text>
       {!isSimulationLoading && (
         <>
           <SectionBar
@@ -420,7 +308,7 @@ export default function WeeklySimulation() {
   );
 }
 
-function AveriasPanel({ currentData }: { currentData: any }) {
+function AveriasPanel({ currentMinuteData }: { currentMinuteData: any }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
   const [showForm, setShowForm] = useState(false);
@@ -466,7 +354,7 @@ function AveriasPanel({ currentData }: { currentData: any }) {
             Programar
           </Button>
         </HStack>
-        {currentData?.incidencias?.map((incidencia: any) => (
+        {currentMinuteData?.incidencias?.map((incidencia: any) => (
           <Box key={incidencia.idIncidencia}>
             <IncidenciaCard 
               incidencia={incidencia} 

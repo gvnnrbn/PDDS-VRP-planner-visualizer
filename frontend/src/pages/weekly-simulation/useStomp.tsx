@@ -8,7 +8,7 @@ const useStomp = (url: string) => {
   const subscriptions = useRef(new Map());
 
   const connect = useCallback(() => {
-  if (client || connected) return;
+  if (client) return;
 
   const socket = new SockJS(url, null, 
     // @ts-ignore
@@ -20,8 +20,11 @@ const useStomp = (url: string) => {
       onConnect: () => {
         console.log('STOMP connected');
         setConnected(true);
-        subscriptions.current.forEach((callback, destination) => {
-          stompClient.subscribe(destination, callback);
+        subscriptions.current.forEach((sub, destination) => {
+          if (typeof sub === 'function') {
+            const stompSub = stompClient.subscribe(destination, sub);
+            subscriptions.current.set(destination, stompSub);
+          }
         });
       },
       onWebSocketClose: (evt) => {
