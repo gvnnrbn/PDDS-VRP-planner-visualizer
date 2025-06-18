@@ -259,39 +259,40 @@
             }
 
             handleMessage(response) {
-                switch(response.type) {
-                    case 'SIMULATION_STARTED':
-                        this.log('🚀 ' + response.data);
-                        break;
-                    
-                    case 'SIMULATION_UPDATE':
-                        this.handleSimulationUpdate(response.data);
-                        break;
-                    
-                    case 'STATE_UPDATED':
-                        this.log('🔄 ' + response.data);
-                        break;
-                    
-                    case 'SIMULATION_STOPPED':
-                        this.log('⏹️ ' + response.data);
-                        // Clear the canvas when simulation stops
-                        visualizer.draw({
-                            vehicles: [],
-                            blockages: [],
-                            warehouses: [],
-                            deliveryNodes: [],
-                            refillNodes: [],
-                            currentTime: ''
-                        });
-                        break;
-                    
-                    case 'ERROR':
-                    case 'SIMULATION_ERROR':
-                        this.log('❌ ' + response.data);
-                        break;
-                    
-                    default:
-                        this.log(`📝 ${response.type}: ${JSON.stringify(response.data)}`);
+                if (response.type) {
+                    // Old/wrapped format
+                    switch(response.type) {
+                        case 'SIMULATION_STARTED':
+                            this.log('🚀 ' + response.data);
+                            break;
+                        case 'SIMULATION_UPDATE':
+                            this.handleSimulationUpdate(response.data);
+                            break;
+                        case 'STATE_UPDATED':
+                            this.log('🔄 ' + response.data);
+                            break;
+                        case 'SIMULATION_STOPPED':
+                            this.log('⏹️ ' + response.data);
+                            // Clear the canvas when simulation stops
+                            visualizer.draw({
+                                vehicles: [],
+                                blockages: [],
+                                warehouses: [],
+                                deliveryNodes: [],
+                                refillNodes: [],
+                                currentTime: ''
+                            });
+                            break;
+                        case 'ERROR':
+                        case 'SIMULATION_ERROR':
+                            this.log('❌ ' + response.data);
+                            break;
+                        default:
+                            this.log(`📝 ${response.type}: ${JSON.stringify(response.data)}`);
+                    }
+                } else {
+                    // New format: direct SimulacionMinuto object
+                    this.handleSimulationUpdate(response);
                 }
             }
 
