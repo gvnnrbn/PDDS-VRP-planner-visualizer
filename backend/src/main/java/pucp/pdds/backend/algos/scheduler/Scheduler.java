@@ -3,9 +3,9 @@ package pucp.pdds.backend.algos.scheduler;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 
 import pucp.pdds.backend.algos.algorithm.Algorithm;
-import pucp.pdds.backend.algos.algorithm.Environment;
 import pucp.pdds.backend.algos.algorithm.Solution;
 import pucp.pdds.backend.algos.data.DataChunk;
 import pucp.pdds.backend.algos.entities.PlannerFailure;
@@ -18,20 +18,33 @@ import pucp.pdds.backend.dto.UpdateFailuresMessage;
 public class Scheduler implements Runnable {
     private final SchedulerState state;
     private final SimpMessagingTemplate messagingTemplate;
+    private final Environment springEnv;
 
     @Autowired
-    public Scheduler(SchedulerState state, SimpMessagingTemplate messagingTemplate) {
+    public Scheduler(SchedulerState state, SimpMessagingTemplate messagingTemplate, Environment springEnv) {
         this.state = state;
         this.messagingTemplate = messagingTemplate;
+        this.springEnv = springEnv;
     }
 
     @Override
     public void run() {
+        initializeState();
+
         Time endSimulationTime = state.getCurrTime().addTime(new Time(0,0,7,0,0));
 
         while(state.getCurrTime().isBefore(endSimulationTime)) {
             // PLAN LOGIC
-            Environment environment = new Environment(state.getActiveVehicles(), state.getActiveOrders(), state.getWarehouses(), state.getActiveBlockages(), state.getFailures(), state.getActiveMaintenances(), state.getCurrTime(), state.minutesToSimulate);
+            pucp.pdds.backend.algos.algorithm.Environment environment = new pucp.pdds.backend.algos.algorithm.Environment(
+                state.getActiveVehicles(), 
+                state.getActiveOrders(), 
+                state.getWarehouses(), 
+                state.getActiveBlockages(), 
+                state.getFailures(), 
+                state.getActiveMaintenances(), 
+                state.getCurrTime(), 
+                state.minutesToSimulate
+            );
             debugPrint("Planning interval " + state.getCurrTime() + " started at " + state.getCurrTime() + " with " + state.getActiveVehicles().size() + " vehicles and " + state.getActiveOrders().size() + " orders");
             Algorithm algorithm = new Algorithm(true);
             Solution sol = algorithm.run(environment, state.minutesToSimulate);
@@ -67,6 +80,10 @@ public class Scheduler implements Runnable {
         state.getFailures().add(failure);
     }
 
+    private void initializeState() {
+        // State is now initialized in SimulationService
+    }
+
     private void debugPrint(String message) {
         System.out.println(state.getCurrTime() + " | " + message);
     }
@@ -80,7 +97,19 @@ public class Scheduler implements Runnable {
 
         sendResponse("SIMULATION_UPDATE", simulacionMinuto);
 
-        SimulationVisualizer.draw(state.getActiveVehicles(), state.getActiveBlockages(), state.getCurrTime(), state.minutesToSimulate, state.getWarehouses(), sol);
+        // Only run visualization in dev mode
+        if (isDevProfile()) {
+            SimulationVisualizer.draw(state.getActiveVehicles(), state.getActiveBlockages(), state.getCurrTime(), state.minutesToSimulate, state.getWarehouses(), sol);
+        }
+    }
+
+    private boolean isDevProfile() {
+        for (String profile : springEnv.getActiveProfiles()) {
+            if (profile.equals("dev")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void sendResponse(String type, Object data) {

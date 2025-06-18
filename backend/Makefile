@@ -24,9 +24,9 @@ build:
 run:
 	$(MAVEN) spring-boot:run
 
-# Run the application in development mode with live reload
+# Run the application in development mode with live reload and GUI support
 dev:
-	$(MAVEN) spring-boot:run -Dspring-boot.run.profiles=dev
+	$(MAVEN) spring-boot:run -Dspring-boot.run.profiles=dev -Djava.awt.headless=false
 
 # Run tests
 test:
@@ -56,7 +56,7 @@ help:
 	@echo "  make clean    : Clean build artifacts"
 	@echo "  make build    : Build the application"
 	@echo "  make run      : Run the application in production mode"
-	@echo "  make dev      : Run the application in development mode"
+	@echo "  make dev      : Run the application in development mode with GUI"
 	@echo "  make test     : Run tests"
 	@echo "  make install  : Install dependencies"
 	@echo "  make status   : Check if application is running"

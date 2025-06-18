@@ -6,6 +6,11 @@ import java.util.stream.Collectors;
 
 import javax.swing.*;
 import java.awt.*;
+
+import org.springframework.core.env.Environment;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import pucp.pdds.backend.algos.entities.PlannerVehicle;
 import pucp.pdds.backend.algos.entities.PlannerBlockage;
 import pucp.pdds.backend.algos.entities.PlannerWarehouse;
@@ -14,9 +19,16 @@ import pucp.pdds.backend.algos.algorithm.OrderDeliverNode;
 import pucp.pdds.backend.algos.algorithm.ProductRefillNode;
 import pucp.pdds.backend.algos.algorithm.Solution;
 
+@Component
 public class SimulationVisualizer {
     private static JFrame visFrame = null;
     private static VehicleVisualizerPanel visPanel = null;
+    private static Environment environment;
+
+    @Autowired
+    public void setEnvironment(Environment environment) {
+        SimulationVisualizer.environment = environment;
+    }
 
     private static class VehicleVisualizerPanel extends JPanel {
         private final int gridLength;
@@ -190,6 +202,23 @@ public class SimulationVisualizer {
     public static void draw(List<PlannerVehicle> vehicles, List<PlannerBlockage> blockages, 
                           Time currentTime, int minutesToSimulate,
                           List<PlannerWarehouse> warehouses, Solution sol) {
+        // Check if visualization is enabled in the current profile
+        if (environment == null || !Boolean.parseBoolean(environment.getProperty("visualization.gui.enabled", "false"))) {
+            System.out.println("DEBUG: Visualization skipped - GUI not enabled in profile");
+            System.out.println("DEBUG: environment = " + environment);
+            if (environment != null) {
+                System.out.println("DEBUG: visualization.gui.enabled = " + environment.getProperty("visualization.gui.enabled"));
+                System.out.println("DEBUG: Active profiles = " + String.join(", ", environment.getActiveProfiles()));
+            }
+            return;
+        }
+
+        // Check if we're in a headless environment
+        if (GraphicsEnvironment.isHeadless()) {
+            System.out.println("DEBUG: Visualization skipped - Headless environment detected");
+            return;
+        }
+
         // Collect only delivery nodes currently being served (next node for each vehicle if it's an OrderDeliverNode)
         List<Node> deliveryNodes = new ArrayList<>();
         List<Node> refillNodes = new ArrayList<>();
@@ -205,24 +234,37 @@ public class SimulationVisualizer {
             }
         }
 
-
         int gridLength = SimulationProperties.gridLength;
         int gridWidth = SimulationProperties.gridWidth;
-        SwingUtilities.invokeLater(() -> {
-            if (visFrame == null) {
-                visFrame = new JFrame("Vehicle & Node Visualization");
-                visPanel = new VehicleVisualizerPanel(gridLength, gridWidth);
-                visFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-                visFrame.add(visPanel);
-                visFrame.pack();
-                visFrame.setLocationRelativeTo(null);
-                visFrame.setVisible(true); 
-            }
-            List<PlannerBlockage> activeBlockages = blockages.stream()
-                .filter(blockage -> blockage.isActive(currentTime, currentTime.addMinutes(minutesToSimulate)))
-                .collect(Collectors.toList());
-            visPanel.warehouses = warehouses;
-            visPanel.updateState(vehicles, activeBlockages, deliveryNodes, refillNodes, currentTime.toString());
-        });
+
+        System.out.println("DEBUG: Attempting to draw visualization");
+        try {
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    if (visFrame == null) {
+                        visFrame = new JFrame("Vehicle & Node Visualization");
+                        visPanel = new VehicleVisualizerPanel(gridLength, gridWidth);
+                        visFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+                        visFrame.add(visPanel);
+                        visFrame.pack();
+                        visFrame.setLocationRelativeTo(null);
+                        visFrame.setVisible(true); 
+                        System.out.println("DEBUG: Created new visualization window");
+                    }
+                    List<PlannerBlockage> activeBlockages = blockages.stream()
+                        .filter(blockage -> blockage.isActive(currentTime, currentTime.addMinutes(minutesToSimulate)))
+                        .collect(Collectors.toList());
+                    visPanel.warehouses = warehouses;
+                    visPanel.updateState(vehicles, activeBlockages, deliveryNodes, refillNodes, currentTime.toString());
+                    System.out.println("DEBUG: Updated visualization state");
+                } catch (Exception e) {
+                    System.err.println("DEBUG: Error in visualization: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            });
+        } catch (Exception e) {
+            System.err.println("DEBUG: Error initializing visualization: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 } 

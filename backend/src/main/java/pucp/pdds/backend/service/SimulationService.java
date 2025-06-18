@@ -3,6 +3,7 @@ package pucp.pdds.backend.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.core.env.Environment;
 
 import pucp.pdds.backend.algos.scheduler.Scheduler;
 import pucp.pdds.backend.algos.scheduler.SchedulerState;
@@ -16,6 +17,7 @@ public class SimulationService {
     private final SimpMessagingTemplate messagingTemplate;
     private final DataProvider dataProvider;
     private final SchedulerState schedulerState;
+    private final Environment environment;
 
     private Scheduler currentSimulation;
     private Thread simulationThread;
@@ -24,10 +26,12 @@ public class SimulationService {
     @Autowired
     public SimulationService(SimpMessagingTemplate messagingTemplate, 
                            DataProvider dataProvider,
-                           SchedulerState schedulerState) {
+                           SchedulerState schedulerState,
+                           Environment environment) {
         this.messagingTemplate = messagingTemplate;
         this.dataProvider = dataProvider;
         this.schedulerState = schedulerState;
+        this.environment = environment;
     }
 
     public void startSimulation(InitMessage message) {
@@ -44,7 +48,7 @@ public class SimulationService {
                 schedulerState.setMaintenances(dataProvider.getMaintenances());
                 schedulerState.setCurrTime(dataProvider.getInitialTime());
 
-                currentSimulation = new Scheduler(schedulerState, messagingTemplate);
+                currentSimulation = new Scheduler(schedulerState, messagingTemplate, environment);
                 simulationThread = new Thread(currentSimulation, "simulation-thread");
                 simulationThread.start();
 
