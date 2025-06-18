@@ -113,18 +113,24 @@ public class Scheduler implements Runnable {
     }
 
     private void onAfterExecution(int iteration, Solution sol) {
-        DataChunk.SimulacionMinuto simulacionMinuto = new DataChunk.SimulacionMinuto(iteration);
-        simulacionMinuto.setVehiculos(DataChunk.convertVehiclesToDataChunk(state.getActiveVehicles(), sol.routes));
-        simulacionMinuto.setAlmacenes(DataChunk.convertWarehousesToDataChunk(state.getWarehouses()));
-        simulacionMinuto.setPedidos(DataChunk.convertOrdersToDataChunk(state.getActiveOrders(), state.getActiveVehicles(), sol.routes, state.getCurrTime()));
-        simulacionMinuto.setIncidencias(DataChunk.convertIncidentsToDataChunk(state.getFailures(), state.getActiveMaintenances()));
+        java.util.Map<String, Object> response = buildSimulationUpdateResponse(state, sol);
+        sendResponse("SIMULATION_UPDATE", response);
 
-        sendResponse("SIMULATION_UPDATE", simulacionMinuto);
-
-        // Only run visualization in dev mode
         if (isDevProfile()) {
             SimulationVisualizer.draw(state.getActiveVehicles(), state.getActiveBlockages(), state.getCurrTime(), state.minutesToSimulate, state.getWarehouses(), sol);
         }
+    }
+
+    private java.util.Map<String, Object> buildSimulationUpdateResponse(SchedulerState state, Solution sol) {
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        response.put("minuto", state.getCurrTime().toString());
+        response.put("almacenes", DataChunk.convertWarehousesToDataChunk(state.getWarehouses()));
+        response.put("vehiculos", DataChunk.convertVehiclesToDataChunk(state.getActiveVehicles(), sol.routes));
+        response.put("pedidos", DataChunk.convertOrdersToDataChunk(state.getActiveOrders(), state.getActiveVehicles(), sol.routes, state.getCurrTime()));
+        response.put("incidencias", DataChunk.convertIncidentsToDataChunk(state.getFailures(), state.getActiveMaintenances()));
+        response.put("mantenimientos", DataChunk.convertMaintenancesToDataChunk(state.getActiveMaintenances()));
+        response.put("bloqueos", DataChunk.convertBlockagesToDataChunk(state.getActiveBlockages()));
+        return response;
     }
 
     private boolean isDevProfile() {

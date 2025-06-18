@@ -102,7 +102,7 @@
                     ctx.beginPath(); ctx.moveTo(margin, sy); ctx.lineTo(width - margin, sy); ctx.stroke();
                 }
 
-                // Draw blockages (as black lines)
+                // Draw blockages (as connected black lines)
                 if (state.blockages) {
                     ctx.strokeStyle = '#000';
                     ctx.lineWidth = 3;
@@ -112,10 +112,21 @@
                             blockage.vertices.forEach((v, i) => {
                                 const x = margin + v.x * scaleX;
                                 const y = margin + v.y * scaleY;
-                                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-                                ctx.beginPath(); ctx.arc(x, y, 4, 0, 2 * Math.PI); ctx.fill();
+                                if (i === 0) {
+                                    ctx.moveTo(x, y);
+                                } else {
+                                    ctx.lineTo(x, y);
+                                }
                             });
                             ctx.stroke();
+                            // Optionally, draw vertices as small filled circles
+                            blockage.vertices.forEach((v) => {
+                                const x = margin + v.x * scaleX;
+                                const y = margin + v.y * scaleY;
+                                ctx.beginPath();
+                                ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                                ctx.fill();
+                            });
                         }
                     });
                     ctx.lineWidth = 1;
@@ -306,10 +317,10 @@
                 
                 // Optional: detailed logging for small datasets
                 if (data.vehiculos && data.vehiculos.length > 0 && data.vehiculos.length < 5) {
-                    this.log(`   🚛 Vehicles: ${data.vehiculos.map(v => v.placa || v.id || 'Unknown').join(', ')}`);
+                    this.log(`   🚛 Vehicles: ${data.vehiculos.map(v => v.placa || v.idVehiculo || 'Unknown').join(', ')}`);
                 }
 
-                // Map backend data to visualizer format
+                // Map backend data to visualizer format (adapted to new backend model)
                 const state = {
                     vehicles: (data.vehiculos || []).map(v => ({
                         id: v.placa || v.idVehiculo,
@@ -317,10 +328,13 @@
                         state: v.estado || 'NORMAL',
                         currentPath: (v.rutaActual || []).map(p => ({ x: p.posX, y: p.posY }))
                     })),
-                    blockages: [], // Add mapping if you have blockages
+                    blockages: (data.bloqueos || []).map(b => ({
+                        id: b.idBloqueo,
+                        vertices: (b.segmentos || []).map(s => ({ x: s.posX, y: s.posY }))
+                    })),
                     warehouses: (data.almacenes || []).map(w => ({
                         id: w.idAlmacen,
-                        position: { x: w.posX, y: w.posY },
+                        position: { x: w.posicion.posX, y: w.posicion.posY },
                         currentGLP: w.currentGLP,
                         maxGLP: w.maxGLP
                     })),

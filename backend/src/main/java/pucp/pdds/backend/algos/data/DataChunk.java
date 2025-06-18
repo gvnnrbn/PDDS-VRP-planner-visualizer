@@ -51,18 +51,20 @@ public class DataChunk {
     }
 
     public static class SimulacionMinuto {
-        public int minuto;
+        public String minuto;
         public List<Almacen> almacenes;
         public List<Vehiculo> vehiculos;
         public List<Pedido> pedidos;
         public List<Incidencia> incidencias;
+        public List<Mantenimiento> mantenimientos;
 
-        public SimulacionMinuto(int minuto) {
+        public SimulacionMinuto(String minuto) {
             this.minuto = minuto;
             this.almacenes = new ArrayList<>();
             this.vehiculos = new ArrayList<>();
             this.pedidos = new ArrayList<>();
             this.incidencias = new ArrayList<>();
+            this.mantenimientos = new ArrayList<>();
         }
 
         public void setAlmacenes(List<Almacen> almacenes) {
@@ -80,12 +82,25 @@ public class DataChunk {
         public void setIncidencias(List<Incidencia> incidencias) {
             this.incidencias = incidencias;
         }
+
+        public void setMantenimientos(List<Mantenimiento> mantenimientos) {
+            this.mantenimientos = mantenimientos;
+        }
+    }
+
+    public static class Posicion {
+        public int posX;
+        public int posY;
+
+        public Posicion(int posX, int posY) {
+            this.posX = posX;
+            this.posY = posY;
+        }
     }
 
     public static class Almacen {
         public int idAlmacen;
-        public int posX;
-        public int posY;
+        public Posicion posicion;
         public int currentGLP;
         public int maxGLP;
         public boolean isMain;
@@ -93,8 +108,7 @@ public class DataChunk {
 
         public Almacen(int idAlmacen, int posX, int posY, int currentGLP, int maxGLP, boolean isMain, boolean wasVehicle) {
             this.idAlmacen = idAlmacen;
-            this.posX = posX;
-            this.posY = posY;
+            this.posicion = new Posicion(posX, posY);
             this.currentGLP = currentGLP;
             this.maxGLP = maxGLP;
             this.isMain = isMain;
@@ -104,49 +118,37 @@ public class DataChunk {
 
     public static class Vehiculo {
         public int idVehiculo;
+        public String estado;
+        public String eta;
         public String tipo;
         public int combustible;
         public int maxCombustible;
-        public int maxGLP;
         public int currGLP;
+        public int maxGLP;
         public String placa;
+        public int idPedido;
         public int posicionX;
         public int posicionY;
-        public List<RutaPunto> rutaActual;
+        public List<Posicion> rutaActual;
 
-        public Vehiculo(int idVehiculo, String tipo, int combustible, int maxCombustible, int maxGLP, int currGLP, String placa, int posicionX, int posicionY) {
+        public Vehiculo(int idVehiculo, String estado, String eta, String tipo, int combustible, int maxCombustible, int currGLP, int maxGLP, String placa, int idPedido, int posicionX, int posicionY) {
             this.idVehiculo = idVehiculo;
+            this.estado = estado;
+            this.eta = eta;
             this.tipo = tipo;
             this.combustible = combustible;
             this.maxCombustible = maxCombustible;
-            this.maxGLP = maxGLP;
             this.currGLP = currGLP;
+            this.maxGLP = maxGLP;
             this.placa = placa;
+            this.idPedido = idPedido;
             this.posicionX = posicionX;
             this.posicionY = posicionY;
             this.rutaActual = new ArrayList<>();
         }
 
-        public void setRutaActual(List<RutaPunto> rutaActual) {
+        public void setRutaActual(List<Posicion> rutaActual) {
             this.rutaActual = rutaActual;
-        }
-    }
-
-    public static class RutaPunto {
-        public int posX;
-        public int posY;
-        public String estado;
-        public String accion;
-        public int idPedido;
-        public Integer traspasoGLP;
-
-        public RutaPunto(int posX, int posY, String estado, String accion, int idPedido, Integer traspasoGLP) {
-            this.posX = posX;
-            this.posY = posY;
-            this.estado = estado;
-            this.accion = accion;
-            this.idPedido = idPedido;
-            this.traspasoGLP = traspasoGLP;
         }
     }
 
@@ -154,16 +156,16 @@ public class DataChunk {
         public int idPedido;
         public String estado;
         public int glp;
-        public String tiempoLimite;
+        public String fechaLimite;
         public List<VehiculoAtendiendo> vehiculosAtendiendo;
         public int posX;
         public int posY;
 
-        public Pedido(int idPedido, String estado, int glp, String tiempoLimite, int posX, int posY) {
+        public Pedido(int idPedido, String estado, int glp, String fechaLimite, int posX, int posY) {
             this.idPedido = idPedido;
             this.estado = estado;
             this.glp = glp;
-            this.tiempoLimite = tiempoLimite;
+            this.fechaLimite = fechaLimite;
             this.posX = posX;
             this.posY = posY;
             this.vehiculosAtendiendo = new ArrayList<>();
@@ -201,6 +203,32 @@ public class DataChunk {
             this.tipo = tipo;
             this.placa = placa;
             this.estado = estado;
+        }
+    }
+
+    public static class Mantenimiento {
+        public String idMantenimiento;
+        public VehiculoMantenimiento vehiculo;
+        public String estado;
+        public String fechaInicio;
+        public String fechaFin;
+
+        public Mantenimiento(String idMantenimiento, VehiculoMantenimiento vehiculo, String estado, String fechaInicio, String fechaFin) {
+            this.idMantenimiento = idMantenimiento;
+            this.vehiculo = vehiculo;
+            this.estado = estado;
+            this.fechaInicio = fechaInicio;
+            this.fechaFin = fechaFin;
+        }
+    }
+
+    public static class VehiculoMantenimiento {
+        public String placa;
+        public String tipo;
+
+        public VehiculoMantenimiento(String placa, String tipo) {
+            this.placa = placa;
+            this.tipo = tipo;
         }
     }
 
@@ -294,42 +322,26 @@ public class DataChunk {
     public static List<Vehiculo> convertVehiclesToDataChunk(List<pucp.pdds.backend.algos.entities.PlannerVehicle> vehicles, java.util.Map<Integer, List<pucp.pdds.backend.algos.algorithm.Node>> routes) {
         return vehicles.stream()
             .map(vehicle -> {
+                String estado = vehicle.state != null ? vehicle.state.toString() : "-";
+                String eta = "-"; // No eta field in PlannerVehicle
+                int idPedido = 0; // No currentOrderId field in PlannerVehicle
                 Vehiculo vehiculo = new Vehiculo(
                     vehicle.id,
+                    estado,
+                    eta,
                     vehicle.type,
                     (int)vehicle.currentFuel,
                     vehicle.maxFuel,
-                    vehicle.maxGLP,
                     vehicle.currentGLP,
+                    vehicle.maxGLP,
                     vehicle.plaque,
+                    idPedido,
                     (int)vehicle.position.x,
                     (int)vehicle.position.y
                 );
-                // Map route points if they exist
                 if (vehicle.currentPath != null) {
-                    List<RutaPunto> rutaActual = vehicle.currentPath.stream()
-                        .map(point -> {
-                            int glpAmount = 0;
-                            // Only try to get next node if vehicle is still active
-                            if (routes.containsKey(vehicle.id) && vehicle.nextNodeIndex < routes.get(vehicle.id).size()) {
-                                pucp.pdds.backend.algos.algorithm.Node nextNode = routes.get(vehicle.id).get(vehicle.nextNodeIndex);
-                                if (nextNode instanceof pucp.pdds.backend.algos.algorithm.OrderDeliverNode) {
-                                    glpAmount = ((pucp.pdds.backend.algos.algorithm.OrderDeliverNode)nextNode).order.amountGLP;
-                                } else if (nextNode instanceof pucp.pdds.backend.algos.algorithm.ProductRefillNode) {
-                                    glpAmount = ((pucp.pdds.backend.algos.algorithm.ProductRefillNode)nextNode).amountGLP;
-                                }
-                            }
-                            return new RutaPunto(
-                                (int)point.x,
-                                (int)point.y, 
-                                vehicle.state.toString(),
-                                vehicle.state.toString(),
-                                routes.containsKey(vehicle.id) && vehicle.nextNodeIndex < routes.get(vehicle.id).size() ? 
-                                    (routes.get(vehicle.id).get(vehicle.nextNodeIndex) instanceof pucp.pdds.backend.algos.algorithm.OrderDeliverNode ? 
-                                        ((pucp.pdds.backend.algos.algorithm.OrderDeliverNode) routes.get(vehicle.id).get(vehicle.nextNodeIndex)).order.id : 0) : 0,
-                                glpAmount
-                            );
-                        })
+                    List<Posicion> rutaActual = vehicle.currentPath.stream()
+                        .map(point -> new Posicion((int)point.x, (int)point.y))
                         .collect(java.util.stream.Collectors.toList());
                     vehiculo.setRutaActual(rutaActual);
                 }
@@ -362,7 +374,7 @@ public class DataChunk {
                     order.id,
                     order.isDelivered() ? "Completado" : "Pendiente",
                     order.amountGLP,
-                    order.deadline.toString(),
+                    order.deadline.toString(), // now fechaLimite
                     (int)order.position.x,
                     (int)order.position.y
                 );
@@ -370,13 +382,15 @@ public class DataChunk {
                 List<VehiculoAtendiendo> vehiculosAtendiendo = new ArrayList<>();
                 for (pucp.pdds.backend.algos.entities.PlannerVehicle vehicle : activeVehicles) {
                     if (vehicle.currentPath != null && !vehicle.currentPath.isEmpty()) {
-                        pucp.pdds.backend.algos.algorithm.Node nextNode = routes.get(vehicle.id).get(vehicle.nextNodeIndex);
-                        if (nextNode instanceof pucp.pdds.backend.algos.algorithm.OrderDeliverNode && 
-                            ((pucp.pdds.backend.algos.algorithm.OrderDeliverNode) nextNode).order.id == order.id) {
-                            vehiculosAtendiendo.add(new VehiculoAtendiendo(
-                                vehicle.plaque,
-                                currTime.toString()
-                            ));
+                        if (routes.containsKey(vehicle.id) && vehicle.nextNodeIndex < routes.get(vehicle.id).size()) {
+                            pucp.pdds.backend.algos.algorithm.Node nextNode = routes.get(vehicle.id).get(vehicle.nextNodeIndex);
+                            if (nextNode instanceof pucp.pdds.backend.algos.algorithm.OrderDeliverNode && 
+                                ((pucp.pdds.backend.algos.algorithm.OrderDeliverNode) nextNode).order.id == order.id) {
+                                vehiculosAtendiendo.add(new VehiculoAtendiendo(
+                                    vehicle.plaque,
+                                    currTime.toString()
+                                ));
+                            }
                         }
                     }
                 }
@@ -390,29 +404,41 @@ public class DataChunk {
             List<pucp.pdds.backend.algos.entities.PlannerFailure> failures,
             List<pucp.pdds.backend.algos.entities.PlannerMaintenance> activeMaintenances) {
         List<Incidencia> incidencias = new ArrayList<>();
-        
         // Add failures as incidents
         failures.forEach(failure -> incidencias.add(new Incidencia(
             failure.id,
             failure.timeOccuredOn != null ? failure.timeOccuredOn.toString() : "",
             failure.timeOccuredOn != null ? failure.timeOccuredOn.toString() : "",
-            failure.shiftOccurredOn.toString(),
-            failure.type.toString(),
+            failure.shiftOccurredOn != null ? failure.shiftOccurredOn.toString() : "",
+            failure.type != null ? failure.type.toString() : "",
             failure.vehiclePlaque,
             failure.timeOccuredOn != null ? "FINISHED" : "ACTIVE"
         )));
-
-        // Add maintenances as incidents
-        activeMaintenances.forEach(maintenance -> incidencias.add(new Incidencia(
-            maintenance.id,
-            maintenance.startDate.toString(),
-            maintenance.endDate.toString(),
-            "T1", // Default shift since it's not specified in PlannerMaintenance
-            "MAINTENANCE",
-            maintenance.vehiclePlaque,
-            "ACTIVE"
-        )));
-
+        // Add maintenances as incidents (optional, if needed)
+        // activeMaintenances.forEach(maintenance -> incidencias.add(new Incidencia(
+        //     maintenance.id,
+        //     maintenance.startDate.toString(),
+        //     maintenance.endDate.toString(),
+        //     "T1", // Default shift since it's not specified in PlannerMaintenance
+        //     "MAINTENANCE",
+        //     maintenance.vehiclePlaque,
+        //     "ACTIVE"
+        // )));
         return incidencias;
+    }
+
+    public static List<Mantenimiento> convertMaintenancesToDataChunk(List<pucp.pdds.backend.algos.entities.PlannerMaintenance> maintenances) {
+        List<Mantenimiento> result = new ArrayList<>();
+        for (pucp.pdds.backend.algos.entities.PlannerMaintenance m : maintenances) {
+            VehiculoMantenimiento vehiculo = new VehiculoMantenimiento(m.vehiclePlaque, "-"); // No vehicleType field
+            result.add(new Mantenimiento(
+                String.valueOf(m.id),
+                vehiculo,
+                "Programado", // No state field
+                m.startDate != null ? m.startDate.toString() : "",
+                m.endDate != null ? m.endDate.toString() : ""
+            ));
+        }
+        return result;
     }
 }
