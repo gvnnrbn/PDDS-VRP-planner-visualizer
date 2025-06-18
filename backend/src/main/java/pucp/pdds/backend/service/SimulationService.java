@@ -40,13 +40,13 @@ public class SimulationService {
 
             try {
                 // Initialize scheduler state with data
-                schedulerState.setVehicles(dataProvider.getVehicles());
-                schedulerState.setOrders(dataProvider.getOrders());
-                schedulerState.setBlockages(dataProvider.getBlockages());
-                schedulerState.setWarehouses(dataProvider.getWarehouses());
-                schedulerState.setFailures(dataProvider.getFailures());
-                schedulerState.setMaintenances(dataProvider.getMaintenances());
-                schedulerState.setCurrTime(dataProvider.getInitialTime());
+                schedulerState.setVehicles(dataProvider.getVehicles().stream().map(v -> v.clone()).toList());
+                schedulerState.setOrders(dataProvider.getOrders().stream().map(o -> o.clone()).toList());
+                schedulerState.setBlockages(dataProvider.getBlockages().stream().map(b -> b.clone()).toList());
+                schedulerState.setWarehouses(dataProvider.getWarehouses().stream().map(w -> w.clone()).toList());
+                schedulerState.setFailures(dataProvider.getFailures().stream().map(f -> f.clone()).toList());
+                schedulerState.setMaintenances(dataProvider.getMaintenances().stream().map(m -> m.clone()).toList());
+                schedulerState.setCurrTime(dataProvider.getInitialTime().clone());
 
                 currentSimulation = new Scheduler(schedulerState, messagingTemplate, environment);
                 simulationThread = new Thread(currentSimulation, "simulation-thread");
@@ -82,16 +82,19 @@ public class SimulationService {
     }
 
     private void stopCurrentSimulation() {
-        if (simulationThread != null && simulationThread.isAlive()) {
-            simulationThread.interrupt();
-            try {
-                simulationThread.join(1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+        if (currentSimulation != null) {
+            currentSimulation.stop();
+            if (simulationThread != null && simulationThread.isAlive()) {
+                simulationThread.interrupt();
+                try {
+                    simulationThread.join(1000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
             }
+            currentSimulation = null;
+            simulationThread = null;
         }
-        currentSimulation = null;
-        simulationThread = null;
     }
 
     private void sendResponse(String type, Object data) {

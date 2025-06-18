@@ -19,12 +19,14 @@ public class Scheduler implements Runnable {
     private final SchedulerState state;
     private final SimpMessagingTemplate messagingTemplate;
     private final Environment springEnv;
+    private volatile boolean isRunning;
 
     @Autowired
     public Scheduler(SchedulerState state, SimpMessagingTemplate messagingTemplate, Environment springEnv) {
         this.state = state;
         this.messagingTemplate = messagingTemplate;
         this.springEnv = springEnv;
+        this.isRunning = true;
     }
 
     @Override
@@ -33,42 +35,64 @@ public class Scheduler implements Runnable {
 
         Time endSimulationTime = state.getCurrTime().addTime(new Time(0,0,7,0,0));
 
-        while(state.getCurrTime().isBefore(endSimulationTime)) {
-            // PLAN LOGIC
-            pucp.pdds.backend.algos.algorithm.Environment environment = new pucp.pdds.backend.algos.algorithm.Environment(
-                state.getActiveVehicles(), 
-                state.getActiveOrders(), 
-                state.getWarehouses(), 
-                state.getActiveBlockages(), 
-                state.getFailures(), 
-                state.getActiveMaintenances(), 
-                state.getCurrTime(), 
-                state.minutesToSimulate
-            );
-            debugPrint("Planning interval " + state.getCurrTime() + " started at " + state.getCurrTime() + " with " + state.getActiveVehicles().size() + " vehicles and " + state.getActiveOrders().size() + " orders");
-            Algorithm algorithm = new Algorithm(true);
-            Solution sol = algorithm.run(environment, state.minutesToSimulate);
-            debugPrint(sol.toString());
-            // PLAN LOGIC
+        while(state.getCurrTime().isBefore(endSimulationTime) && isRunning && !Thread.currentThread().isInterrupted()) {
+            try {
+                // PLAN LOGIC
+                pucp.pdds.backend.algos.algorithm.Environment environment = new pucp.pdds.backend.algos.algorithm.Environment(
+                    state.getActiveVehicles(), 
+                    state.getActiveOrders(), 
+                    state.getWarehouses(), 
+                    state.getActiveBlockages(), 
+                    state.getFailures(), 
+                    state.getActiveMaintenances(), 
+                    state.getCurrTime(), 
+                    state.minutesToSimulate
+                );
+                debugPrint("Planning interval " + state.getCurrTime() + " started at " + state.getCurrTime() + " with " + state.getActiveVehicles().size() + " vehicles and " + state.getActiveOrders().size() + " orders");
+                Algorithm algorithm = new Algorithm(true);
+                Solution sol = algorithm.run(environment, state.minutesToSimulate);
+                debugPrint(sol.toString());
+                // PLAN LOGIC
 
-            if (!sol.isFeasible(environment)) {
-                sendError("Can't continue delivering, couldn't find a feasible plan for next " + state.minutesToSimulate + " minutes");
-                break;
-            }
-
-            state.initializeVehicles();
-
-            for (int iteration = 0; iteration < state.minutesToSimulate; iteration++) {
-                state.advance(sol);
-                onAfterExecution(iteration, sol);
-
-                try {
-                    Thread.sleep(200);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
+                if (!sol.isFeasible(environment)) {
+                    sendError("Can't continue delivering, couldn't find a feasible plan for next " + state.minutesToSimulate + " minutes");
+                    break;
                 }
+
+                state.initializeVehicles();
+
+                for (int iteration = 0; iteration < state.minutesToSimulate && isRunning && !Thread.currentThread().isInterrupted(); iteration++) {
+                    state.advance(sol);
+                    onAfterExecution(iteration, sol);
+
+                    try {
+                        Thread.sleep(200);
+                    } catch (InterruptedException e) {
+                        isRunning = false;
+                        Thread.currentThread().interrupt();
+                        sendResponse("SIMULATION_STOPPED", "Simulation stopped by user");
+                        return;
+                    }
+                }
+
+                if (!isRunning || Thread.currentThread().isInterrupted()) {
+                    sendResponse("SIMULATION_STOPPED", "Simulation stopped by user");
+                    return;
+                }
+            } catch (Exception e) {
+                sendError("Unexpected error during simulation: " + e.getMessage());
+                isRunning = false;
+                return;
             }
         }
+
+        if (!isRunning) {
+            sendResponse("SIMULATION_STOPPED", "Simulation stopped by user");
+        }
+    }
+
+    public void stop() {
+        isRunning = false;
     }
 
     public void updateFailures(UpdateFailuresMessage message) {

@@ -54,16 +54,16 @@
         <button onclick="updateFailures()">Add Failure</button>
     </div>
     
-    <div class="control-section">
-        <h3>Log</h3>
-        <button onclick="clearLog()">Clear Log</button>
-        <div id="log"></div>
-    </div>
-
     <!-- Simple Simulation Visualizer -->
     <div class="control-section">
         <h3>Simulation Visualizer</h3>
         <canvas id="simCanvas" width="900" height="700" style="border:1px solid #ccc; background:#fff;"></canvas>
+    </div>
+
+    <div class="control-section">
+        <h3>Log</h3>
+        <button onclick="clearLog()">Clear Log</button>
+        <div id="log"></div>
     </div>
 
     <script>
@@ -71,8 +71,8 @@
             constructor(canvasId) {
                 this.canvas = document.getElementById(canvasId);
                 this.ctx = this.canvas.getContext('2d');
-                this.gridLength = 100; // default, can be set from data
-                this.gridWidth = 100;
+                this.gridLength = 70; // default, can be set from data
+                this.gridWidth = 50;
             }
 
             draw(state) {
@@ -274,6 +274,15 @@
                     
                     case 'SIMULATION_STOPPED':
                         this.log('⏹️ ' + response.data);
+                        // Clear the canvas when simulation stops
+                        visualizer.draw({
+                            vehicles: [],
+                            blockages: [],
+                            warehouses: [],
+                            deliveryNodes: [],
+                            refillNodes: [],
+                            currentTime: ''
+                        });
                         break;
                     
                     case 'ERROR':
@@ -364,8 +373,12 @@
 
             stopSimulation() {
                 if (!this.checkConnection()) return;
-                this.send('/app/stop', {});
-                this.log('⏹️ Stopping simulation...');
+                try {
+                    this.send('/app/stop', {});
+                    this.log('⏹️ Sending stop simulation request...');
+                } catch (error) {
+                    this.log('❌ Error stopping simulation: ' + error.message);
+                }
             }
 
             send(destination, message) {
