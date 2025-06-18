@@ -1,23 +1,13 @@
-import { Box, Button, FormControl, FormLabel, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Stack, Text, useColorModeValue, VStack, HStack, useDisclosure, useToast } from '@chakra-ui/react'
-import { Route, Routes, useLocation } from 'react-router-dom'
+import { Box, Button, FormControl, FormLabel, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Stack, useColorModeValue, VStack, HStack, useDisclosure, useToast } from '@chakra-ui/react'
+import { Route, Routes } from 'react-router-dom'
 import { SectionBar } from '../../components/common/SectionBar'
 import { useEffect, useState } from 'react'
 import { Flex } from '@chakra-ui/react'
-import PedidosPhase from './PedidosPhase'
-import IncidenciasPhase from './IncidenciasPhase'
-import SimulationPhase from './SimulationPhase'
-import VehiculosPhase from './VehiculosPhase'
-
 import LegendPanel from '../../components/common/Legend'
 import LoadingOverlay from '../../components/common/LoadingOverlay'
-import { PedidoCard } from '../../components/common/cards/PedidoCard'
-import { IncidenciaCard } from '../../components/common/cards/IncidenciaCard'
-import { FlotaCard } from '../../components/common/cards/FlotaCard'
 import { PanelSearchBar } from '../../components/common/PanelSearchBar'
-import { MantenimientoCard } from '../../components/common/cards/MantenimientoCard'
 import { FilterSortButtons } from '../../components/common/cards/FilterSortButtons'
 import AlmacenPhase from './AlmacenPhase'
-import useStomp from './useStomp'
 import type { Message } from '@stomp/stompjs'
 import type { VehiculoSimulado } from '../../core/types/vehiculo'
 import type { PedidoSimulado } from '../../core/types/pedido'
@@ -28,6 +18,8 @@ import { FaSort, FaFilter, FaRegClock } from 'react-icons/fa'
 import { IncidenciaForm } from '../../components/IncidenciaForm'
 import { MapGrid } from '../../components/common/Map'
 import { SimulationProvider } from '../../components/common/SimulationContextSemanal'
+import SimulationPhase from './SimulationPhase'
+
 interface SimulacionMinuto {
   minuto: string,
   bloqueos: any[],
@@ -46,7 +38,6 @@ export default function WeeklySimulation() {
 
   const [selectedDate, setSelectedDate] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { connected, subscribe, unsubscribe, publish } = useStomp('http://localhost:8080/ws');
   const [hasStarted, setHasStarted] = useState(false);
   const [ isPaused, setIsPaused ] = useState(false)
   const [ speedMs, setSpeedMs ] = useState(1000);
@@ -78,65 +69,13 @@ export default function WeeklySimulation() {
 
   const [pendingStart, setPendingStart] = useState(false);
 
-useEffect(() => {
-  if (connected && pendingStart) {
-    handleStartSimulation();
-    setPendingStart(false);
-  }
-}, [connected, pendingStart]);
-
-const handleSubmit = () => {
-  formatDateTime();
-  setIsModalOpen(false);
-  setIsSimulationLoading(true);
-  setPendingStart(true); // ⏳ esperar conexión
-};
- 
-
-  const handleStartSimulation = () => {
-    if (connected) {
-      publish('/app/simulation-start', selectedDate);
-      setHasStarted(true);
-      console.log('Sent date to backend:', selectedDate);
-    }
+  const handleSubmit = () => {
+    formatDateTime();
+    setIsModalOpen(false);
+    setIsSimulationLoading(true);
+    setPendingStart(true); // ⏳ esperar conexión
   };
-  const [minuteBuffer, setMinuteBuffer] = useState<SimulacionMinuto[]>([]);
-  const [currentMinuteData, setCurrentMinuteData] = useState<SimulacionMinuto | null>(null);
-
-  useEffect(() => {
-    if (!connected) return;
-
-    const handleIncomingData = (message: any) => {
-      const data: SimulacionMinuto = JSON.parse(message.body);
-      setMinuteBuffer(prev => [...prev, data]);
-      console.log(data)
-    };
-
-    subscribe('/topic/simulation', handleIncomingData);
-    return () => unsubscribe('/topic/simulation');
-  }, [connected]);
-
-  // Espera 3 segundos antes de consumir el buffer, luego consume cada 2 segundos
-  useEffect(() => {
-    if (!connected) return;
-    let interval: NodeJS.Timeout;
-    const timeout = setTimeout(() => {
-      setIsSimulationLoading(false);
-      interval = setInterval(() => {
-        setMinuteBuffer(prev => {
-          if (prev.length === 0) return prev;
-          const [nextMinute, ...rest] = prev;
-          setCurrentMinuteData(nextMinute);
-          return rest;
-        });
-      }, 2000);
-    }, 3000);
-
-    return () => {
-      clearTimeout(timeout);
-      if (interval) clearInterval(interval);
-    };
-  }, [connected]);
+ 
 
   /*
    * HANDLE PANEL SECTIONS
@@ -150,14 +89,7 @@ const handleSubmit = () => {
         <VStack spacing={4} align="stretch">
           <PanelSearchBar onSubmit={()=>console.log('searching...')}/>
             {/* <FilterSortButtons entity={'Pedidos'}/> */}
-          {currentMinuteData?.pedidos?.map((pedido: PedidoSimulado) => (
-            <Box key={pedido.idPedido}>
-              <PedidoCard 
-                pedido={pedido} 
-                onClick={() => console.log('Enfocando pedido')}
-              />
-            </Box>
-          ))}
+          {null}
         </VStack>
       </Box>
     )
@@ -168,15 +100,7 @@ const handleSubmit = () => {
       <Box>
         <VStack spacing={4} align="stretch">
         <PanelSearchBar onSubmit={()=>console.log('searching...')}/>
-        {currentMinuteData?.vehiculos?.map((vehiculo :VehiculoSimulado) => (
-          <Box key={vehiculo.idVehiculo}>
-            <FlotaCard 
-              vehiculo={vehiculo} 
-              onClick={() => console.log('Enfocando vehiculo')}
-            />
-          </Box>
-      ))}
-
+        {null}
         </VStack>
       </Box>
     )
@@ -184,7 +108,7 @@ const handleSubmit = () => {
   {
     title: 'Averias',
     content: (
-      <AveriasPanel currentMinuteData={currentMinuteData} />
+      <AveriasPanel currentMinuteData={null} />
     )
   },
   {
@@ -193,30 +117,13 @@ const handleSubmit = () => {
       <Box>
         <VStack spacing={4} align="stretch">
         <PanelSearchBar onSubmit={()=>console.log('searching...')}/>
-        {currentMinuteData?.mantenimientos?.map((mantenimiento: MantenimientoSimulado) => (
-          <Box key={mantenimiento.idMantenimiento}>
-            <MantenimientoCard 
-              mantenimiento={mantenimiento} 
-              onClick={() => console.log('Enfocando vehiculo')}
-            />
-          </Box>
-      ))}
-
+        {null}
         </VStack>
       </Box>
     )
-    },
-    // {
-    //   title: 'Indicadores',
-    //   content: (
-    //     <Box>
-    //       <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
-    //         contenido indicadores
-    //       </Text>
-    //     </Box>
-    //   )
-    // },
-  ]
+  },
+  ];
+
   const [section, setSection] = useState(sections[0].title)
 
   const handleSectionChange = (section: string) => {
@@ -232,28 +139,28 @@ const handleSubmit = () => {
     <Flex height="full" overflowY="auto" position="relative">
       <Box flex={1} p={4} bg={bgColor} h="full">
         <Routes>
-          {/* <Route path="pedidos" element={<PedidosPhase />} />
-          <Route path="incidencias" element={<IncidenciasPhase />} />
-          <Route path="vehiculos" element={<VehiculosPhase />} />
-          <Route path="almacen" element={<AlmacenPhase />} /> */}
           <Route
             path="simulacion"
             element={
               isSimulationLoading 
-              ? <></> 
-              : 
-              <>
-              {currentMinuteData && (
-                <SimulationProvider initialData={currentMinuteData}>
-                  <SimulationPhase
-                    data={currentMinuteData}
-                    speedMs={speedMs}
-                    setSpeedMs={setSpeedMs}
-                    setIsPaused={setIsPaused}
-                  />
-              </SimulationProvider>)}
-                </>
-              }
+                ? <></> 
+                : (
+                  <SimulationProvider initialData={{
+                    minuto: "",
+                    vehiculos: [],
+                    pedidos: [],
+                    almacenes: [],
+                    incidencias: [],
+                    mantenimientos: [],
+                  }}>
+                    <SimulationPhase
+                      speedMs={speedMs}
+                      setSpeedMs={setSpeedMs}
+                      setIsPaused={setIsPaused}
+                    />
+                  </SimulationProvider>
+                )
+            }
           />
         </Routes>
       </Box>
@@ -323,7 +230,7 @@ const handleSubmit = () => {
           </ModalBody>
 
           <ModalFooter justifyContent={'center'}>
-            <Button variant={'primary'} mr={3} onClick={handleSubmit} disabled={!connected}>
+            <Button variant={'primary'} mr={3} onClick={handleSubmit} disabled={!true}>
               Iniciar Simulación
             </Button>
           </ModalFooter>
@@ -380,14 +287,7 @@ function AveriasPanel({ currentMinuteData }: { currentMinuteData: any }) {
             Programar
           </Button>
         </HStack>
-        {currentMinuteData?.incidencias?.map((incidencia: any) => (
-          <Box key={incidencia.idIncidencia}>
-            <IncidenciaCard 
-              incidencia={incidencia} 
-              onClick={() => console.log('Enfocando vehiculo')}
-            />
-          </Box>
-        ))}
+        {null}
       </VStack>
       <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
         <ModalOverlay />
