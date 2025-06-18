@@ -22,7 +22,7 @@ public class SchedulerAgentTextFiles implements SchedulerAgent {
     private List<PlannerMaintenance> maintenances;
     private Time initialTime;
 
-    public SchedulerAgentTextFiles() {
+    public SchedulerAgentTextFiles(Time initialTime) {
         this.vehicles = CSVDataParser.parseVehicles("data/vehicles.csv");
         this.orders = CSVDataParser.parseOrders("data/orders.csv");
         this.blockages = CSVDataParser.parseBlockages("data/blockages.csv");

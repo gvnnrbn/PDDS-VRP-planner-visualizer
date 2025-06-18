@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simulation Client</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .control-section { margin: 15px 0; padding: 10px; border: 1px solid #ddd; }
+        button { padding: 8px 12px; margin: 5px; }
+        input, select { padding: 5px; margin: 5px; }
+        #log { height: 400px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; margin-top: 10px; background: #f9f9f9; }
+        #status { font-weight: bold; margin: 10px 0; }
+        .connected { color: green; }
+        .disconnected { color: red; }
+    </style>
+</head>
+<body>
+    <h2>Simulation Control Panel</h2>
+    
+    <div class="control-section">
+        <h3>Connection</h3>
+        <label>Server URL:</label>
+        <input type="text" id="serverUrl" value="http://localhost:8080" style="width: 300px;">
+        <button onclick="connectToServer()">Connect</button>
+        <button onclick="disconnect()">Disconnect</button>
+        <div id="status" class="disconnected">Status: Disconnected</div>
+    </div>
+    
+    <div class="control-section">
+        <h3>Simulation Control</h3>
+        <label>Initial Time:</label>
+        <input type="datetime-local" id="initialTime" value="2024-01-01T08:00">
+        <button onclick="startSimulation()">Start Simulation</button>
+        <button onclick="stopSimulation()">Stop Simulation</button>
+    </div>
+    
+    <div class="control-section">
+        <h3>Add Failure</h3>
+        <label>Failure Type:</label>
+        <select id="failureType">
+            <option value="ENGINE_FAILURE">Engine Failure</option>
+            <option value="TIRE_FAILURE">Tire Failure</option>
+            <option value="BATTERY_FAILURE">Battery Failure</option>
+        </select>
+        <label>Vehicle Plaque:</label>
+        <input type="text" id="vehiclePlaque" placeholder="ABC-123">
+        <label>Shift:</label>
+        <input type="number" id="shiftOccurred" value="1" min="1" max="3">
+        <button onclick="updateFailures()">Add Failure</button>
+    </div>
+    
+    <div class="control-section">
+        <h3>Log</h3>
+        <button onclick="clearLog()">Clear Log</button>
+        <div id="log"></div>
+    </div>
+
+    <!-- Simple Simulation Visualizer -->
+    <div class="control-section">
+        <h3>Simulation Visualizer</h3>
+        <canvas id="simCanvas" width="900" height="700" style="border:1px solid #ccc; background:#fff;"></canvas>
+    </div>
+
+    <script>
+        class SimulationVisualizerJS {
+            constructor(canvasId) {
+                this.canvas = document.getElementById(canvasId);
+                this.ctx = this.canvas.getContext('2d');
+                this.gridLength = 100; // default, can be set from data
+                this.gridWidth = 100;
+            }
+
+            draw(state) {
+                // console.log(state)
+
+                const ctx = this.ctx;
+                ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                const margin = 40;
+                const width = this.canvas.width;
+                const height = this.canvas.height;
+                const scaleX = (width - 2 * margin) / this.gridLength;
+                const scaleY = (height - 2 * margin) / this.gridWidth;
+
+                // Draw current time
+                ctx.fillStyle = '#000';
+                ctx.font = '18px Arial';
+                ctx.fillText('Time: ' + (state.currentTime || ''), 20, 30);
+
+                // Draw grid
+                ctx.strokeStyle = '#dcdcdc';
+                for (let x = 0; x <= this.gridLength; x += 10) {
+                    const sx = margin + x * scaleX;
+                    ctx.beginPath(); ctx.moveTo(sx, margin); ctx.lineTo(sx, height - margin); ctx.stroke();
+                }
+                for (let y = 0; y <= this.gridWidth; y += 10) {
+                    const sy = margin + y * scaleY;
+                    ctx.beginPath(); ctx.moveTo(margin, sy); ctx.lineTo(width - margin, sy); ctx.stroke();
+                }
+
+                // Draw blockages (as black lines)
+                if (state.blockages) {
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 3;
+                    state.blockages.forEach(blockage => {
+                        if (blockage.vertices && blockage.vertices.length > 1) {
+                            ctx.beginPath();
+                            blockage.vertices.forEach((v, i) => {
+                                const x = margin + v.x * scaleX;
+                                const y = margin + v.y * scaleY;
+                                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                                ctx.beginPath(); ctx.arc(x, y, 4, 0, 2 * Math.PI); ctx.fill();
+                            });
+                            ctx.stroke();
+                        }
+                    });
+                    ctx.lineWidth = 1;
+                }
+
+                // Draw warehouses (as gray houses)
+                if (state.warehouses) {
+                    state.warehouses.forEach(wh => {
+                        const x = margin + wh.position.x * scaleX - 12;
+                        const y = margin + wh.position.y * scaleY - 12;
+                        // House base
+                        ctx.fillStyle = '#969696';
+                        ctx.fillRect(x, y + 12, 24, 12);
+                        // Roof
+                        ctx.beginPath();
+                        ctx.moveTo(x - 4, y + 12); ctx.lineTo(x + 12, y); ctx.lineTo(x + 28, y + 12); ctx.closePath();
+                        ctx.fill();
+                        // ID
+                        ctx.fillStyle = '#000';
+                        ctx.font = '12px Arial';
+                        ctx.fillText('W' + (wh.id || ''), x + 8, y + 20);
+                        // Capacity bar
+                        if (wh.maxGLP) {
+                            const perc = wh.currentGLP / wh.maxGLP;
+                            ctx.fillStyle = '#c8c8c8';
+                            ctx.fillRect(x + 2, y + 26, 20, 4);
+                            ctx.fillStyle = '#00c800';
+                            ctx.fillRect(x + 2, y + 26, 20 * perc, 4);
+                        }
+                    });
+                }
+
+                // Draw delivery nodes (red circles)
+                if (state.deliveryNodes) {
+                    ctx.fillStyle = '#ff6464';
+                    state.deliveryNodes.forEach(node => {
+                        const x = margin + node.position.x * scaleX - 8;
+                        const y = margin + node.position.y * scaleY - 8;
+                        ctx.beginPath(); ctx.arc(x + 8, y + 8, 8, 0, 2 * Math.PI); ctx.fill();
+                    });
+                }
+
+                // Draw refill nodes (blue squares)
+                if (state.refillNodes) {
+                    ctx.fillStyle = '#6464ff';
+                    state.refillNodes.forEach(node => {
+                        const x = margin + node.position.x * scaleX - 8;
+                        const y = margin + node.position.y * scaleY - 8;
+                        ctx.fillRect(x, y, 16, 16);
+                    });
+                }
+
+                // Draw vehicles (yellow, orange, red)
+                if (state.vehicles) {
+                    state.vehicles.forEach(v => {
+                        let color = '#ffc800';
+                        if (v.state === 'STUCK') color = '#ff0000';
+                        else if (v.state === 'MAINTENANCE') color = '#ffa500';
+                        ctx.fillStyle = color;
+                        const vx = margin + v.position.x * scaleX - 10;
+                        const vy = margin + v.position.y * scaleY - 10;
+                        ctx.beginPath(); ctx.arc(vx + 10, vy + 10, 10, 0, 2 * Math.PI); ctx.fill();
+                        ctx.fillStyle = '#000';
+                        ctx.font = '12px Arial';
+                        ctx.fillText('V' + (v.id || ''), vx, vy - 5);
+                        // Draw path if available
+                        if (v.currentPath && v.currentPath.length > 1 && v.state !== 'STUCK') {
+                            ctx.strokeStyle = 'rgba(0,180,0,0.7)';
+                            ctx.lineWidth = 2;
+                            ctx.beginPath();
+                            v.currentPath.forEach((p, i) => {
+                                const px = margin + p.x * scaleX;
+                                const py = margin + p.y * scaleY;
+                                if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                            });
+                            ctx.stroke();
+                            ctx.lineWidth = 1;
+                        }
+                    });
+                }
+            }
+        }
+
+        let visualizer = new SimulationVisualizerJS('simCanvas');
+
+        class SimulationClient {
+            constructor() {
+                this.stompClient = null;
+                this.connected = false;
+                this.serverUrl = '';
+            }
+
+            connect(serverUrl) {
+                if (this.connected) {
+                    this.disconnect();
+                }
+
+                this.serverUrl = serverUrl;
+                this.log(`🔌 Connecting to ${serverUrl}...`);
+                
+                try {
+                    const socket = new SockJS(`${serverUrl}/ws`);
+                    this.stompClient = Stomp.over(socket);
+                    
+                    this.stompClient.connect({}, 
+                        (frame) => this.onConnect(frame),
+                        (error) => this.onError(error)
+                    );
+                } catch (error) {
+                    this.onError(error);
+                }
+            }
+
+            onConnect(frame) {
+                this.connected = true;
+                this.updateStatus('Connected', 'connected');
+                this.log('✅ Connected to simulation server');
+                
+                this.stompClient.subscribe('/topic/simulation', (message) => {
+                    try {
+                        this.handleMessage(JSON.parse(message.body));
+                    } catch (error) {
+                        this.log('❌ Error parsing message: ' + error.message);
+                    }
+                });
+            }
+
+            onError(error) {
+                this.connected = false;
+                this.updateStatus('Connection Error', 'disconnected');
+                this.log('❌ Connection error: ' + (error.message || error));
+            }
+
+            disconnect() {
+                if (this.stompClient) {
+                    this.stompClient.disconnect();
+                }
+                this.connected = false;
+                this.updateStatus('Disconnected', 'disconnected');
+                this.log('🔌 Disconnected');
+            }
+
+            handleMessage(response) {
+                switch(response.type) {
+                    case 'SIMULATION_STARTED':
+                        this.log('🚀 ' + response.data);
+                        break;
+                    
+                    case 'SIMULATION_UPDATE':
+                        this.handleSimulationUpdate(response.data);
+                        break;
+                    
+                    case 'STATE_UPDATED':
+                        this.log('🔄 ' + response.data);
+                        break;
+                    
+                    case 'SIMULATION_STOPPED':
+                        this.log('⏹️ ' + response.data);
+                        break;
+                    
+                    case 'ERROR':
+                    case 'SIMULATION_ERROR':
+                        this.log('❌ ' + response.data);
+                        break;
+                    
+                    default:
+                        this.log(`📝 ${response.type}: ${JSON.stringify(response.data)}`);
+                }
+            }
+
+            handleSimulationUpdate(data) {
+                const minute = data.minuto || 'N/A';
+                const vehicles = data.vehiculos ? data.vehiculos.length : 0;
+                const orders = data.pedidos ? data.pedidos.length : 0;
+                const incidents = data.incidencias ? data.incidencias.length : 0;
+                
+                this.log(`📊 Minute ${minute}: ${vehicles} vehicles, ${orders} orders, ${incidents} incidents`);
+                
+                // Optional: detailed logging for small datasets
+                if (data.vehiculos && data.vehiculos.length > 0 && data.vehiculos.length < 5) {
+                    this.log(`   🚛 Vehicles: ${data.vehiculos.map(v => v.placa || v.id || 'Unknown').join(', ')}`);
+                }
+
+                // Map backend data to visualizer format
+                const state = {
+                    vehicles: (data.vehiculos || []).map(v => ({
+                        id: v.placa || v.idVehiculo,
+                        position: { x: v.posicionX, y: v.posicionY },
+                        state: v.estado || 'NORMAL',
+                        currentPath: (v.rutaActual || []).map(p => ({ x: p.posX, y: p.posY }))
+                    })),
+                    blockages: [], // Add mapping if you have blockages
+                    warehouses: (data.almacenes || []).map(w => ({
+                        id: w.idAlmacen,
+                        position: { x: w.posX, y: w.posY },
+                        currentGLP: w.currentGLP,
+                        maxGLP: w.maxGLP
+                    })),
+                    deliveryNodes: (data.pedidos || []).map(p => ({
+                        position: { x: p.posX, y: p.posY }
+                    })),
+                    refillNodes: [], // Add mapping if you have refill nodes
+                    currentTime: data.minuto || ''
+                };
+                visualizer.draw(state);
+            }
+
+            // Convert HTML datetime-local to Time object
+            convertToTimeObject(datetimeLocal) {
+                const date = new Date(datetimeLocal);
+                return {
+                    year: date.getFullYear(),
+                    month: date.getMonth() + 1, // JavaScript months are 0-based
+                    day: date.getDate(),
+                    hour: date.getHours(),
+                    minute: date.getMinutes()
+                };
+            }
+
+            startSimulation(initialTime) {
+                if (!this.checkConnection()) return;
+
+                // Convert datetime-local to Time object
+                const timeObj = this.convertToTimeObject(initialTime);
+                
+                const message = {
+                    initialTime: timeObj
+                };
+
+                this.send('/app/init', message);
+                this.log(`🚀 Starting simulation with initial time: ${timeObj.year}/${timeObj.month.toString().padStart(2,'0')}/${timeObj.day.toString().padStart(2,'0')} ${timeObj.hour.toString().padStart(2,'0')}:${timeObj.minute.toString().padStart(2,'0')}`);
+            }
+
+            updateFailures(type, vehiclePlaque, shiftOccurredOn) {
+                if (!this.checkConnection()) return;
+
+                const message = {
+                    type: type,
+                    vehiclePlaque: vehiclePlaque,
+                    shiftOccurredOn: shiftOccurredOn
+                };
+
+                this.send('/app/update-failures', message);
+                this.log(`⚠️ Adding failure: ${type} on vehicle ${vehiclePlaque} (shift ${shiftOccurredOn})`);
+            }
+
+            stopSimulation() {
+                if (!this.checkConnection()) return;
+                this.send('/app/stop', {});
+                this.log('⏹️ Stopping simulation...');
+            }
+
+            send(destination, message) {
+                try {
+                    this.stompClient.send(destination, {}, JSON.stringify(message));
+                } catch (error) {
+                    this.log('❌ Error sending message: ' + error.message);
+                }
+            }
+
+            checkConnection() {
+                if (!this.connected) {
+                    this.log('❌ Not connected to server');
+                    return false;
+                }
+                return true;
+            }
+
+            log(message) {
+                const logDiv = document.getElementById('log');
+                const timestamp = new Date().toLocaleTimeString();
+                logDiv.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+                logDiv.scrollTop = logDiv.scrollHeight;
+            }
+
+            updateStatus(status, className) {
+                const statusDiv = document.getElementById('status');
+                statusDiv.textContent = 'Status: ' + status;
+                statusDiv.className = className;
+            }
+
+            clearLog() {
+                document.getElementById('log').innerHTML = '';
+            }
+        }
+
+        let client = new SimulationClient();
+
+        function connectToServer() {
+            const serverUrl = document.getElementById('serverUrl').value.trim();
+            if (!serverUrl) {
+                alert('Please enter server URL');
+                return;
+            }
+            client.connect(serverUrl);
+        }
+
+        function disconnect() { client.disconnect(); }
+        
+        function startSimulation() {
+            const initialTime = document.getElementById('initialTime').value;
+            if (!initialTime) {
+                alert('Please set initial time');
+                return;
+            }
+            client.startSimulation(initialTime);
+        }
+        
+        function updateFailures() {
+            const type = document.getElementById('failureType').value;
+            const vehiclePlaque = document.getElementById('vehiclePlaque').value.trim();
+            const shiftOccurred = parseInt(document.getElementById('shiftOccurred').value);
+            
+            if (!vehiclePlaque) {
+                alert('Please enter vehicle plaque');
+                return;
+            }
+            
+            client.updateFailures(type, vehiclePlaque, shiftOccurred);
+        }
+        
+        function stopSimulation() { client.stopSimulation(); }
+        function clearLog() { client.clearLog(); }
+
+        window.onload = function() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('initialTime').value = now.toISOString().slice(0, 16);
+        };
+    </script>
+</body>
+</html>

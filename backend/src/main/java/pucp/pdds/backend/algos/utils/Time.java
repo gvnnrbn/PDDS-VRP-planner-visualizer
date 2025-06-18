@@ -9,6 +9,9 @@ public class Time implements Comparable<Time>, Cloneable {
     private int hour;
     private int min;
 
+    // No-arg constructor for Jackson
+    public Time() {}
+
     public Time(Time other) {   
         this.year = other.year;
         this.month = other.month;
@@ -195,5 +198,25 @@ public class Time implements Comparable<Time>, Cloneable {
         } catch (CloneNotSupportedException e) {
             throw new AssertionError(); // Can never happen
         }
+    }
+
+    public void setYear(int year) {
+        this.year = year;
+    }
+
+    public void setMonth(int month) {
+        this.month = month;
+    }
+
+    public void setDay(int day) {
+        this.day = day;
+    }
+
+    public void setHour(int hour) {
+        this.hour = hour;
+    }
+
+    public void setMinute(int min) {
+        this.min = min;
     }
 }

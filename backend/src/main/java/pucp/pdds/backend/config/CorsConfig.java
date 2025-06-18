@@ -13,7 +13,7 @@ public class CorsConfig {
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
-        corsConfiguration.setAllowedOriginPatterns(List.of("http://localhost:5173"));
+        corsConfiguration.setAllowedOriginPatterns(List.of("*"));
         corsConfiguration.setAllowCredentials(true);
         corsConfiguration.addAllowedHeader("*");
         corsConfiguration.addAllowedMethod("*");
