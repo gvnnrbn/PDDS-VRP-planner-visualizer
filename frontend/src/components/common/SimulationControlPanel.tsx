@@ -55,8 +55,8 @@ async function drawState(canvas: HTMLCanvasElement, data: any) {
   const margin = 40;
   const width = canvas.width;
   const height = canvas.height;
-  const gridLength = 140;
-  const gridWidth = 100;
+  const gridLength = 70;
+  const gridWidth = 50;
   const scaleX = (width - 2 * margin) / gridLength;
   const scaleY = (height - 2 * margin) / gridWidth;
 
