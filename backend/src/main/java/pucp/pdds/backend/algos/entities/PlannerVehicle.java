@@ -119,7 +119,7 @@ public class PlannerVehicle implements Cloneable {
             System.out.println("Order " + order.id + " currently has " + order.amountGLP + " GLP left to deliver");
 
             order.amountGLP -= deliverNode.amountGLP;
-            vehicle.currentGLP += deliverNode.amountGLP;
+            vehicle.currentGLP -= deliverNode.amountGLP;
 
             if (order.amountGLP == 0) {
                 order.deliverTime = currentTime;
