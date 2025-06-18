@@ -41,10 +41,10 @@ public class SimulationService {
             try {
                 // Initialize scheduler state with data
                 schedulerState.setVehicles(dataProvider.getVehicles().stream().map(v -> v.clone()).toList());
-                schedulerState.setOrders(dataProvider.getOrders().stream().map(o -> o.clone()).toList());
+                schedulerState.setOrders(new java.util.ArrayList<>(dataProvider.getOrders().stream().map(o -> o.clone()).toList()));
                 schedulerState.setBlockages(dataProvider.getBlockages().stream().map(b -> b.clone()).toList());
                 schedulerState.setWarehouses(dataProvider.getWarehouses().stream().map(w -> w.clone()).toList());
-                schedulerState.setFailures(dataProvider.getFailures().stream().map(f -> f.clone()).toList());
+                schedulerState.setFailures(new java.util.ArrayList<>(dataProvider.getFailures().stream().map(f -> f.clone()).toList()));
                 schedulerState.setMaintenances(dataProvider.getMaintenances().stream().map(m -> m.clone()).toList());
                 schedulerState.setCurrTime(dataProvider.getInitialTime().clone());
 
