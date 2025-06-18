@@ -1,17 +1,9 @@
 package pucp.pdds.backend.algos.scheduler;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import pucp.pdds.backend.algos.algorithm.Algorithm;
 import pucp.pdds.backend.algos.algorithm.Solution;
 import pucp.pdds.backend.algos.algorithm.Environment;
-import pucp.pdds.backend.algos.algorithm.Node;
-import pucp.pdds.backend.algos.algorithm.OrderDeliverNode;
-import pucp.pdds.backend.algos.algorithm.ProductRefillNode;
 import pucp.pdds.backend.algos.data.DataChunk;
-import pucp.pdds.backend.algos.entities.PlannerOrder;
-import pucp.pdds.backend.algos.entities.PlannerVehicle;
 import pucp.pdds.backend.algos.utils.SimulationVisualizer;
 import pucp.pdds.backend.algos.utils.Time;
 
@@ -32,7 +24,7 @@ public class Scheduler {
         state.blockages = agent.getBlockages();
         state.failures = agent.getFailures();
         state.maintenances = agent.getMaintenances();
-        state.currTime = new Time(2025, 1, 1, 0, 0);
+        state.currTime = agent.getInitialTime();
 
         Time endSimulationTime = state.currTime.addTime(new Time(0,0,7,0,0));
 
@@ -81,23 +73,6 @@ public class Scheduler {
         simulacionMinuto.setPedidos(DataChunk.convertOrdersToDataChunk(state.getActiveOrders(), state.getActiveVehicles(), sol.routes, state.currTime));
         simulacionMinuto.setIncidencias(DataChunk.convertIncidentsToDataChunk(state.failures, state.getActiveMaintenances()));
 
-        System.out.println(simulacionMinuto);
-
-        // Collect only delivery nodes currently being served (next node for each vehicle if it's an OrderDeliverNode)
-        List<Node> deliveryNodes = new ArrayList<>();
-        List<Node> refillNodes = new ArrayList<>();
-        for (PlannerVehicle v : state.getActiveVehicles()) {
-            List<Node> route = sol.routes.get(v.id);
-            if (route != null && v.nextNodeIndex < route.size()) {
-                Node nextNode = route.get(v.nextNodeIndex);
-                if (nextNode instanceof OrderDeliverNode) {
-                    deliveryNodes.add(nextNode);
-                } else if (nextNode instanceof ProductRefillNode) {
-                    refillNodes.add(nextNode);
-                }
-            }
-        }
-
-        SimulationVisualizer.draw(state.getActiveVehicles(), state.getActiveBlockages(), deliveryNodes, refillNodes, state.currTime, state.minutesToSimulate, state.warehouses);
+        SimulationVisualizer.draw(state.getActiveVehicles(), state.getActiveBlockages(), state.currTime, state.minutesToSimulate, state.warehouses, sol);
     }
 }

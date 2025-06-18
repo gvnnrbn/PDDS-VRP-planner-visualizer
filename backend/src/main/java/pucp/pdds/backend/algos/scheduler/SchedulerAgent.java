@@ -9,6 +9,7 @@ import pucp.pdds.backend.algos.entities.PlannerVehicle;
 import pucp.pdds.backend.algos.entities.PlannerWarehouse;
 import pucp.pdds.backend.algos.entities.PlannerFailure;
 import pucp.pdds.backend.algos.entities.PlannerMaintenance;
+import pucp.pdds.backend.algos.utils.Time;
 
 public interface SchedulerAgent {
     public List<PlannerVehicle> getVehicles();
@@ -17,5 +18,6 @@ public interface SchedulerAgent {
     public List<PlannerWarehouse> getWarehouses();
     public List<PlannerFailure> getFailures();
     public List<PlannerMaintenance> getMaintenances();
+    public Time getInitialTime();
     public void export(DataChunk dataChunk, int sequence);
 }

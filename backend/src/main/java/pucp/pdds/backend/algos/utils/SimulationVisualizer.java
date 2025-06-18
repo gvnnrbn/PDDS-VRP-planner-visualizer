@@ -1,5 +1,6 @@
 package pucp.pdds.backend.algos.utils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -9,6 +10,9 @@ import pucp.pdds.backend.algos.entities.PlannerVehicle;
 import pucp.pdds.backend.algos.entities.PlannerBlockage;
 import pucp.pdds.backend.algos.entities.PlannerWarehouse;
 import pucp.pdds.backend.algos.algorithm.Node;
+import pucp.pdds.backend.algos.algorithm.OrderDeliverNode;
+import pucp.pdds.backend.algos.algorithm.ProductRefillNode;
+import pucp.pdds.backend.algos.algorithm.Solution;
 
 public class SimulationVisualizer {
     private static JFrame visFrame = null;
@@ -184,8 +188,24 @@ public class SimulationVisualizer {
     }
 
     public static void draw(List<PlannerVehicle> vehicles, List<PlannerBlockage> blockages, 
-                          List<Node> deliveryNodes, List<Node> refillNodes, Time currentTime, int minutesToSimulate,
-                          List<PlannerWarehouse> warehouses) {
+                          Time currentTime, int minutesToSimulate,
+                          List<PlannerWarehouse> warehouses, Solution sol) {
+        // Collect only delivery nodes currently being served (next node for each vehicle if it's an OrderDeliverNode)
+        List<Node> deliveryNodes = new ArrayList<>();
+        List<Node> refillNodes = new ArrayList<>();
+        for (PlannerVehicle v : vehicles) {
+            List<Node> route = sol.routes.get(v.id);
+            if (route != null && v.nextNodeIndex < route.size()) {
+                Node nextNode = route.get(v.nextNodeIndex);
+                if (nextNode instanceof OrderDeliverNode) {
+                    deliveryNodes.add(nextNode);
+                } else if (nextNode instanceof ProductRefillNode) {
+                    refillNodes.add(nextNode);
+                }
+            }
+        }
+
+
         int gridLength = SimulationProperties.gridLength;
         int gridWidth = SimulationProperties.gridWidth;
         SwingUtilities.invokeLater(() -> {

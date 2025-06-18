@@ -20,6 +20,7 @@ public class SchedulerAgentTextFiles implements SchedulerAgent {
     private List<PlannerWarehouse> warehouses;
     private List<PlannerFailure> failures;
     private List<PlannerMaintenance> maintenances;
+    private Time initialTime;
 
     public SchedulerAgentTextFiles() {
         this.vehicles = CSVDataParser.parseVehicles("data/vehicles.csv");
@@ -28,6 +29,7 @@ public class SchedulerAgentTextFiles implements SchedulerAgent {
         this.warehouses = CSVDataParser.parseWarehouses("data/warehouses.csv");
         this.failures = CSVDataParser.parseFailures("data/failures.csv");
         this.maintenances = CSVDataParser.parseMaintenances("data/maintenances.csv");
+        this.initialTime = new Time(2025, 1, 1, 0, 0);
 
         DataExporter.clearSimulationData();
     }
@@ -60,6 +62,11 @@ public class SchedulerAgentTextFiles implements SchedulerAgent {
     @Override
     public List<PlannerMaintenance> getMaintenances() {
         return maintenances;
+    }
+
+    @Override
+    public Time getInitialTime() {
+        return initialTime;
     }
 
     @Override
