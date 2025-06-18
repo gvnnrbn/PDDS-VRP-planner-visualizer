@@ -1,14 +1,26 @@
 package pucp.pdds.backend.algos.scheduler;
 
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
 
 import pucp.pdds.backend.algos.algorithm.Algorithm;
 import pucp.pdds.backend.algos.algorithm.Solution;
 import pucp.pdds.backend.algos.data.DataChunk;
+import pucp.pdds.backend.algos.entities.PlannerVehicle;
+import pucp.pdds.backend.algos.entities.PlannerOrder;
+import pucp.pdds.backend.algos.entities.PlannerWarehouse;
+import pucp.pdds.backend.algos.entities.PlannerBlockage;
 import pucp.pdds.backend.algos.entities.PlannerFailure;
+import pucp.pdds.backend.algos.entities.PlannerMaintenance;
 import pucp.pdds.backend.algos.utils.SimulationVisualizer;
 import pucp.pdds.backend.algos.utils.Time;
 import pucp.pdds.backend.dto.SimulationResponse;
@@ -19,15 +31,13 @@ import java.time.format.DateTimeFormatter;
 public class Scheduler implements Runnable {
     private final SchedulerState state;
     private final SimpMessagingTemplate messagingTemplate;
-    private final Environment springEnv;
     private volatile boolean isRunning;
     private static final DateTimeFormatter SIM_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     @Autowired
-    public Scheduler(SchedulerState state, SimpMessagingTemplate messagingTemplate, Environment springEnv) {
+    public Scheduler(SchedulerState state, SimpMessagingTemplate messagingTemplate) {
         this.state = state;
         this.messagingTemplate = messagingTemplate;
-        this.springEnv = springEnv;
         this.isRunning = true;
     }
 
@@ -118,9 +128,7 @@ public class Scheduler implements Runnable {
         java.util.Map<String, Object> response = buildSimulationUpdateResponse(state, sol);
         sendResponse("SIMULATION_UPDATE", response);
 
-        if (isDevProfile()) {
-            SimulationVisualizer.draw(state.getActiveVehicles(), state.getActiveBlockages(), state.getCurrTime(), state.minutesToSimulate, state.getWarehouses(), sol);
-        }
+            // SimulationVisualizer.draw(state.getActiveVehicles(), state.getActiveBlockages(), state.getCurrTime(), state.minutesToSimulate, state.getWarehouses(), sol);
     }
 
     private java.util.Map<String, Object> buildSimulationUpdateResponse(SchedulerState state, Solution sol) {
@@ -253,14 +261,6 @@ public class Scheduler implements Runnable {
         return timeObj.toString();
     }
 
-    private boolean isDevProfile() {
-        for (String profile : springEnv.getActiveProfiles()) {
-            if (profile.equals("dev")) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     private void sendResponse(String type, Object data) {
         SimulationResponse response = new SimulationResponse(type, data);

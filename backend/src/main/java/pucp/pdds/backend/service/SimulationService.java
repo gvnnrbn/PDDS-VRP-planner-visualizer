@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.core.env.Environment;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import pucp.pdds.backend.algos.scheduler.Scheduler;
 import pucp.pdds.backend.algos.scheduler.SchedulerState;
@@ -14,6 +16,8 @@ import pucp.pdds.backend.dto.UpdateFailuresMessage;
 
 @Service
 public class SimulationService {
+    private static final Logger logger = LoggerFactory.getLogger(SimulationService.class);
+    
     private final SimpMessagingTemplate messagingTemplate;
     private final DataProvider dataProvider;
     private final SchedulerState schedulerState;
@@ -39,21 +43,36 @@ public class SimulationService {
             stopCurrentSimulation();
 
             try {
-                // Initialize scheduler state with data
-                schedulerState.setVehicles(dataProvider.getVehicles().stream().map(v -> v.clone()).toList());
-                schedulerState.setOrders(new java.util.ArrayList<>(dataProvider.getOrders().stream().map(o -> o.clone()).toList()));
-                schedulerState.setBlockages(dataProvider.getBlockages().stream().map(b -> b.clone()).toList());
-                schedulerState.setWarehouses(dataProvider.getWarehouses().stream().map(w -> w.clone()).toList());
-                schedulerState.setFailures(new java.util.ArrayList<>(dataProvider.getFailures().stream().map(f -> f.clone()).toList()));
-                schedulerState.setMaintenances(dataProvider.getMaintenances().stream().map(m -> m.clone()).toList());
+                logger.info("Starting simulation - loading fresh data from database...");
+                sendResponse("SIMULATION_LOADING", "Loading data from database...");
+                
+                // Initialize scheduler state with fresh data from database
+                var vehicles = dataProvider.getVehicles();
+                var orders = dataProvider.getOrders();
+                var blockages = dataProvider.getBlockages();
+                var warehouses = dataProvider.getWarehouses();
+                var failures = dataProvider.getFailures();
+                var maintenances = dataProvider.getMaintenances();
+                
+                logger.info("Loaded {} vehicles, {} orders, {} blockages, {} warehouses, {} failures, {} maintenances", 
+                    vehicles.size(), orders.size(), blockages.size(), warehouses.size(), failures.size(), maintenances.size());
+                
+                schedulerState.setVehicles(vehicles.stream().map(v -> v.clone()).toList());
+                schedulerState.setOrders(new java.util.ArrayList<>(orders.stream().map(o -> o.clone()).toList()));
+                schedulerState.setBlockages(blockages.stream().map(b -> b.clone()).toList());
+                schedulerState.setWarehouses(warehouses.stream().map(w -> w.clone()).toList());
+                schedulerState.setFailures(new java.util.ArrayList<>(failures.stream().map(f -> f.clone()).toList()));
+                schedulerState.setMaintenances(maintenances.stream().map(m -> m.clone()).toList());
                 schedulerState.setCurrTime(dataProvider.getInitialTime().clone());
 
-                currentSimulation = new Scheduler(schedulerState, messagingTemplate, environment);
+                currentSimulation = new Scheduler(schedulerState, messagingTemplate);
                 simulationThread = new Thread(currentSimulation, "simulation-thread");
                 simulationThread.start();
 
-                sendResponse("SIMULATION_STARTED", "Simulation initialized");
+                logger.info("Simulation started successfully");
+                sendResponse("SIMULATION_STARTED", "Simulation initialized with fresh data from database");
             } catch (Exception e) {
+                logger.error("Error starting simulation", e);
                 sendResponse("SIMULATION_ERROR", "Error starting simulation: " + e.getMessage());
             }
         }

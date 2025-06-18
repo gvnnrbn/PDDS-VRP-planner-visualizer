@@ -17,12 +17,12 @@ import pucp.pdds.backend.repository.*;
 
 @Service
 public class FileBasedDataProvider implements DataProvider {
-    private final List<PlannerVehicle> vehicles;
-    private final List<PlannerOrder> orders;
-    private final List<PlannerBlockage> blockages;
-    private final List<PlannerWarehouse> warehouses;
-    private final List<PlannerFailure> failures;
-    private final List<PlannerMaintenance> maintenances;
+    private final VehiculoRepository vehiculoRepository;
+    private final PedidoRepository pedidoRepository;
+    private final AlmacenRepository almacenRepository;
+    private final BloqueoRepository bloqueoRepository;
+    private final IncidenciaRepository incidenciaRepository;
+    private final MantenimientoRepository mantenimientoRepository;
     private final Time initialTime;
 
     @Autowired
@@ -34,43 +34,43 @@ public class FileBasedDataProvider implements DataProvider {
         IncidenciaRepository incidenciaRepository,
         MantenimientoRepository mantenimientoRepository
     ) {
-        this.vehicles = vehiculoRepository.findAll().stream().map(PlannerVehicle::fromEntity).collect(Collectors.toList());
-        this.orders = pedidoRepository.findAll().stream().map(PlannerOrder::fromEntity).collect(Collectors.toList());
-        this.blockages = bloqueoRepository.findAll().stream().map(PlannerBlockage::fromEntity).collect(Collectors.toList());
-        this.warehouses = almacenRepository.findAll().stream().map(PlannerWarehouse::fromEntity).collect(Collectors.toList());
-        this.failures = incidenciaRepository.findAll().stream().map(PlannerFailure::fromEntity).collect(Collectors.toList());
-        this.maintenances = mantenimientoRepository.findAll().stream().map(PlannerMaintenance::fromEntity).collect(Collectors.toList());
+        this.vehiculoRepository = vehiculoRepository;
+        this.pedidoRepository = pedidoRepository;
+        this.almacenRepository = almacenRepository;
+        this.bloqueoRepository = bloqueoRepository;
+        this.incidenciaRepository = incidenciaRepository;
+        this.mantenimientoRepository = mantenimientoRepository;
         this.initialTime = new Time(2025, 1, 1, 0, 0);
     }
 
     @Override
     public List<PlannerVehicle> getVehicles() {
-        return vehicles;
+        return vehiculoRepository.findAll().stream().map(PlannerVehicle::fromEntity).collect(Collectors.toList());
     }
 
     @Override
     public List<PlannerOrder> getOrders() {
-        return orders;
+        return pedidoRepository.findAll().stream().map(PlannerOrder::fromEntity).collect(Collectors.toList());
     }
 
     @Override
     public List<PlannerBlockage> getBlockages() {
-        return blockages;
+        return bloqueoRepository.findAll().stream().map(PlannerBlockage::fromEntity).collect(Collectors.toList());
     }
 
     @Override
     public List<PlannerWarehouse> getWarehouses() {
-        return warehouses;
+        return almacenRepository.findAll().stream().map(PlannerWarehouse::fromEntity).collect(Collectors.toList());
     }
 
     @Override
     public List<PlannerFailure> getFailures() {
-        return failures;
+        return incidenciaRepository.findAll().stream().map(PlannerFailure::fromEntity).collect(Collectors.toList());
     }
 
     @Override
     public List<PlannerMaintenance> getMaintenances() {
-        return maintenances;
+        return mantenimientoRepository.findAll().stream().map(PlannerMaintenance::fromEntity).collect(Collectors.toList());
     }
 
     @Override

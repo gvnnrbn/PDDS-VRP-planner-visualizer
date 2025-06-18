@@ -13,8 +13,7 @@ public class Bloqueo {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 
-    @Lob
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "vertices_json", columnDefinition = "TEXT")
     private String verticesJson; // JSON array of {x, y} objects
 
     public Bloqueo() {}

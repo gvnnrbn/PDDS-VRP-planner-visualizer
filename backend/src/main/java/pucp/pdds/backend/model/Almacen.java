@@ -2,6 +2,7 @@ package pucp.pdds.backend.model;
 
 import java.util.Map;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -16,13 +17,19 @@ public class Almacen {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "posicionx")
     private float posicionX;
+    
+    @Column(name = "posiciony")
     private float posicionY;
 
+    @Column(name = "capacidad_efectivam3")
     private float capacidadEfectivam3;
 
+    @Column(name = "es_principal")
     private boolean esPrincipal;
 
+    @Column(name = "horario_abastecimiento")
     private String horarioAbastecimiento;
 
     public Almacen() {

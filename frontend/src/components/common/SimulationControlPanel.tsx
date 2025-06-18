@@ -257,7 +257,38 @@ const SimulationControlPanel: React.FC = () => {
       }
       return;
     }
-    logMessage('📝 ' + JSON.stringify(response));
+    
+    // Handle different message types
+    if (typeof response === 'object' && response !== null && 'type' in response) {
+      const typedResponse = response as { type: string; data: any };
+      
+      switch (typedResponse.type) {
+        case 'SIMULATION_LOADING':
+          logMessage('🔄 ' + typedResponse.data);
+          return;
+        case 'SIMULATION_STARTED':
+          logMessage('✅ ' + typedResponse.data);
+          return;
+        case 'SIMULATION_ERROR':
+          logMessage('❌ ' + typedResponse.data);
+          setIsSimulating(false);
+          return;
+        case 'STATE_UPDATED':
+          logMessage('🔄 ' + typedResponse.data);
+          return;
+        case 'SIMULATION_UPDATE':
+          // Handle simulation update data
+          if (canvasRef.current) {
+            drawState(canvasRef.current, typedResponse.data);
+          }
+          return;
+        default:
+          logMessage('📝 ' + JSON.stringify(response));
+      }
+    } else {
+      logMessage('📝 ' + JSON.stringify(response));
+    }
+    
     // Visualización: dibujar en canvas
     if (canvasRef.current && typeof response === 'object' && response !== null) {
       if ('type' in response && (response as any).type === 'SIMULATION_UPDATE' && 'data' in response) {

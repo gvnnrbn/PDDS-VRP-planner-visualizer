@@ -40,8 +40,8 @@ public class PlannerOrder implements Cloneable {
             pedido.getFechaRegistro().getMonthValue(),
             pedido.getFechaRegistro().getDayOfMonth(),
             pedido.getFechaRegistro().getHour(),
-            pedido.getFechaRegistro().getMinute() + pedido.getTiempoTolerancia()
-        );
+            pedido.getFechaRegistro().getMinute()
+        ).addMinutes(pedido.getTiempoTolerancia() * 60);
         
         Position position = new Position(pedido.getPosicionX(), pedido.getPosicionY());
         
