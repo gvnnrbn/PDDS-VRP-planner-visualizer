@@ -6,7 +6,6 @@ import java.time.LocalDateTime;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import pucp.pdds.backend.algos.algorithm.Node;
-import pucp.pdds.backend.algos.utils.Position;
 
 public class DataChunk {
     public LocalDateTime fechaInicio;

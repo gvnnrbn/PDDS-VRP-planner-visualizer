@@ -1,7 +1,7 @@
 package pucp.pdds.backend.controller;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+// import java.time.LocalDateTime;
+// import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -17,8 +17,8 @@ import org.springframework.stereotype.Controller;
 
 @Controller
 public class SimulacionController {
-    private static final DateTimeFormatter DATE_FORMATTER = 
-        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+    // private static final DateTimeFormatter DATE_FORMATTER = 
+    //     DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
     
     public Queue<String> simulationChunks = new LinkedList<>();
     public boolean chunkSent;
@@ -32,7 +32,7 @@ public class SimulacionController {
     public void iniciarSimulacion(@Payload String fechaInicioStr) {
         System.out.println("Iniciando simulación con fecha: " + fechaInicioStr);
         try {
-            LocalDateTime fechaInicio = LocalDateTime.parse(fechaInicioStr, DATE_FORMATTER);
+            // LocalDateTime fechaInicio = LocalDateTime.parse(fechaInicioStr, DATE_FORMATTER);
 
             // Datos simulados por minuto
             String[] simulatedMinutes = new String[] {
