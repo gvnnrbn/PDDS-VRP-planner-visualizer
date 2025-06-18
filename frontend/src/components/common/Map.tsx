@@ -28,13 +28,11 @@ interface MinutoSimulacion {
 
 
 interface MapGridProps {
-  minuto: number;
   data: MinutoSimulacion;
   speedMs: number;
 }
 
-export const MapGrid: React.FC<MapGridProps> = ({ minuto, data, speedMs }) => {
-    if (minuto < 0) return null;
+export const MapGrid: React.FC<MapGridProps> = ({ data, speedMs }) => {
 
     const stageRef = useRef<any>(null);
     const [scale, setScale] = useState(1);

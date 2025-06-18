@@ -27,6 +27,7 @@ import { set } from 'date-fns'
 import { FaSort, FaFilter, FaRegClock } from 'react-icons/fa'
 import { IncidenciaForm } from '../../components/IncidenciaForm'
 import { MapGrid } from '../../components/common/Map'
+import { SimulationProvider } from '../../components/common/SimulationContextSemanal'
 interface SimulacionMinuto {
   minuto: string,
   bloqueos: any[],
@@ -44,7 +45,7 @@ export default function WeeklySimulation() {
   const [ isSimulationCompleted, setIsSImulationCompleted ] = useState(false);
 
   const [selectedDate, setSelectedDate] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { connected, subscribe, unsubscribe, publish } = useStomp('http://localhost:8080/ws');
   const [hasStarted, setHasStarted] = useState(false);
   const [ isPaused, setIsPaused ] = useState(false)
@@ -230,6 +231,31 @@ const handleSubmit = () => {
   return (
     <Flex height="full" overflowY="auto" position="relative">
       <Box flex={1} p={4} bg={bgColor} h="full">
+        <Routes>
+          {/* <Route path="pedidos" element={<PedidosPhase />} />
+          <Route path="incidencias" element={<IncidenciasPhase />} />
+          <Route path="vehiculos" element={<VehiculosPhase />} />
+          <Route path="almacen" element={<AlmacenPhase />} /> */}
+          <Route
+            path="simulacion"
+            element={
+              isSimulationLoading 
+              ? <></> 
+              : 
+              <>
+              {currentMinuteData && (
+                <SimulationProvider initialData={currentMinuteData}>
+                  <SimulationPhase
+                    data={currentMinuteData}
+                    speedMs={speedMs}
+                    setSpeedMs={setSpeedMs}
+                    setIsPaused={setIsPaused}
+                  />
+              </SimulationProvider>)}
+                </>
+              }
+          />
+        </Routes>
       </Box>
       {!isSimulationLoading && (
         <>

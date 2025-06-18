@@ -6,150 +6,72 @@ import {
   useDisclosure, 
 } from "@chakra-ui/react";
 import SimulationCompleteModal from '../../components/common/SimulationCompletionModal';
+import type { PedidoSimulado } from '../../core/types/pedido';
+
+import { useSimulation } from '../../components/common/SimulationContextSemanal';
 
 interface PhaseProps {
-  minuto: number
+  //minuto: number
   // setMinuto: (min: number) => void
   data: any 
   speedMs: number
   setSpeedMs: (speed: number) => void
   // isPaused: boolean
   setIsPaused: (paused: boolean) => void
-  fechaVisual: Date
+  //fechaVisual: Date
 }
 
 export default function SimulationPhase(
   { 
-    minuto, 
+    //minuto, 
     // setMinuto,
     data,
     speedMs,
     setSpeedMs,
     // isPaused,
     setIsPaused,
-    fechaVisual // valor por defecto si no se pasa 
+    //fechaVisual // valor por defecto si no se pasa 
   } : PhaseProps) {
-    
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const [simulacionFinalizada, setSimulacionFinalizada] = useState(false);
+  const { currentMinuteData, simulatedNow } = useSimulation();
+  const [pedidosVisibles, setPedidosVisibles] = useState(currentMinuteData.pedidos || []);
 
-  const simulacion = DataMapaPrueba.chunks[0].simulacion.slice(0, 2);
-
-  const [indiceActual, setIndiceActual] = useState(0);
-  const simData = useMemo(() => simulacion[indiceActual], [simulacion, indiceActual]);
-
-  const parseDateString = (dateString: string): Date => {
-    const [datePart, timePart] = dateString.split(" ");
-    const [day, month, year] = datePart.split("/");
-    return new Date(`${year}-${month}-${day}T${timePart}:00`);
-  };
-
-  const [visualDate, setVisualDate] = useState(() =>
-    parseDateString(simulacion[0].minuto)
-  );
-
-  const TiempoIntervalo = 60000;
-  const TiempoSimuladoMs = 75 * 60 * 1000;
-
-  // 👇 Avanza hasta el penúltimo índice
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      const siguiente = indiceActual + 1;
+    const visibles = (currentMinuteData.pedidos || []).filter((pedido) => {
+      const etas = pedido.vehiculosAtendiendo || [];
 
-      if (siguiente < simulacion.length) {
-        console.log('🕒 Tiempo agotado, avanzando a índice', siguiente);
-        setIndiceActual(siguiente);
-        setVisualDate(parseDateString(simulacion[siguiente].minuto));
-      } else {
-        console.log('🏁 Simulación terminada');
-        setSimulacionFinalizada(true);
-        setIsPaused(true);
-        onOpen();
-      }
-    }, TiempoIntervalo);
+      const maxEta = etas.reduce((acc, v) => {
+        const etaDate = new Date(v.eta);
+        return !acc || etaDate > acc ? etaDate : acc;
+      }, null as Date | null);
 
-    return () => clearTimeout(timeout);
-  }, [indiceActual, simulacion, setIsPaused, onOpen]);
+      if (!maxEta) return true;
 
-  const SPEED_MS_MAPPING: Record<string, number> = {
-    "Velocidad x1": 31250,
-    "Velocidad x2": 15625,
-  };
+      const maxEtaPlus15 = new Date(maxEta.getTime() + 15 * 60 * 1000);
+      return simulatedNow < maxEtaPlus15;
+    });
 
-  const [displayDate, setDisplayDate] = useState<string>("");
-  useEffect(() => {
-    if (!visualDate) return;
+    setPedidosVisibles(visibles);
+  }, [simulatedNow, currentMinuteData.pedidos]);
 
-    let frameId: number;
-    const start = performance.now();
-
-    const tick = (now: number) => {
-      const elapsed = now - start;
-      const progreso = Math.min(elapsed / TiempoIntervalo, 1); // 0 a 1
-      const tiempoSimulado = TiempoSimuladoMs * progreso;
-
-      const fechaActualSimulada = new Date(visualDate.getTime() + tiempoSimulado);
-
-      const formateado = `${fechaActualSimulada.toLocaleDateString()} | ${fechaActualSimulada.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      })}`;
-
-      setDisplayDate(formateado);
-
-      if (progreso < 1) {
-        frameId = requestAnimationFrame(tick);
-      }
-    };
-
-    frameId = requestAnimationFrame(tick);
-
-    return () => cancelAnimationFrame(frameId);
-  }, [visualDate, TiempoIntervalo]);
-
-  const handleStop = () => {
-    setIsPaused(true);
-    setSimulacionFinalizada(true);
-    onOpen();
-  };
-
-  const handleCloseModal = () => {
-    console.log('🔒 Cerrar modal');
-    setSimulacionFinalizada(false);   // Desactiva flag
-    onClose();                         // Cierra modal
-    setIndiceActual(0);               // (opcional) reinicia la simulación
-  };
+  const formattedDate = `${simulatedNow.toLocaleDateString()} | ${simulatedNow.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  })}`;
 
   return (
-    <div>
-      <MapGrid minuto={minuto} data={simData} speedMs={TiempoIntervalo} />
+    <>
+      <MapGrid data={{ ...currentMinuteData, pedidos: pedidosVisibles }} speedMs={speedMs} />
       <BottomLeftControls
+        date={formattedDate}
         variant="full"
-        date={displayDate}
-        onSpeedChange={(s) => {
-          if (s in SPEED_MS_MAPPING) {
-            setSpeedMs(SPEED_MS_MAPPING[s as keyof typeof SPEED_MS_MAPPING]);
-          }
+        onSpeedChange={(label) => {
+          const map = { "Velocidad x1": 31250, "Velocidad x2": 15625 };
+          if (label in map) setSpeedMs(map[label as keyof typeof map]);
         }}
-        onStop={handleStop}
+        onStop={() => {
+          setIsPaused(true);
+        }}
       />
-
-      {<SimulationCompleteModal
-        isOpen={isOpen}
-        onClose={handleCloseModal}
-        fechaInicio="10/06/2025 08:00"
-        fechaFin="12/06/2025 18:00"
-        duracion="3 días"
-        pedidosEntregados={504}
-        consumoPetroleo={456}
-        tiempoPlanificacion="00:25:35"
-      />}
-
-      <button onClick={() => {
-        const siguiente = indiceActual + 1;
-        console.log('👉 Botón: Avanzar a', siguiente);
-        setIndiceActual(siguiente);
-      }}>Avanzar 1 paso</button>
-    </div>
+    </>
   );
 }
