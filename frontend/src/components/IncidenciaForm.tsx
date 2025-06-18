@@ -95,7 +95,7 @@ export const IncidenciaForm = ({ incidencia, onFinish, onCancel }: IncidenciaFor
           <FormLabel>Vehiculo</FormLabel>
           <Select
             value={formData.vehiculo.id}
-            onChange={(e) => setFormData({ ...formData, vehiculo: { id: parseInt(e.target.value) } })}
+            onChange={(e) => setFormData({ ...formData, vehiculo: { id: e.target.value === '' ? 0 : parseInt(e.target.value) || 0 } })}
           >
             <option value="">Seleccionar vehiculo</option>
             {vehiculos.map((vehiculo) => (

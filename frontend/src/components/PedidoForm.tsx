@@ -67,7 +67,7 @@ export const PedidoForm = ({ pedido, onFinish, onCancel }: PedidoFormProps) => {
             <Input 
               type="number"
               value={formData.posicionX}
-              onChange={(e) => setFormData({ ...formData, posicionX: parseInt(e.target.value) })}
+              onChange={(e) => setFormData({ ...formData, posicionX: e.target.value === '' ? 0 : parseInt(e.target.value) || 0 })}
             />
           </FormControl>
           <FormControl>
@@ -75,7 +75,7 @@ export const PedidoForm = ({ pedido, onFinish, onCancel }: PedidoFormProps) => {
             <Input 
               type="number"
               value={formData.posicionY}
-              onChange={(e) => setFormData({ ...formData, posicionY: parseInt(e.target.value) })}
+              onChange={(e) => setFormData({ ...formData, posicionY: e.target.value === '' ? 0 : parseInt(e.target.value) || 0 })}
             />
           </FormControl>
         </HStack>
@@ -86,7 +86,7 @@ export const PedidoForm = ({ pedido, onFinish, onCancel }: PedidoFormProps) => {
             <Input 
               type="number"
               value={formData.cantidadGLP}
-              onChange={(e) => setFormData({ ...formData, cantidadGLP: parseInt(e.target.value) })}
+              onChange={(e) => setFormData({ ...formData, cantidadGLP: e.target.value === '' ? 0 : parseInt(e.target.value) || 0 })}
             />
           </FormControl>
           <FormControl>
@@ -94,7 +94,7 @@ export const PedidoForm = ({ pedido, onFinish, onCancel }: PedidoFormProps) => {
             <Input 
               type="number"
               value={formData.tiempoTolerancia}
-              onChange={(e) => setFormData({ ...formData, tiempoTolerancia: parseInt(e.target.value) })}
+              onChange={(e) => setFormData({ ...formData, tiempoTolerancia: e.target.value === '' ? 0 : parseInt(e.target.value) || 0 })}
             />
           </FormControl>
         </HStack>

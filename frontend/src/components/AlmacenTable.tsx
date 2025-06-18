@@ -66,7 +66,7 @@ export const AlmacenTable = ({ onAlmacenSelect }: { onAlmacenSelect: (a: Almacen
           </Thead>
           <Tbody>
             {currentAlmacenes.map((a) => (
-              <Tr key={a.idAlmacen}>
+              <Tr key={a.id}>
                 <Td>
                     {a.esPrincipal
                         ? '—'
@@ -80,7 +80,7 @@ export const AlmacenTable = ({ onAlmacenSelect }: { onAlmacenSelect: (a: Almacen
                 <Td>
                   <HStack spacing={2}>
                     <IconButton aria-label="Editar" icon={<EditIcon />} onClick={() => onAlmacenSelect(a)} />
-                    <IconButton aria-label="Eliminar" icon={<DeleteIcon />} colorScheme="red" onClick={() => handleDelete(a.idAlmacen)} />
+                    <IconButton aria-label="Eliminar" icon={<DeleteIcon />} colorScheme="red" onClick={() => handleDelete(a.id)} />
                   </HStack>
                 </Td>
               </Tr>

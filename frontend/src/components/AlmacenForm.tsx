@@ -51,7 +51,7 @@ export const AlmacenForm = ({ almacen, onFinish, onCancel, onSubmitAlmacen }: Al
 
         <FormControl>
           <FormLabel>Capacidad Efectiva (m³)</FormLabel>
-          <NumberInput value={formData.capacidadEfectivam3} min={0} onChange={(val) => handleChange('capacidadEfectivaM3', parseFloat(val))}>
+          <NumberInput value={formData.capacidadEfectivam3} min={0} onChange={(val) => handleChange('capacidadEfectivam3', val === '' ? 0 : parseFloat(val) || 0)}>
             <NumberInputField />
           </NumberInput>
         </FormControl>
@@ -72,14 +72,14 @@ export const AlmacenForm = ({ almacen, onFinish, onCancel, onSubmitAlmacen }: Al
 
         <FormControl>
           <FormLabel>Posición X</FormLabel>
-          <NumberInput value={formData.posicionX} onChange={(val) => handleChange('posicionX', parseFloat(val))}>
+          <NumberInput value={formData.posicionX} onChange={(val) => handleChange('posicionX', val === '' ? 0 : parseFloat(val) || 0)}>
             <NumberInputField />
           </NumberInput>
         </FormControl>
 
         <FormControl>
           <FormLabel>Posición Y</FormLabel>
-          <NumberInput value={formData.posicionY} onChange={(val) => handleChange('posicionY', parseFloat(val))}>
+          <NumberInput value={formData.posicionY} onChange={(val) => handleChange('posicionY', val === '' ? 0 : parseFloat(val) || 0)}>
             <NumberInputField />
           </NumberInput>
         </FormControl>

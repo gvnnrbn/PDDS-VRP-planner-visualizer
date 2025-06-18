@@ -30,11 +30,11 @@ export default function IncidenciasPhase() {
   }
 
   const handlePreviousPhase = () => {
-    navigate('/weekly-simulation/pedidos')
+    navigate('/pedidos')
   }
 
   const handleNextPhase = () => {
-    navigate('/weekly-simulation/vehiculos')
+    navigate('/vehiculos')
   }
 
   return (

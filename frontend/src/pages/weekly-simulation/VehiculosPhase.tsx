@@ -27,11 +27,11 @@ export default function VehiculosPhase() {
   }
 
   const handlePreviousPhase = () => {
-    navigate('/weekly-simulation/incidencias')
+    navigate('/incidencias')
   }
 
   const handleNextPhase = () => {
-    navigate('/weekly-simulation/almacen')
+    navigate('/almacen')
   }
 
 
@@ -49,7 +49,7 @@ export default function VehiculosPhase() {
           <Text fontSize="2xl" fontWeight="bold" textAlign="center" flex={1}>
             Gestión de Vehículos
           </Text>
-          <Link to={'/almacenes'}>
+          <Link to={'/almacen'}>
                       <Button variant='primary'width="15rem">Siguiente: Almacenes</Button>
                     </Link>
         </HStack>

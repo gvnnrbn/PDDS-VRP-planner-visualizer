@@ -65,17 +65,17 @@ export const VehiculoForm = ({ vehiculo, onFinish, onCancel }: VehiculoFormProps
 
         <FormControl>
           <FormLabel>Peso</FormLabel>
-          <Input type="number" value={formData.peso} onChange={(e) => setFormData({ ...formData, peso: parseInt(e.target.value) })} />
+          <Input type="number" value={formData.peso} onChange={(e) => setFormData({ ...formData, peso: e.target.value === '' ? 0 : parseInt(e.target.value) || 0 })} />
         </FormControl>
 
         <HStack>
           <FormControl>
             <FormLabel>Max. Combustible</FormLabel>
-            <Input type="number" value={formData.maxCombustible} onChange={(e) => setFormData({ ...formData, maxCombustible: parseFloat(e.target.value) })} />
+            <Input type="number" value={formData.maxCombustible} onChange={(e) => setFormData({ ...formData, maxCombustible: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })} />
           </FormControl>
           <FormControl>
             <FormLabel>Max. GLP</FormLabel>
-            <Input type="number" value={formData.maxGlp} onChange={(e) => setFormData({ ...formData, maxGlp: parseFloat(e.target.value) })} />
+            <Input type="number" value={formData.maxGlp} onChange={(e) => setFormData({ ...formData, maxGlp: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })} />
           </FormControl>
         </HStack>
         <HStack>
@@ -85,7 +85,7 @@ export const VehiculoForm = ({ vehiculo, onFinish, onCancel }: VehiculoFormProps
               type="number"
               value={formData.currCombustible}
               onChange={(e) =>
-                setFormData({ ...formData, currCombustible: e.target.value === '' ? undefined : parseFloat(e.target.value), })
+                setFormData({ ...formData, currCombustible: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })
               }
             />
           </FormControl>
@@ -96,7 +96,7 @@ export const VehiculoForm = ({ vehiculo, onFinish, onCancel }: VehiculoFormProps
               type="number"
               value={formData.currGlp}
               onChange={(e) =>
-                setFormData({ ...formData, currGlp: parseFloat(e.target.value) })
+                setFormData({ ...formData, currGlp: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })
               }
             />
           </FormControl>
@@ -106,11 +106,11 @@ export const VehiculoForm = ({ vehiculo, onFinish, onCancel }: VehiculoFormProps
         <HStack>
           <FormControl>
             <FormLabel>Posición X</FormLabel>
-            <Input type="number" value={formData.posicionX} onChange={(e) => setFormData({ ...formData, posicionX: parseFloat(e.target.value) })} />
+            <Input type="number" value={formData.posicionX} onChange={(e) => setFormData({ ...formData, posicionX: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })} />
           </FormControl>
           <FormControl>
             <FormLabel>Posición Y</FormLabel>
-            <Input type="number" value={formData.posicionY} onChange={(e) => setFormData({ ...formData, posicionY: parseFloat(e.target.value) })} />
+            <Input type="number" value={formData.posicionY} onChange={(e) => setFormData({ ...formData, posicionY: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })} />
           </FormControl>
         </HStack>
 

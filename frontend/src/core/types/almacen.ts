@@ -9,7 +9,7 @@ export interface AlmacenSimulado  {
 
 
 export interface Almacen {
-  idAlmacen: number
+  id: number
   capacidadEfectivam3: number
   esPrincipal: boolean
   horarioAbastecimiento: string

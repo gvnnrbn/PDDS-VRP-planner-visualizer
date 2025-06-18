@@ -45,11 +45,7 @@ export default function AlmacenPhase() {
     }
   }
   const handlePreviousPhase = () => {
-    navigate('/weekly-simulation/vehiculos')
-  }
-
-  const handleNextPhase = () => {
-    navigate('/weekly-simulation/simulacion')
+    navigate('/vehiculos')
   }
 
   return (
@@ -66,13 +62,6 @@ export default function AlmacenPhase() {
           <Text fontSize="2xl" fontWeight="bold" textAlign="center" flex={1}>
             Gestión de Almacenes
           </Text>
-          <Button 
-            onClick={handleNextPhase}
-            colorScheme="blue" 
-            width="15rem"
-          >
-            Siguiente: Simulación
-          </Button>
         </HStack>
 
         <HStack justify="flex-end" spacing={4}>
