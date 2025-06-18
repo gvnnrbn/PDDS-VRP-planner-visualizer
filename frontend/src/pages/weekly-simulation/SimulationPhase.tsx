@@ -48,8 +48,8 @@ export default function SimulationPhase(
     parseDateString(simulacion[0].minuto)
   );
 
-  const TiempoIntervalo = 45000;
-  const TiempoSimuladoMs = 60 * 60 * 1000;
+  const TiempoIntervalo = 60000;
+  const TiempoSimuladoMs = 75 * 60 * 1000;
 
   // 👇 Avanza hasta el penúltimo índice
   useEffect(() => {
