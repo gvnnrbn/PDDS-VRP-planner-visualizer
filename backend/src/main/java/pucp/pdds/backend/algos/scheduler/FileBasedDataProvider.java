@@ -1,6 +1,7 @@
 package pucp.pdds.backend.algos.scheduler;
 
 import java.util.List;
+import org.springframework.stereotype.Service;
 
 import pucp.pdds.backend.algos.data.DataChunk;
 import pucp.pdds.backend.algos.entities.PlannerVehicle;
@@ -13,16 +14,17 @@ import pucp.pdds.backend.algos.utils.CSVDataParser;
 import pucp.pdds.backend.algos.utils.DataExporter;
 import pucp.pdds.backend.algos.utils.Time;
 
-public class SchedulerAgentTextFiles implements SchedulerAgent {
-    private List<PlannerVehicle> vehicles;
-    private List<PlannerOrder> orders;
-    private List<PlannerBlockage> blockages;
-    private List<PlannerWarehouse> warehouses;
-    private List<PlannerFailure> failures;
-    private List<PlannerMaintenance> maintenances;
-    private Time initialTime;
+@Service
+public class FileBasedDataProvider implements DataProvider {
+    private final List<PlannerVehicle> vehicles;
+    private final List<PlannerOrder> orders;
+    private final List<PlannerBlockage> blockages;
+    private final List<PlannerWarehouse> warehouses;
+    private final List<PlannerFailure> failures;
+    private final List<PlannerMaintenance> maintenances;
+    private final Time initialTime;
 
-    public SchedulerAgentTextFiles(Time initialTime) {
+    public FileBasedDataProvider() {
         this.vehicles = CSVDataParser.parseVehicles("data/vehicles.csv");
         this.orders = CSVDataParser.parseOrders("data/orders.csv");
         this.blockages = CSVDataParser.parseBlockages("data/blockages.csv");

@@ -5,28 +5,46 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import pucp.pdds.backend.algos.scheduler.Scheduler;
-import pucp.pdds.backend.algos.scheduler.SchedulerAgent;
-import pucp.pdds.backend.algos.scheduler.SchedulerAgentTextFiles;
+import pucp.pdds.backend.algos.scheduler.SchedulerState;
+import pucp.pdds.backend.algos.scheduler.DataProvider;
 import pucp.pdds.backend.dto.InitMessage;
 import pucp.pdds.backend.dto.SimulationResponse;
 import pucp.pdds.backend.dto.UpdateFailuresMessage;
 
 @Service
 public class SimulationService {
-    @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    private final SimpMessagingTemplate messagingTemplate;
+    private final DataProvider dataProvider;
+    private final SchedulerState schedulerState;
 
     private Scheduler currentSimulation;
     private Thread simulationThread;
-    private Object simulationLock = new Object();
+    private final Object simulationLock = new Object();
+
+    @Autowired
+    public SimulationService(SimpMessagingTemplate messagingTemplate, 
+                           DataProvider dataProvider,
+                           SchedulerState schedulerState) {
+        this.messagingTemplate = messagingTemplate;
+        this.dataProvider = dataProvider;
+        this.schedulerState = schedulerState;
+    }
 
     public void startSimulation(InitMessage message) {
         synchronized (simulationLock) {
             stopCurrentSimulation();
 
             try {
-                SchedulerAgent agent = createSchedulerAgent(message);
-                currentSimulation = new Scheduler(agent, messagingTemplate);
+                // Initialize scheduler state with data
+                schedulerState.setVehicles(dataProvider.getVehicles());
+                schedulerState.setOrders(dataProvider.getOrders());
+                schedulerState.setBlockages(dataProvider.getBlockages());
+                schedulerState.setWarehouses(dataProvider.getWarehouses());
+                schedulerState.setFailures(dataProvider.getFailures());
+                schedulerState.setMaintenances(dataProvider.getMaintenances());
+                schedulerState.setCurrTime(dataProvider.getInitialTime());
+
+                currentSimulation = new Scheduler(schedulerState, messagingTemplate);
                 simulationThread = new Thread(currentSimulation, "simulation-thread");
                 simulationThread.start();
 
@@ -62,20 +80,14 @@ public class SimulationService {
     private void stopCurrentSimulation() {
         if (simulationThread != null && simulationThread.isAlive()) {
             simulationThread.interrupt();
-            try{
+            try {
                 simulationThread.join(1000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-            simulationThread = null;
-            currentSimulation = null;
         }
         currentSimulation = null;
         simulationThread = null;
-    }
-
-    private SchedulerAgent createSchedulerAgent(InitMessage message) {
-        return new SchedulerAgentTextFiles(message.getInitialTime());
     }
 
     private void sendResponse(String type, Object data) {

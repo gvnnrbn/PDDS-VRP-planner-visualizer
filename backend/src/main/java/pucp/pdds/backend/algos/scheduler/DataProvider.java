@@ -1,6 +1,7 @@
 package pucp.pdds.backend.algos.scheduler;
 
 import java.util.List;
+import org.springframework.stereotype.Component;
 
 import pucp.pdds.backend.algos.data.DataChunk;
 import pucp.pdds.backend.algos.entities.PlannerBlockage;
@@ -11,13 +12,14 @@ import pucp.pdds.backend.algos.entities.PlannerFailure;
 import pucp.pdds.backend.algos.entities.PlannerMaintenance;
 import pucp.pdds.backend.algos.utils.Time;
 
-public interface SchedulerAgent {
-    public List<PlannerVehicle> getVehicles();
-    public List<PlannerOrder> getOrders();
-    public List<PlannerBlockage> getBlockages();
-    public List<PlannerWarehouse> getWarehouses();
-    public List<PlannerFailure> getFailures();
-    public List<PlannerMaintenance> getMaintenances();
-    public Time getInitialTime();
-    public void export(DataChunk dataChunk, int sequence);
+@Component
+public interface DataProvider {
+    List<PlannerVehicle> getVehicles();
+    List<PlannerOrder> getOrders();
+    List<PlannerBlockage> getBlockages();
+    List<PlannerWarehouse> getWarehouses();
+    List<PlannerFailure> getFailures();
+    List<PlannerMaintenance> getMaintenances();
+    Time getInitialTime();
+    void export(DataChunk dataChunk, int sequence);
 }

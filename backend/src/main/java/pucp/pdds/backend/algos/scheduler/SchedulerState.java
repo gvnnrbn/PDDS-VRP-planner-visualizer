@@ -1,6 +1,10 @@
 package pucp.pdds.backend.algos.scheduler;
 
 import java.util.List;
+import java.util.ArrayList;
+import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -18,6 +22,8 @@ import pucp.pdds.backend.algos.utils.Position;
 import pucp.pdds.backend.algos.utils.PathBuilder;
 import pucp.pdds.backend.algos.utils.SimulationProperties;
 
+@Component
+@Scope(value = "singleton", proxyMode = ScopedProxyMode.TARGET_CLASS)
 public class SchedulerState {
     public static SchedulerState instance;
     public static final Lock lock = new ReentrantLock();
@@ -33,15 +39,71 @@ public class SchedulerState {
         SchedulerState.instance = state;
     }
 
-    public List<PlannerVehicle> vehicles;
-    public List<PlannerOrder> orders;
-    public List<PlannerBlockage> blockages;
-    public List<PlannerWarehouse> warehouses;
-    public List<PlannerFailure> failures;
-    public List<PlannerMaintenance> maintenances;
+    private List<PlannerVehicle> vehicles = new ArrayList<>();
+    private List<PlannerOrder> orders = new ArrayList<>();
+    private List<PlannerBlockage> blockages = new ArrayList<>();
+    private List<PlannerWarehouse> warehouses = new ArrayList<>();
+    private List<PlannerFailure> failures = new ArrayList<>();
+    private List<PlannerMaintenance> maintenances = new ArrayList<>();
 
-    public Time currTime;
+    private Time currTime;
     public final int minutesToSimulate = 60;
+
+    public List<PlannerVehicle> getVehicles() {
+        return vehicles;
+    }
+
+    public List<PlannerOrder> getOrders() {
+        return orders;
+    }
+
+    public List<PlannerBlockage> getBlockages() {
+        return blockages;
+    }
+
+    public List<PlannerWarehouse> getWarehouses() {
+        return warehouses;
+    }
+
+    public List<PlannerFailure> getFailures() {
+        return failures;
+    }
+
+    public List<PlannerMaintenance> getMaintenances() {
+        return maintenances;
+    }
+
+    public Time getCurrTime() {
+        return currTime;
+    }
+
+    public void setVehicles(List<PlannerVehicle> vehicles) {
+        this.vehicles = vehicles != null ? vehicles : new ArrayList<>();
+    }
+
+    public void setOrders(List<PlannerOrder> orders) {
+        this.orders = orders != null ? orders : new ArrayList<>();
+    }
+
+    public void setBlockages(List<PlannerBlockage> blockages) {
+        this.blockages = blockages != null ? blockages : new ArrayList<>();
+    }
+
+    public void setWarehouses(List<PlannerWarehouse> warehouses) {
+        this.warehouses = warehouses != null ? warehouses : new ArrayList<>();
+    }
+
+    public void setFailures(List<PlannerFailure> failures) {
+        this.failures = failures != null ? failures : new ArrayList<>();
+    }
+
+    public void setMaintenances(List<PlannerMaintenance> maintenances) {
+        this.maintenances = maintenances != null ? maintenances : new ArrayList<>();
+    }
+
+    public void setCurrTime(Time currTime) {
+        this.currTime = currTime;
+    }
 
     public List<PlannerBlockage> getActiveBlockages() {
         return blockages.stream()
@@ -76,7 +138,7 @@ public class SchedulerState {
         }
     }
 
-    public void advance(Solution sol) {
+    public synchronized void advance(Solution sol) {
         debugPrint("--- Time: " + currTime + " ---");
 
         if (currTime.getHour() == 0 && currTime.getMinute() == 0) {

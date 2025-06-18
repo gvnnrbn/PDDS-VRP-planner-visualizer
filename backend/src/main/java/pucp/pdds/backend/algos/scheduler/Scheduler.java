@@ -1,6 +1,8 @@
 package pucp.pdds.backend.algos.scheduler;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import pucp.pdds.backend.algos.algorithm.Algorithm;
 import pucp.pdds.backend.algos.algorithm.Environment;
@@ -12,27 +14,25 @@ import pucp.pdds.backend.algos.utils.Time;
 import pucp.pdds.backend.dto.SimulationResponse;
 import pucp.pdds.backend.dto.UpdateFailuresMessage;
 
+@Service
 public class Scheduler implements Runnable {
-    private final SchedulerAgent agent;
+    private final SchedulerState state;
     private final SimpMessagingTemplate messagingTemplate;
 
-    public Scheduler(SchedulerAgent agent, SimpMessagingTemplate messagingTemplate) {
-        this.agent = agent;
+    @Autowired
+    public Scheduler(SchedulerState state, SimpMessagingTemplate messagingTemplate) {
+        this.state = state;
         this.messagingTemplate = messagingTemplate;
     }
 
     @Override
     public void run() {
-        SchedulerState state = SchedulerState.getInstance();
+        Time endSimulationTime = state.getCurrTime().addTime(new Time(0,0,7,0,0));
 
-        initializeState(state);
-
-        Time endSimulationTime = state.currTime.addTime(new Time(0,0,7,0,0));
-
-        while(state.currTime.isBefore(endSimulationTime)) {
+        while(state.getCurrTime().isBefore(endSimulationTime)) {
             // PLAN LOGIC
-            Environment environment = new Environment(state.getActiveVehicles(), state.getActiveOrders(), state.warehouses, state.getActiveBlockages(), state.failures, state.getActiveMaintenances(), state.currTime, state.minutesToSimulate);
-            debugPrint("Planning interval " + state.currTime + " started at " + state.currTime + " with " + state.getActiveVehicles().size() + " vehicles and " + state.getActiveOrders().size() + " orders");
+            Environment environment = new Environment(state.getActiveVehicles(), state.getActiveOrders(), state.getWarehouses(), state.getActiveBlockages(), state.getFailures(), state.getActiveMaintenances(), state.getCurrTime(), state.minutesToSimulate);
+            debugPrint("Planning interval " + state.getCurrTime() + " started at " + state.getCurrTime() + " with " + state.getActiveVehicles().size() + " vehicles and " + state.getActiveOrders().size() + " orders");
             Algorithm algorithm = new Algorithm(true);
             Solution sol = algorithm.run(environment, state.minutesToSimulate);
             debugPrint(sol.toString());
@@ -43,65 +43,44 @@ public class Scheduler implements Runnable {
                 break;
             }
 
-            SchedulerState.lock.lock();
             state.initializeVehicles();
-            SchedulerState.lock.unlock();
 
             for (int iteration = 0; iteration < state.minutesToSimulate; iteration++) {
-
-                SchedulerState.lock.lock();
                 state.advance(sol);
-                onAfterExecution(iteration, state, sol);
-                SchedulerState.lock.unlock();
+                onAfterExecution(iteration, sol);
 
                 try {
                     Thread.sleep(200);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
-
             }
         }
     }
 
     public void updateFailures(UpdateFailuresMessage message) {
-        SchedulerState.lock.lock();
-
-        SchedulerState state = SchedulerState.getInstance();
-        int lastId = state.failures.size() > 0 ? state.failures.getLast().id : 0;
+        int lastId = state.getFailures().size() > 0 ? state.getFailures().getLast().id : 0;
 
         PlannerFailure failure = new PlannerFailure(
             lastId + 1, message.getType(), message.getShiftOccurredOn(),
             message.getVehiclePlaque(), null);
-        state.failures.add(failure);
-        
-        SchedulerState.lock.unlock();
-    }
-
-    private void initializeState(SchedulerState state) {
-        state.warehouses = agent.getWarehouses();
-        state.vehicles = agent.getVehicles();
-        state.orders = agent.getOrders();
-        state.blockages = agent.getBlockages();
-        state.failures = agent.getFailures();
-        state.maintenances = agent.getMaintenances();
-        state.currTime = agent.getInitialTime();
+        state.getFailures().add(failure);
     }
 
     private void debugPrint(String message) {
-        System.out.println(SchedulerState.getInstance().currTime + " | " + message);
+        System.out.println(state.getCurrTime() + " | " + message);
     }
 
-    private void onAfterExecution(int iteration, SchedulerState state, Solution sol) {
+    private void onAfterExecution(int iteration, Solution sol) {
         DataChunk.SimulacionMinuto simulacionMinuto = new DataChunk.SimulacionMinuto(iteration);
         simulacionMinuto.setVehiculos(DataChunk.convertVehiclesToDataChunk(state.getActiveVehicles(), sol.routes));
-        simulacionMinuto.setAlmacenes(DataChunk.convertWarehousesToDataChunk(state.warehouses));
-        simulacionMinuto.setPedidos(DataChunk.convertOrdersToDataChunk(state.getActiveOrders(), state.getActiveVehicles(), sol.routes, state.currTime));
-        simulacionMinuto.setIncidencias(DataChunk.convertIncidentsToDataChunk(state.failures, state.getActiveMaintenances()));
+        simulacionMinuto.setAlmacenes(DataChunk.convertWarehousesToDataChunk(state.getWarehouses()));
+        simulacionMinuto.setPedidos(DataChunk.convertOrdersToDataChunk(state.getActiveOrders(), state.getActiveVehicles(), sol.routes, state.getCurrTime()));
+        simulacionMinuto.setIncidencias(DataChunk.convertIncidentsToDataChunk(state.getFailures(), state.getActiveMaintenances()));
 
         sendResponse("SIMULATION_UPDATE", simulacionMinuto);
 
-        SimulationVisualizer.draw(state.getActiveVehicles(), state.getActiveBlockages(), state.currTime, state.minutesToSimulate, state.warehouses, sol);
+        SimulationVisualizer.draw(state.getActiveVehicles(), state.getActiveBlockages(), state.getCurrTime(), state.minutesToSimulate, state.getWarehouses(), sol);
     }
 
     private void sendResponse(String type, Object data) {
