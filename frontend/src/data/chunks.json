@@ -19,6 +19,19 @@
                   "eta": "12/06/2025 12:00"
                 }
               ]
+            },{
+              "idPedido": 2,
+              "estado": "Pendiente",
+              "glp": 20,
+              "posX": 2,
+              "posY": 10,
+              "fechaLimite": "12/06/2025 19:00",
+              "vehiculosAtendiendo": [
+                {
+                  "placa": "TA001",
+                  "eta": "12/06/2025 12:00"
+                }
+              ]
             }
           ],
           "vehiculos": [
@@ -57,6 +70,30 @@
                   ],
                   "accion": "Entrega",
                   "cantidad": 10
+                },{
+                  "puntos":[
+                    {
+                      "posX":7, 
+                      "posY":10
+                    },{
+                      "posX":2, 
+                      "posY":10
+                    }
+                  ],
+                  "accion": "Entrega",
+                  "cantidad": 10
+                },{
+                  "puntos":[
+                    {
+                      "posX":1, 
+                      "posY":10
+                    },{
+                      "posX":1, 
+                      "posY":1
+                    }
+                  ],
+                  "accion": "Terminar",
+                  "cantidad": 0
                 }
               ]
             }

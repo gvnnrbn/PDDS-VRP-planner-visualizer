@@ -54,7 +54,6 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
     const [pos, setPos] = useState<[number, number]>([
       vehiculo.posicionX,
       vehiculo.posicionY,
-
     ]);
 
     const [paradaActual, setParadaActual] = useState(0);
@@ -71,8 +70,8 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
       if (!puntos || puntos.length < 1) return;
 
       const fullRuta: [number, number][] = [
-        [vehiculo.posicionX, vehiculo.posicionY],
-        ...puntos.map(p => [p.posX, p.posY] as [number, number])
+        [pos[0], pos[1]],
+        ...puntos.map(p => [p.posX, p.posY] as [number, number]),
       ];
 
       if (fullRuta.length < 2) return;
@@ -175,10 +174,11 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
         {vehiculo.rutaActual?.[paradaActual]?.puntos && (
         <Arrow
           points={[
-            [vehiculo.posicionX, vehiculo.posicionY],
-            ...vehiculo.rutaActual[paradaActual].puntos.map(p => [p.posX, p.posY])
+            [pos[0], pos[1]], // ← posición actual animada
+            ...vehiculo.rutaActual[paradaActual].puntos
+              .slice(recorridoHastaAhora)
+              .map(p => [p.posX, p.posY] as [number, number])
           ]
-            .slice(recorridoHastaAhora)
             .flatMap(([x, y]) => [x * cellSize, (gridHeight - y) * cellSize])}
           stroke="blue"
           strokeWidth={3}
