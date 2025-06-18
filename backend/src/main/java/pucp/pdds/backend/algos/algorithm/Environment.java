@@ -126,7 +126,7 @@ public class Environment {
         }
 
         int totalGLPToRefill = totalGLP - totalGLPInVehicles;
-        int totalAssignableGLP = (int) (totalGLPToRefill * 1.5);
+        int totalAssignableGLP = (int) (totalGLPToRefill * 2);
 
         // Round robin to assign GLP from the warehouses
         int currentWarehouseIndex = 0;
@@ -174,7 +174,7 @@ public class Environment {
     public static double calculateFuelCost(Node from, Node to, Map<Position, Map<Position, Double>> distances,
             PlannerVehicle vehicle) {
         double distance = distances.get(from.getPosition()).get(to.getPosition());
-        double fuelCost = distance * (vehicle.weight + vehicle.currentGLP * 0.5) / 180;
+        double fuelCost = distance * (vehicle.weight / 1000 + vehicle.currentGLP * 0.5) / 180;
         return fuelCost;
     }
 

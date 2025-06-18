@@ -7,7 +7,7 @@ public class OrderDeliverNode extends Node {
     public PlannerOrder order;
     public int amountGLP;
 
-    public static int chunkSize = 10; // Max number of m3 of GLP that can be transported in one chunk
+    public static int chunkSize = 5; // Max number of m3 of GLP that can be transported in one chunk
 
     @Override
     public OrderDeliverNode clone() {

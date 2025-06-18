@@ -116,11 +116,17 @@ public class PlannerVehicle implements Cloneable {
                 throw new RuntimeException("Order with id " + deliverNode.order.id + " not found");
             }
 
+            System.out.println("Order " + order.id + " currently has " + order.amountGLP + " GLP left to deliver");
+
             order.amountGLP -= deliverNode.amountGLP;
             vehicle.currentGLP += deliverNode.amountGLP;
 
             if (order.amountGLP == 0) {
                 order.deliverTime = currentTime;
+            }
+
+            if (order.amountGLP < 0) {
+                throw new RuntimeException("Order " + order.id + " has " + order.amountGLP + " GLP left to deliver");
             }
 
             this.waitTransition = SimulationProperties.timeAfterDelivery;

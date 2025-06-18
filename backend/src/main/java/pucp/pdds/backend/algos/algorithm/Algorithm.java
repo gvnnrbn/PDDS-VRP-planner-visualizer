@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import pucp.pdds.backend.algos.entities.PlannerOrder;
+import pucp.pdds.backend.algos.entities.PlannerVehicle;
+
 public class Algorithm {
     // Hyperparameters
     private static int maxTimeMs = 30 * 1000;
@@ -135,6 +138,28 @@ public class Algorithm {
         }
 
         bestSolution.compress();
+
+        if (!bestSolution.isFeasible(environment)) {
+            System.out.println("Best solution: " + bestSolution);
+            int totalGLPToDeliver = 0;
+            for (PlannerOrder order : environment.orders) {
+                totalGLPToDeliver += order.amountGLP;
+            }
+            System.out.println("GLP to deliver: " + totalGLPToDeliver);
+            int totalGLPInVehicles = 0;
+            for (PlannerVehicle vehicle : environment.vehicles) {
+                totalGLPInVehicles += vehicle.currentGLP;
+            }
+            System.out.println("GLP in vehicles: " + totalGLPInVehicles);
+            int totalGLPToRefill = 0;
+            for (Node node : bestSolution.routes.values().stream().flatMap(List::stream).toList()) {
+                if (node instanceof ProductRefillNode) {
+                    totalGLPToRefill += ((ProductRefillNode) node).amountGLP;
+                }
+            }
+            System.out.println("GLP to refill during simulation: " + totalGLPToRefill);
+            System.out.println("foo");
+        }
         return bestSolution;
     }
 

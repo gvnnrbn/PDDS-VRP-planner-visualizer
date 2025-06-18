@@ -87,8 +87,7 @@ public class CSVDataParser {
 
     public static List<PlannerVehicle> parseVehicles(String filePath) {
         List<PlannerVehicle> vehicles = new ArrayList<>();
-        String currentType = null;
-        int id = 1;
+        int id = 1; // Single ID counter for all vehicle types
         
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             String line;
@@ -109,12 +108,6 @@ public class CSVDataParser {
                     // Extract vehicle type (TA, TB, TC, TD)
                     String type = parts[0];
                     
-                    // Reset ID counter if we encounter a new vehicle type
-                    if (!type.equals(currentType)) {
-                        id = 1;
-                        currentType = type;
-                    }
-                    
                     // Convert weights from Ton to kg (1 Ton = 1000 kg)
                     double grossWeight = Double.parseDouble(parts[1]) * 1000;
                     
@@ -127,17 +120,17 @@ public class CSVDataParser {
                     // Create vehicles
                     for (int i = 0; i < amountOfUnits; i++) {
                         // Generate plaque using type and sequential number, adding leading zero only for single digits
-                        String plaque = type + (id < 10 ? "0" + id : String.valueOf(id));
+                        String plaque = type + (i + 1 < 10 ? "0" + (i + 1) : String.valueOf(i + 1));
                         PlannerVehicle vehicle = new PlannerVehicle(
                             id++,
                             plaque,
                             type,
                             PlannerVehicle.VehicleState.IDLE,
                             (int) grossWeight,
-                            1000,  // Increased fuel capacity to 1000 gallons
-                            1000,  // Current fuel to 1000 gallons
+                            25,  // Increased fuel capacity to 25 gallons
+                            25,  // Current fuel to 25 gallons
                             maxGLP,
-                            0,  // Start with empty GLP to force refilling
+                            maxGLP,  // Start with empty GLP to force refilling
                             new Position(12, 8)  // Start at main warehouse position
                         );
                         vehicles.add(vehicle);
