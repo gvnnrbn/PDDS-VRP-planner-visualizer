@@ -204,18 +204,11 @@ public class SimulationVisualizer {
                           List<PlannerWarehouse> warehouses, Solution sol) {
         // Check if visualization is enabled in the current profile
         if (environment == null || !Boolean.parseBoolean(environment.getProperty("visualization.gui.enabled", "false"))) {
-            System.out.println("DEBUG: Visualization skipped - GUI not enabled in profile");
-            System.out.println("DEBUG: environment = " + environment);
-            if (environment != null) {
-                System.out.println("DEBUG: visualization.gui.enabled = " + environment.getProperty("visualization.gui.enabled"));
-                System.out.println("DEBUG: Active profiles = " + String.join(", ", environment.getActiveProfiles()));
-            }
             return;
         }
 
         // Check if we're in a headless environment
         if (GraphicsEnvironment.isHeadless()) {
-            System.out.println("DEBUG: Visualization skipped - Headless environment detected");
             return;
         }
 
@@ -237,7 +230,6 @@ public class SimulationVisualizer {
         int gridLength = SimulationProperties.gridLength;
         int gridWidth = SimulationProperties.gridWidth;
 
-        System.out.println("DEBUG: Attempting to draw visualization");
         try {
             SwingUtilities.invokeLater(() -> {
                 try {
@@ -249,21 +241,17 @@ public class SimulationVisualizer {
                         visFrame.pack();
                         visFrame.setLocationRelativeTo(null);
                         visFrame.setVisible(true); 
-                        System.out.println("DEBUG: Created new visualization window");
                     }
                     List<PlannerBlockage> activeBlockages = blockages.stream()
                         .filter(blockage -> blockage.isActive(currentTime, currentTime.addMinutes(minutesToSimulate)))
                         .collect(Collectors.toList());
                     visPanel.warehouses = warehouses;
                     visPanel.updateState(vehicles, activeBlockages, deliveryNodes, refillNodes, currentTime.toString());
-                    System.out.println("DEBUG: Updated visualization state");
                 } catch (Exception e) {
-                    System.err.println("DEBUG: Error in visualization: " + e.getMessage());
                     e.printStackTrace();
                 }
             });
         } catch (Exception e) {
-            System.err.println("DEBUG: Error initializing visualization: " + e.getMessage());
             e.printStackTrace();
         }
     }
