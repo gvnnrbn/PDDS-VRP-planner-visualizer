@@ -93,16 +93,19 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
         const stepDurMs = (distancia / velocidad) * 1000;
 
         const tiempoRestante = tiempoLimiteMs - tiempoTranscurrido;
-        const avanzarMs = Math.min(stepDurMs, tiempoRestante);
 
+        // ⚠️ Si no hay tiempo suficiente para completar el tramo
+        if (tiempoRestante <= 0) return;
+        
         const start = performance.now();
 
         const animate = (now: number) => {
           const elapsed = now - start;
-          const t = Math.min(elapsed / avanzarMs, 1);
+          const progreso = Math.min(elapsed / stepDurMs, tiempoRestante / stepDurMs, 1);
+
           const interp: [number, number] = [
-            from[0] + (to[0] - from[0]) * t,
-            from[1] + (to[1] - from[1]) * t,
+            from[0] + (to[0] - from[0]) * progreso,
+            from[1] + (to[1] - from[1]) * progreso,
           ];
           setPos(interp);
 
@@ -112,16 +115,19 @@ export const VehicleIcon = forwardRef<Konva.Image, Props>(
             shapeRef.current.getLayer()?.batchDraw();
           }
 
-          if (t < 1) {
+          const tiempoRealConsumido = progreso * stepDurMs;
+
+          if (progreso < 1 && tiempoRealConsumido < tiempoRestante) {
             frameId = requestAnimationFrame(animate);
           } else {
-            if (tiempoRestante >= stepDurMs) {
-              tiempoTranscurrido += stepDurMs;
+            tiempoTranscurrido += tiempoRealConsumido;
+
+            if (progreso === 1) {
               step++;
-              setRecorridoHastaAhora(step); // 👈 actualizado por paso dentro de la parada
-              recorrerRuta();
+              setRecorridoHastaAhora(step); // ✅ avanzar índice de celda solo si llegó
+              recorrerRuta(); // ⏭️ continuar con siguiente paso
             }
-            // Si no hay tiempo suficiente, se queda en posición parcial
+            // 🚫 Si no llegó, se queda donde está
           }
         };
 

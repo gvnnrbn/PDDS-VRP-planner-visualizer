@@ -48,8 +48,11 @@
                       "posX":2, 
                       "posY":3
                     },{
-                      "posX":5, 
+                      "posX":7, 
                       "posY":3
+                    },{
+                      "posX":7,
+                      "posY":5
                     }
                   ],
                   "accion": "Entrega",
@@ -135,7 +138,6 @@
                   ],
                   "accion": "Entrega",
                   "cantidad": 10
-                  
                 }
               ]
             }
