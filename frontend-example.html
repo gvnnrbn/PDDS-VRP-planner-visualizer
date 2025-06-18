@@ -39,14 +39,18 @@
         <h3>Add Failure</h3>
         <label>Failure Type:</label>
         <select id="failureType">
-            <option value="ENGINE_FAILURE">Engine Failure</option>
-            <option value="TIRE_FAILURE">Tire Failure</option>
-            <option value="BATTERY_FAILURE">Battery Failure</option>
+            <option value="Ti1">Failure Type 1 (2h)</option>
+            <option value="Ti2">Failure Type 2 (2h)</option>
+            <option value="Ti3">Failure Type 3 (4h)</option>
         </select>
         <label>Vehicle Plaque:</label>
         <input type="text" id="vehiclePlaque" placeholder="ABC-123">
         <label>Shift:</label>
-        <input type="number" id="shiftOccurred" value="1" min="1" max="3">
+        <select id="shiftOccurred">
+            <option value="T1">T1 (00:00-08:00)</option>
+            <option value="T2">T2 (08:00-16:00)</option>
+            <option value="T3">T3 (16:00-24:00)</option>
+        </select>
         <button onclick="updateFailures()">Add Failure</button>
     </div>
     
@@ -345,17 +349,17 @@
                 this.log(`🚀 Starting simulation with initial time: ${timeObj.year}/${timeObj.month.toString().padStart(2,'0')}/${timeObj.day.toString().padStart(2,'0')} ${timeObj.hour.toString().padStart(2,'0')}:${timeObj.minute.toString().padStart(2,'0')}`);
             }
 
-            updateFailures(type, vehiclePlaque, shiftOccurredOn) {
+            updateFailures(type, vehiclePlaque, shiftOccurred) {
                 if (!this.checkConnection()) return;
 
                 const message = {
                     type: type,
                     vehiclePlaque: vehiclePlaque,
-                    shiftOccurredOn: shiftOccurredOn
+                    shiftOccurredOn: shiftOccurred
                 };
 
                 this.send('/app/update-failures', message);
-                this.log(`⚠️ Adding failure: ${type} on vehicle ${vehiclePlaque} (shift ${shiftOccurredOn})`);
+                this.log(`⚠️ Adding failure: ${type} on vehicle ${vehiclePlaque} (shift ${shiftOccurred})`);
             }
 
             stopSimulation() {
@@ -423,7 +427,7 @@
         function updateFailures() {
             const type = document.getElementById('failureType').value;
             const vehiclePlaque = document.getElementById('vehiclePlaque').value.trim();
-            const shiftOccurred = parseInt(document.getElementById('shiftOccurred').value);
+            const shiftOccurred = document.getElementById('shiftOccurred').value;
             
             if (!vehiclePlaque) {
                 alert('Please enter vehicle plaque');
