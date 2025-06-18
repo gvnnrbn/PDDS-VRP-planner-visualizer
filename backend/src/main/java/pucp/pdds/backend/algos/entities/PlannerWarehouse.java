@@ -1,6 +1,7 @@
 package pucp.pdds.backend.algos.entities;
 
 import pucp.pdds.backend.algos.utils.Position;
+import pucp.pdds.backend.model.Almacen;
 
 public class PlannerWarehouse implements Cloneable {
     public int id;
@@ -17,6 +18,19 @@ public class PlannerWarehouse implements Cloneable {
         this.currentGLP = currentGLP;
         this.isMain = isMain;
         this.wasVehicle = wasVehicle;
+    }
+
+    public static PlannerWarehouse fromEntity(Almacen almacen) {
+        Position position = new Position(almacen.getPosicionX(), almacen.getPosicionY());
+        
+        return new PlannerWarehouse(
+            almacen.getId().intValue(),
+            position,
+            (int) almacen.getCapacidadEfectivam3(),
+            (int) almacen.getCapacidadEfectivam3(), // Start with full capacity
+            almacen.isEsPrincipal(),
+            false // wasVehicle is false for warehouses
+        );
     }
 
     @Override

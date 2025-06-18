@@ -10,6 +10,7 @@ import pucp.pdds.backend.algos.utils.Position;
 import pucp.pdds.backend.algos.utils.SimulationProperties;
 import pucp.pdds.backend.algos.utils.Time;
 import pucp.pdds.backend.algos.utils.PathBuilder;
+import pucp.pdds.backend.model.Vehiculo;
 
 public class PlannerVehicle implements Cloneable {
     // Basic vehicle attributes
@@ -52,6 +53,24 @@ public class PlannerVehicle implements Cloneable {
         this.waitTransition = 0;
         this.currentPath = null;
         this.nextNodeIndex = 1;
+    }
+
+    public static PlannerVehicle fromEntity(Vehiculo vehiculo) {
+        VehicleState state = vehiculo.isDisponible() ? VehicleState.IDLE : VehicleState.REPAIR;
+        Position position = new Position(vehiculo.getPosicionX(), vehiculo.getPosicionY());
+        
+        return new PlannerVehicle(
+            vehiculo.getId().intValue(),
+            vehiculo.getPlaca(),
+            vehiculo.getTipo().name(),
+            state,
+            vehiculo.getPeso(),
+            (int) vehiculo.getMaxCombustible(),
+            vehiculo.getCurrCombustible(),
+            (int) vehiculo.getMaxGlp(),
+            (int) vehiculo.getCurrGlp(),
+            position
+        );
     }
 
     // Path advancement method

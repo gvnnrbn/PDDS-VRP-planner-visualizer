@@ -3,7 +3,6 @@ package pucp.pdds.backend.algos.scheduler;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
-import pucp.pdds.backend.algos.data.DataChunk;
 import pucp.pdds.backend.algos.entities.PlannerBlockage;
 import pucp.pdds.backend.algos.entities.PlannerOrder;
 import pucp.pdds.backend.algos.entities.PlannerVehicle;
@@ -21,5 +20,4 @@ public interface DataProvider {
     List<PlannerFailure> getFailures();
     List<PlannerMaintenance> getMaintenances();
     Time getInitialTime();
-    void export(DataChunk dataChunk, int sequence);
 }

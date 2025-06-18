@@ -4,6 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import pucp.pdds.backend.algos.utils.Time;
 import pucp.pdds.backend.algos.utils.Position;
+import pucp.pdds.backend.model.Bloqueo;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Map;
 
 public class PlannerBlockage implements Cloneable {
     private static final double EPSILON = 1e-6;
@@ -17,6 +21,48 @@ public class PlannerBlockage implements Cloneable {
         this.startTime = startTime;
         this.endTime = endTime;
         this.vertices = vertices;
+    }
+
+    public static PlannerBlockage fromEntity(Bloqueo bloqueo) {
+        Time startTime = new Time(
+            bloqueo.getStartTime().getYear(),
+            bloqueo.getStartTime().getMonthValue(),
+            bloqueo.getStartTime().getDayOfMonth(),
+            bloqueo.getStartTime().getHour(),
+            bloqueo.getStartTime().getMinute()
+        );
+        
+        Time endTime = new Time(
+            bloqueo.getEndTime().getYear(),
+            bloqueo.getEndTime().getMonthValue(),
+            bloqueo.getEndTime().getDayOfMonth(),
+            bloqueo.getEndTime().getHour(),
+            bloqueo.getEndTime().getMinute()
+        );
+        
+        List<Position> vertices = new ArrayList<>();
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            List<Map<String, Object>> verticesData = mapper.readValue(
+                bloqueo.getVerticesJson(), 
+                new TypeReference<List<Map<String, Object>>>() {}
+            );
+            
+            for (Map<String, Object> vertexData : verticesData) {
+                double x = ((Number) vertexData.get("x")).doubleValue();
+                double y = ((Number) vertexData.get("y")).doubleValue();
+                vertices.add(new Position(x, y));
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse vertices JSON: " + e.getMessage());
+        }
+        
+        return new PlannerBlockage(
+            bloqueo.getId().intValue(),
+            startTime,
+            endTime,
+            vertices
+        );
     }
 
     // Returns true if the movement from a to b is blocked

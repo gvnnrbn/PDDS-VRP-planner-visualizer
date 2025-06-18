@@ -2,6 +2,8 @@ package pucp.pdds.backend.algos.entities;
 
 import pucp.pdds.backend.algos.utils.Position;
 import pucp.pdds.backend.algos.utils.Time;
+import pucp.pdds.backend.model.Pedido;
+import java.time.LocalDateTime;
 
 public class PlannerOrder implements Cloneable {
     public int id;
@@ -22,6 +24,35 @@ public class PlannerOrder implements Cloneable {
         this.deadline = deadline;
         this.deliverTime = null;
         this.releaseTime = arrivalTime;
+    }
+
+    public static PlannerOrder fromEntity(Pedido pedido) {
+        Time arrivalTime = new Time(
+            pedido.getFechaRegistro().getYear(),
+            pedido.getFechaRegistro().getMonthValue(),
+            pedido.getFechaRegistro().getDayOfMonth(),
+            pedido.getFechaRegistro().getHour(),
+            pedido.getFechaRegistro().getMinute()
+        );
+        
+        Time deadline = new Time(
+            pedido.getFechaRegistro().getYear(),
+            pedido.getFechaRegistro().getMonthValue(),
+            pedido.getFechaRegistro().getDayOfMonth(),
+            pedido.getFechaRegistro().getHour(),
+            pedido.getFechaRegistro().getMinute() + pedido.getTiempoTolerancia()
+        );
+        
+        Position position = new Position(pedido.getPosicionX(), pedido.getPosicionY());
+        
+        return new PlannerOrder(
+            pedido.getId().intValue(),
+            arrivalTime,
+            position,
+            pedido.getCantidadGLP(),
+            pedido.getCodigoCliente(),
+            deadline
+        );
     }
 
     public boolean isDelivered() {

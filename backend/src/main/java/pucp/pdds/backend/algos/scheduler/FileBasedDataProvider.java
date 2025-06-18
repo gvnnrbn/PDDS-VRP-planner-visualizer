@@ -1,18 +1,19 @@
 package pucp.pdds.backend.algos.scheduler;
 
 import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import pucp.pdds.backend.algos.data.DataChunk;
 import pucp.pdds.backend.algos.entities.PlannerVehicle;
 import pucp.pdds.backend.algos.entities.PlannerOrder;
 import pucp.pdds.backend.algos.entities.PlannerBlockage;
 import pucp.pdds.backend.algos.entities.PlannerWarehouse;
 import pucp.pdds.backend.algos.entities.PlannerFailure;
 import pucp.pdds.backend.algos.entities.PlannerMaintenance;
-import pucp.pdds.backend.algos.utils.CSVDataParser;
-import pucp.pdds.backend.algos.utils.DataExporter;
 import pucp.pdds.backend.algos.utils.Time;
+import pucp.pdds.backend.repository.*;
 
 @Service
 public class FileBasedDataProvider implements DataProvider {
@@ -24,16 +25,22 @@ public class FileBasedDataProvider implements DataProvider {
     private final List<PlannerMaintenance> maintenances;
     private final Time initialTime;
 
-    public FileBasedDataProvider() {
-        this.vehicles = CSVDataParser.parseVehicles("data/vehicles.csv");
-        this.orders = CSVDataParser.parseOrders("data/orders.csv");
-        this.blockages = CSVDataParser.parseBlockages("data/blockages.csv");
-        this.warehouses = CSVDataParser.parseWarehouses("data/warehouses.csv");
-        this.failures = CSVDataParser.parseFailures("data/failures.csv");
-        this.maintenances = CSVDataParser.parseMaintenances("data/maintenances.csv");
+    @Autowired
+    public FileBasedDataProvider(
+        VehiculoRepository vehiculoRepository,
+        PedidoRepository pedidoRepository,
+        AlmacenRepository almacenRepository,
+        BloqueoRepository bloqueoRepository,
+        IncidenciaRepository incidenciaRepository,
+        MantenimientoRepository mantenimientoRepository
+    ) {
+        this.vehicles = vehiculoRepository.findAll().stream().map(PlannerVehicle::fromEntity).collect(Collectors.toList());
+        this.orders = pedidoRepository.findAll().stream().map(PlannerOrder::fromEntity).collect(Collectors.toList());
+        this.blockages = bloqueoRepository.findAll().stream().map(PlannerBlockage::fromEntity).collect(Collectors.toList());
+        this.warehouses = almacenRepository.findAll().stream().map(PlannerWarehouse::fromEntity).collect(Collectors.toList());
+        this.failures = incidenciaRepository.findAll().stream().map(PlannerFailure::fromEntity).collect(Collectors.toList());
+        this.maintenances = mantenimientoRepository.findAll().stream().map(PlannerMaintenance::fromEntity).collect(Collectors.toList());
         this.initialTime = new Time(2025, 1, 1, 0, 0);
-
-        DataExporter.clearSimulationData();
     }
 
     @Override
@@ -69,10 +76,5 @@ public class FileBasedDataProvider implements DataProvider {
     @Override
     public Time getInitialTime() {
         return initialTime;
-    }
-
-    @Override
-    public void export(DataChunk dataChunk, int sequence) {
-        DataExporter.exportToJson(dataChunk, sequence);
     }
 }

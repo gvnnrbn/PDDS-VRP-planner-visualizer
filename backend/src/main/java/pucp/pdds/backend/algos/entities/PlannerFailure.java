@@ -1,6 +1,7 @@
 package pucp.pdds.backend.algos.entities;
 
 import pucp.pdds.backend.algos.utils.Time;
+import pucp.pdds.backend.model.Incidencia;
 
 public class PlannerFailure implements Cloneable{
     public int id;
@@ -16,6 +17,34 @@ public class PlannerFailure implements Cloneable{
         this.type = type;
         this.shiftOccurredOn = shiftOccurredOn;
         this.timeOccuredOn = timeOccuredOn;
+    }
+
+    public static PlannerFailure fromEntity(Incidencia incidencia) {
+        // Map Turno to Shift
+        Shift shift = Shift.valueOf(incidencia.getTurno().name());
+        
+        // Create a default time for the failure (start of the shift)
+        Time timeOccuredOn = new Time(
+            incidencia.getFecha().getYear(),
+            incidencia.getFecha().getMonthValue(),
+            incidencia.getFecha().getDayOfMonth(),
+            shift == Shift.T1 ? 0 : shift == Shift.T2 ? 8 : 16,
+            0
+        );
+        
+        // Determine failure type based on shift (this is a simplification)
+        FailureType type = FailureType.Ti1; // Default to Ti1
+        
+        String vehiclePlaque = incidencia.getVehiculo() != null ? 
+            incidencia.getVehiculo().getPlaca() : "UNKNOWN";
+        
+        return new PlannerFailure(
+            incidencia.getId().intValue(),
+            type,
+            shift,
+            vehiclePlaque,
+            timeOccuredOn
+        );
     }
 
     public boolean hasBeenAssigned() {
