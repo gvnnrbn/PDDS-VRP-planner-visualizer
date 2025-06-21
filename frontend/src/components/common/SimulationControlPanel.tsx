@@ -11,7 +11,7 @@ interface LogEntry {
   message: string;
 }
 
-const defaultServerUrl = 'http://localhost:8080';
+const backend_url = import.meta.env.VITE_ENV_BACKEND_URL;
 
 // Cache global para imágenes de íconos
 const iconImageCache: Record<string, HTMLImageElement> = {};
@@ -170,7 +170,7 @@ async function drawState(canvas: HTMLCanvasElement, data: any) {
 }
 
 const SimulationControlPanel: React.FC = () => {
-  const [serverUrl, setServerUrl] = useState(defaultServerUrl);
+  // const [serverUrl, setServerUrl] = useState(defaultServerUrl);
   const [initialTime, setInitialTime] = useState(() => {
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -200,10 +200,10 @@ const SimulationControlPanel: React.FC = () => {
     if (connected) {
       disconnect();
     }
-    logMessage(`🔌 Connecting to ${serverUrl}...`);
+    logMessage(`🔌 Connecting to ${backend_url}...`);
     const client = new Client({
       brokerURL: undefined,
-      webSocketFactory: () => new SockJS(`${serverUrl}/ws`),
+      webSocketFactory: () => new SockJS(`${backend_url}/ws`),
       debug: () => {},
       reconnectDelay: 5000,
       onConnect: () => {
@@ -334,11 +334,18 @@ const SimulationControlPanel: React.FC = () => {
 
   const clearLog = () => setLog([]);
 
+  const onIniciarSimulacion = () => {
+    if (!connected) {
+      connect();
+    }
+    onOpen();
+  };
+
   return (
     <Box borderWidth="1px" borderRadius="md" p={4} mb={4}>
       <VStack align="start" spacing={3}>
         <Flex gap={4} align="center">
-          <Button colorScheme="green" size="md" onClick={onOpen} isDisabled={isSimulating}>
+          <Button colorScheme="green" size="md" onClick={onIniciarSimulacion} isDisabled={isSimulating}>
             Iniciar Simulación
           </Button>
           {isSimulating && (
@@ -353,18 +360,6 @@ const SimulationControlPanel: React.FC = () => {
             <ModalHeader fontWeight="bold" fontSize="2xl" color="gray.700">Iniciar Simulación</ModalHeader>
             <ModalBody>
               <VStack spacing={4} align="stretch">
-                {!connected && (
-                  <FormControl>
-                    <FormLabel>Server URL</FormLabel>
-                    <HStack>
-                      <Input value={serverUrl} onChange={e => setServerUrl(e.target.value)} placeholder="Server URL" />
-                      <Button colorScheme="blue" onClick={connect} isDisabled={connected}>Conectar</Button>
-                    </HStack>
-                    <Text color={status === 'connected' ? 'green.500' : status === 'error' ? 'red.500' : 'gray.500'} fontWeight="bold" mt={2}>
-                      Estado: {status.charAt(0).toUpperCase() + status.slice(1)}
-                    </Text>
-                  </FormControl>
-                )}
                 <FormControl mt={2}>
                   <FormLabel>Fecha y hora de inicio</FormLabel>
                   <Input type="datetime-local" value={initialTime} onChange={e => setInitialTime(e.target.value)} />

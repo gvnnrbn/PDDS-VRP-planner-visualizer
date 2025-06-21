@@ -3,12 +3,21 @@ package pucp.pdds.backend.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.springframework.core.env.Environment;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import pucp.pdds.backend.algos.scheduler.Scheduler;
 import pucp.pdds.backend.algos.scheduler.SchedulerState;
+import pucp.pdds.backend.algos.utils.Time;
 import pucp.pdds.backend.algos.scheduler.DataProvider;
 import pucp.pdds.backend.dto.InitMessage;
 import pucp.pdds.backend.dto.SimulationResponse;
@@ -38,14 +47,29 @@ public class SimulationService {
         this.environment = environment;
     }
 
-    public void startSimulation(InitMessage message) {
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+
+
+    public void startSimulation(String fechaInicioStr) {
         synchronized (simulationLock) {
             stopCurrentSimulation();
 
             try {
                 logger.info("Starting simulation - loading fresh data from database...");
                 sendResponse("SIMULATION_LOADING", "Loading data from database...");
-                
+
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode root = mapper.readTree(fechaInicioStr);
+                JsonNode timeNode = root.path("initialTime");
+
+                int year = timeNode.path("year").asInt();
+                int month = timeNode.path("month").asInt();
+                int day = timeNode.path("day").asInt();
+                int hour = timeNode.path("hour").asInt();
+                int minute = timeNode.path("minute").asInt();
+
+                LocalDateTime fechaInicio = LocalDateTime.of(year, month, day, hour, minute);
+
                 // Initialize scheduler state with fresh data from database
                 var vehicles = dataProvider.getVehicles();
                 var orders = dataProvider.getOrders();
@@ -63,7 +87,9 @@ public class SimulationService {
                 schedulerState.setWarehouses(warehouses.stream().map(w -> w.clone()).toList());
                 schedulerState.setFailures(new java.util.ArrayList<>(failures.stream().map(f -> f.clone()).toList()));
                 schedulerState.setMaintenances(maintenances.stream().map(m -> m.clone()).toList());
-                schedulerState.setCurrTime(dataProvider.getInitialTime().clone());
+                schedulerState.setCurrTime(
+                    new Time(fechaInicio.getYear(), fechaInicio.getMonthValue(), 
+                    fechaInicio.getDayOfMonth(), fechaInicio.getHour(), fechaInicio.getMinute()));
 
                 currentSimulation = new Scheduler(schedulerState, messagingTemplate);
                 simulationThread = new Thread(currentSimulation, "simulation-thread");

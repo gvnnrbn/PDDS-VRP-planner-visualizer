@@ -1,7 +1,11 @@
 package pucp.pdds.backend.controller;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Controller;
 
 import pucp.pdds.backend.dto.InitMessage;
@@ -14,8 +18,10 @@ public class SimulationController {
     private SimulationService simulationService;
 
     @MessageMapping("/init")
-    public void startSimulation(InitMessage message) {
-        simulationService.startSimulation(message);
+    public void startSimulation(@Payload String fechaInicioStr) {
+        System.out.println("Received start simulation request with date: " + fechaInicioStr);
+
+        simulationService.startSimulation(fechaInicioStr);
     }
 
     @MessageMapping("/update-failures")
