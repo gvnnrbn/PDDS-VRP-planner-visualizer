@@ -72,7 +72,7 @@ public class SimulationService {
 
                 // Initialize scheduler state with fresh data from database
                 var vehicles = dataProvider.getVehicles();
-                var orders = dataProvider.getOrders();
+                var orders = dataProvider.getOrdersForWeek(fechaInicio);
                 var blockages = dataProvider.getBlockages();
                 var warehouses = dataProvider.getWarehouses();
                 var failures = dataProvider.getFailures();
@@ -81,6 +81,15 @@ public class SimulationService {
                 logger.info("Loaded {} vehicles, {} orders, {} blockages, {} warehouses, {} failures, {} maintenances", 
                     vehicles.size(), orders.size(), blockages.size(), warehouses.size(), failures.size(), maintenances.size());
                 
+                vehicles.forEach(v -> {
+                    v.currentFuel = v.maxFuel;
+                    v.currentGLP = v.maxGLP;
+                });
+
+                warehouses.forEach(w -> {
+                    w.currentGLP = w.maxGLP;
+                });
+
                 schedulerState.setVehicles(vehicles.stream().map(v -> v.clone()).toList());
                 schedulerState.setOrders(new java.util.ArrayList<>(orders.stream().map(o -> o.clone()).toList()));
                 schedulerState.setBlockages(blockages.stream().map(b -> b.clone()).toList());

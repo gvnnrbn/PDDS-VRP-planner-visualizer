@@ -54,6 +54,12 @@ public class FileBasedDataProvider implements DataProvider {
     }
 
     @Override
+    public List<PlannerOrder> getOrdersForWeek(java.time.LocalDateTime startDate) {
+        java.time.LocalDateTime endDate = startDate.plusDays(7);
+        return pedidoRepository.findByFechaRegistroBetween(startDate, endDate).stream().map(PlannerOrder::fromEntity).collect(Collectors.toList());
+    }
+
+    @Override
     public List<PlannerBlockage> getBlockages() {
         return bloqueoRepository.findAll().stream().map(PlannerBlockage::fromEntity).collect(Collectors.toList());
     }
