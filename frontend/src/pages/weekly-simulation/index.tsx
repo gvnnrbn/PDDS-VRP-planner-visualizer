@@ -97,15 +97,17 @@ export default function WeeklySimulation() {
       <Box>
         <VStack spacing={4} align="stretch">
           {/* <PanelSearchBar onSubmit={() => console.log('searching...')} /> */}
-          <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
+          {/* Modal de registro de pedidos */}
+          {/* <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
             <ModalOverlay />
             <ModalContent>
               <ModalBody>
                 <PedidoForm onFinish={onClose} onCancel={onClose} />
               </ModalBody>
             </ModalContent>
-          </Modal>
-          <Menu>
+          </Modal> */}
+          {/* Boton con acciones desplegables */}
+          {/* <Menu>
           <MenuButton
             as={Button}
             leftIcon={<FaPlus />}
@@ -124,7 +126,7 @@ export default function WeeklySimulation() {
               }} />
             </MenuItem>
           </MenuList>
-        </Menu>
+        </Menu> */}
           {currentMinuteData?.pedidos?.map((pedido) => (
             <PedidoCard key={pedido.idPedido} pedido={pedido} onClick={()=>console.log('enfocando...')}/>
           ))}
@@ -154,7 +156,6 @@ export default function WeeklySimulation() {
     const incidenciaService = new IncidenciaService();
     const toast = useToast();
       const inputRef = useRef<HTMLInputElement>(null);
-      const [searchValue, setSearchValue] = useState('');
 
       // Solo registrar avería, no importar
       const handleRegister = async (data: Record<string, unknown>) => {
@@ -166,28 +167,32 @@ export default function WeeklySimulation() {
           const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
           toast({ title: 'Error al registrar', description: errorMessage, status: 'error', duration: 4000 });
         }
-  };
+      };
+
     return (
       <Box>
         <VStack spacing={4} align="stretch">
           {/* <PanelSearchBar onSubmit={() => console.log('searching...')} /> */}
+          {/* Modal para crear avería */}
           <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
             <ModalOverlay />
             <ModalContent>
+              <ModalHeader>Registrar Avería</ModalHeader>
               <ModalBody>
-                <IncidenciaForm onFinish={onClose} onCancel={onClose} />
+                <IncidenciaForm onFinish={handleRegister} onCancel={onClose} />
               </ModalBody>
             </ModalContent>
           </Modal>
+          {/* Boton con acciones desplegables */}
           <Menu>
-          <MenuButton
-            as={Button}
-            leftIcon={<FaPlus />}
-            variant="secondary"
-          >
-            Agregar
-          </MenuButton>
-          <MenuList>
+            <MenuButton
+              as={Button}
+              leftIcon={<FaPlus />}
+              variant="secondary"
+            >
+              Agregar
+            </MenuButton>
+            <MenuList>
               <MenuItem onClick={onOpen}>Crear una avería</MenuItem>
               <MenuItem onClick={() => inputRef.current?.click()}>Importar desde archivo
                 <Input type="file" display="none" ref={inputRef} accept=".csv,.xlsx,.xls,.txt" onChange={() => {}} />
@@ -339,92 +344,4 @@ export default function WeeklySimulation() {
       <LoadingOverlay isVisible={isSimulationLoading} />
     </Flex>
   );
-}
-
-function AveriasPanel({ currentMinuteData }: { currentMinuteData: any }) {
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const toast = useToast();
-  const [showForm, setShowForm] = useState(false);
-  return (
-    <Box>
-      <VStack spacing={4} align="stretch">
-        <PanelSearchBar onSubmit={()=>console.log('searching...')}/>
-        <HStack spacing={2} mt={2}>
-          <Button
-            leftIcon={<FaSort />} colorScheme="purple" variant="outline" size="sm"
-            borderRadius="md" fontWeight="bold" borderWidth="2px" borderColor="purple.500"
-            color="purple.700" bg="white"
-            _hover={{ bg: 'purple.100', color: 'purple.700' }}
-            _active={{ bg: 'purple.500', color: 'white', borderColor: 'purple.700' }}
-          >
-            Ordenar
-          </Button>
-          <Button
-            leftIcon={<FaFilter />} colorScheme="purple" variant="outline" size="sm"
-            borderRadius="md" fontWeight="bold" borderWidth="2px" borderColor="purple.500"
-            color="purple.700" bg="white"
-            _hover={{ bg: 'purple.100', color: 'purple.700' }}
-            _active={{ bg: 'purple.500', color: 'white', borderColor: 'purple.700' }}
-          >
-            Filtrar
-          </Button>
-          <Button
-            leftIcon={<FaRegClock />}
-            colorScheme="purple"
-            variant="outline"
-            size="sm"
-            borderRadius="md"
-            fontWeight="bold"
-            borderWidth="2px"
-            borderColor="purple.500"
-            color="purple.700"
-            bg="white"
-            _hover={{ bg: 'purple.100', color: 'purple.700' }}
-            _active={{ bg: 'purple.600', color: 'white', borderColor: 'purple.700' }}
-            _expanded={{ bg: 'purple.600', color: 'white', borderColor: 'purple.700' }}
-            onClick={onOpen}
-          >
-            Programar
-          </Button>
-        </HStack>
-        {null}
-      </VStack>
-      <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalBody>
-            <IncidenciaForm onFinish={() => { onClose(); toast({ title: 'Incidencia programada', status: 'success', duration: 3000 }); }} onCancel={onClose} />
-          </ModalBody>
-        </ModalContent>
-      </Modal>
-    </Box>
-  );
-}
-
-function PedidosSection() {
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const toast = useToast();
-
-  const handleImport = async (file: File) => {
-    try {
-      await pedidoService.importarPedidos(file);
-      toast({ title: 'Importación exitosa', status: 'success', duration: 3000 });
-    } catch (error: any) {
-      toast({ title: 'Error al importar', description: error.message, status: 'error', duration: 4000 });
-    }
-  };
-  return (
-    <Box>
-      <PedidosActionsBar onAdd={onOpen} onImport={handleImport} />
-      {/* Aquí iría la tabla de pedidos o el contenido principal */}
-      <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalBody>
-            <PedidoForm onFinish={onClose} onCancel={onClose} />
-          </ModalBody>
-        </ModalContent>
-      </Modal>
-    </Box>
-  )
 }
