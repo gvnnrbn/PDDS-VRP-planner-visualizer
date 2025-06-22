@@ -10,13 +10,16 @@ import org.springframework.stereotype.Service;
 import pucp.pdds.backend.algos.algorithm.Algorithm;
 import pucp.pdds.backend.algos.algorithm.Solution;
 import pucp.pdds.backend.algos.data.DataChunk;
+import pucp.pdds.backend.algos.utils.Time;
 import pucp.pdds.backend.dto.SimulationResponse;
 import java.time.format.DateTimeFormatter;
+import java.time.LocalDateTime;
+import java.time.Duration;
 
 @Service
 public class DailyScheduler implements Runnable {
     private SchedulerState state;
-    private Lock stateLock = new ReentrantLock();
+    private final Lock stateLock = new ReentrantLock();
     private final SimpMessagingTemplate messagingTemplate;
     private volatile boolean isRunning;
     private static final DateTimeFormatter SIM_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
@@ -74,8 +77,13 @@ public class DailyScheduler implements Runnable {
                     pushChanges();
                     stateLock.unlock();
 
+                    LocalDateTime realTime = state.getCurrTime().toLocalDateTime();
+                    long sleepMillis = Duration.between(LocalDateTime.now(), realTime).toMillis();
+
                     try {
-                        Thread.sleep(200);
+                        if (sleepMillis > 0) {
+                            Thread.sleep(sleepMillis);
+                        }
                     } catch (InterruptedException e) {
                         isRunning = false;
                         Thread.currentThread().interrupt();
@@ -106,14 +114,20 @@ public class DailyScheduler implements Runnable {
 
     public void refetchData() {
         stateLock.lock();
-        // DB UPDATES
-        stateLock.unlock();
+        try {
+            dataProvider.refetchData(state);
+        } finally {
+            stateLock.unlock();
+        }
     }
 
     public void pushChanges() {
         stateLock.lock();
-        // DB UPDATES
-        stateLock.unlock();
+        try {
+            dataProvider.pushChanges(state);
+        } finally {
+            stateLock.unlock();
+        }
     }
 
     private void debugPrint(String message) {
@@ -258,5 +272,11 @@ public class DailyScheduler implements Runnable {
 
     private void sendError(String message) {
         sendResponse("ERROR", message);
+    }
+
+    private long calculateMillisToNextMinute() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime nextMinute = now.plusMinutes(1).withSecond(0).withNano(0);
+        return Duration.between(now, nextMinute).toMillis();
     }
 }
