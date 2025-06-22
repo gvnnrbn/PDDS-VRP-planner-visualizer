@@ -1,10 +1,11 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import type { IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { Box, Button, Input, VStack, HStack, useToast, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, FormControl, FormLabel, useDisclosure, Flex, Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon, Text } from '@chakra-ui/react';
 import { FaTruck, FaWarehouse, FaMapMarkerAlt } from 'react-icons/fa';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { set } from 'date-fns';
 
 interface LogEntry {
   timestamp: string;
@@ -169,8 +170,12 @@ async function drawState(canvas: HTMLCanvasElement, data: any) {
   }
 }
 
-const SimulationControlPanel: React.FC = () => {
-  // const [serverUrl, setServerUrl] = useState(defaultServerUrl);
+interface SimulationControlPanelProps {
+  setData: (data: any) => void;
+  data: any;
+}
+
+const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData, data }) => {
   const [initialTime, setInitialTime] = useState(() => {
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -184,6 +189,12 @@ const SimulationControlPanel: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
+
+  useEffect(() => {
+    if (!connected) {
+      connect();
+    }
+  }, []);
 
   const logMessage = (message: string) => {
     setLog((prev) => [
@@ -268,6 +279,7 @@ const SimulationControlPanel: React.FC = () => {
           return;
         case 'SIMULATION_STARTED':
           logMessage('✅ ' + typedResponse.data);
+          setIsSimulating(true);
           return;
         case 'SIMULATION_ERROR':
           logMessage('❌ ' + typedResponse.data);
@@ -279,8 +291,20 @@ const SimulationControlPanel: React.FC = () => {
         case 'SIMULATION_UPDATE':
           // Handle simulation update data
           if (canvasRef.current) {
+            // console.log('Data updated:', data);
             drawState(canvasRef.current, typedResponse.data);
           }
+          setData(typedResponse.data);
+          return;
+        case 'SIMULATION_STATE':
+          if (typeof typedResponse.data === 'boolean') {
+            if (typedResponse.data === true) {
+            setIsSimulating(true);
+            }
+          }
+          setData(typedResponse.data);
+          console.log('Data updated:', typedResponse.data);
+          logMessage('📝 ' + JSON.stringify(response));
           return;
         default:
           logMessage('📝 ' + JSON.stringify(response));
@@ -288,6 +312,11 @@ const SimulationControlPanel: React.FC = () => {
     } else {
       logMessage('📝 ' + JSON.stringify(response));
     }
+    useEffect(()=>{
+      if(data){
+        console.log('Data updated:', data);
+      }
+    },[data])
     
     // Visualización: dibujar en canvas
     if (canvasRef.current && typeof response === 'object' && response !== null) {

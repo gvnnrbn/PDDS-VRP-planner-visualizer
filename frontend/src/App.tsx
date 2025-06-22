@@ -14,14 +14,24 @@ import IncidenciasPhase from './pages/weekly-simulation/IncidenciasPhase'
 import VehiculosPhase from './pages/weekly-simulation/VehiculosPhase'
 import AlmacenPhase from './pages/weekly-simulation/AlmacenPhase'
 import Home from './pages/Home'
+import { SimulationProvider } from './components/common/SimulationContextSemanal';
 
 // Create a client
 const queryClient = new QueryClient()
 
 function App() {
+  const initialSimData = {
+  minuto: '08/05/2025 08:00',
+  vehiculos: [],
+  pedidos: [],
+  almacenes: [],
+  incidencias: [],
+  mantenimientos: []
+};
   return (
     <ChakraProvider theme={customTheme}>
       <QueryClientProvider client={queryClient}>
+        <SimulationProvider>
         <Router>
           <SidebarProvider>
             <Box h="100vh" display="flex" flexDirection="column">
@@ -41,6 +51,7 @@ function App() {
             </Box>
           </SidebarProvider>
         </Router>
+        </SimulationProvider>
       </QueryClientProvider>
     </ChakraProvider>
   )

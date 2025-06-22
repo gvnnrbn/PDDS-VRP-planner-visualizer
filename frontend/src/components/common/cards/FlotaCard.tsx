@@ -1,10 +1,10 @@
 import { Box, Button, Flex, Text } from "@chakra-ui/react";
 import { faArrowsToDot } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import type { VehiculoSimulado } from "../../../core/types/vehiculo";
+import type { VehiculoSimulado, VehiculoSimuladoV2 } from "../../../core/types/vehiculo";
 
 interface FlotaCardProps {
-    vehiculo: VehiculoSimulado,
+    vehiculo: VehiculoSimuladoV2,
     onClick: () => void,
 }
 export const FlotaCard = ({
