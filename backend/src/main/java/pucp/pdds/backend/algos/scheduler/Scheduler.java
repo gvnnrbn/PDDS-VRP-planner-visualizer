@@ -73,7 +73,7 @@ public class Scheduler implements Runnable {
                     stateLock.unlock();
 
                     try {
-                        Thread.sleep(2);
+                        Thread.sleep(200);
                     } catch (InterruptedException e) {
                         isRunning = false;
                         Thread.currentThread().interrupt();
