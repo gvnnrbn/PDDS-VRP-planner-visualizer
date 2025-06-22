@@ -61,7 +61,16 @@ jobs:
           port: 22
           source: "backend/target/*.jar"
           target: "/opt/pdds-app"
-          strip_components: 2 # Removes 'backend/target' from the path
+          rename: "pdds-backend.jar"
+
+      - name: ♻️ Restart Backend Service
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: 22
+          script: sudo systemctl restart pdds-backend.service
 
       - name: 🚀 Deploy Frontend to Server
         uses: appleboy/scp-action@master
