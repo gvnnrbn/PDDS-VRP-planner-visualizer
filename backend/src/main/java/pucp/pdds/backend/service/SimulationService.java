@@ -99,8 +99,8 @@ public class SimulationService {
                 );
 
                 currentSimulation = new Scheduler(messagingTemplate);
-                currentSimulation.setState(schedulerState);
                 simulationThread = new Thread(currentSimulation, "simulation-thread");
+                currentSimulation.setState(schedulerState);
                 simulationThread.start();
 
                 isSimulationActive = true;

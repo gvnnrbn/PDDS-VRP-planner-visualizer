@@ -293,7 +293,7 @@ public class SchedulerState {
                 }
                 Node nextNode = route.get(plannerVehicle.nextNodeIndex);
                 // Check if at the node's position
-                if (!plannerVehicle.position.equals(nextNode.getPosition())) {
+                if (Math.abs(plannerVehicle.position.x - nextNode.getPosition().x) > 0.1 || Math.abs(plannerVehicle.position.y - nextNode.getPosition().y) > 0.1) {
                     // Not at node yet: build path to it
                     plannerVehicle.currentPath = PathBuilder.buildPath(plannerVehicle.position, nextNode.getPosition(), getActiveBlockages());
                     continue;
