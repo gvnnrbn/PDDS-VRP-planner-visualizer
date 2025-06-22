@@ -543,7 +543,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
             </Box>
           )}
         </Box>
-        <Accordion allowToggle w="100%" defaultIndex={[]}> 
+        {/* <Accordion allowToggle w="100%" defaultIndex={[]}> 
           <AccordionItem borderWidth={0}>
             <AccordionButton px={0} _hover={{ bg: 'gray.100' }}>
               <Box flex="1" textAlign="left" fontWeight="semibold">Log</Box>
@@ -558,7 +558,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
               </Box>
             </AccordionPanel>
           </AccordionItem>
-        </Accordion>
+        </Accordion> */}
       </VStack>
     </Box>
   );
