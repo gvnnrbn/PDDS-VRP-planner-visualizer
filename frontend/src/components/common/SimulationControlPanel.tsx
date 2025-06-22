@@ -3,7 +3,7 @@ import { Client } from '@stomp/stompjs';
 import type { IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { Box, Button, Input, VStack, HStack, useToast, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, FormControl, FormLabel, useDisclosure, Flex, Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon, Text } from '@chakra-ui/react';
-import { FaTruck, FaWarehouse, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaTruck, FaWarehouse, FaMapMarkerAlt, FaIndustry } from 'react-icons/fa';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { set } from 'date-fns';
 
@@ -48,6 +48,14 @@ function isSimulationStopped(response: unknown): response is { type: string; dat
   );
 }
 
+
+//VARIBLES PARA ZOOM Y PAN
+let panX = 0;
+let panY = 0;
+let zoomScale = 1;
+export const vehicleHitboxes: { x: number; y: number; size: number; vehiculo: any }[] = [];
+
+
 // Dibuja el estado de la simulación en el canvas usando íconos
 async function drawState(canvas: HTMLCanvasElement, data: any) {
   const ctx = canvas.getContext('2d');
@@ -61,20 +69,34 @@ async function drawState(canvas: HTMLCanvasElement, data: any) {
   const scaleX = (width - 2 * margin) / gridLength;
   const scaleY = (height - 2 * margin) / gridWidth;
 
+  //pan y zoom
+  ctx.clearRect(0, 0, width, height);
+  ctx.save();
+  ctx.translate(panX, panY);
+  ctx.scale(zoomScale, zoomScale);
+
   // Draw current time
   ctx.fillStyle = '#000';
   ctx.font = '18px Arial';
   ctx.fillText('Time: ' + (data.minuto || ''), 20, 30);
 
-  // Draw grid
-  ctx.strokeStyle = '#dcdcdc';
-  for (let x = 0; x <= gridLength; x += 10) {
+  //Lineas GRID
+  ctx.strokeStyle = 'rgba(220, 220, 220, 0.55)';
+  for (let x = 0; x <= gridLength; x++) {
     const sx = margin + x * scaleX;
-    ctx.beginPath(); ctx.moveTo(sx, margin); ctx.lineTo(sx, height - margin); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(sx, margin);
+    ctx.lineTo(sx, height - margin);
+    ctx.stroke();
   }
-  for (let y = 0; y <= gridWidth; y += 10) {
+
+  // Draw horizontal grid lines (50 rows => 51 lines including borders)
+  for (let y = 0; y <= gridWidth; y++) {
     const sy = margin + y * scaleY;
-    ctx.beginPath(); ctx.moveTo(margin, sy); ctx.lineTo(width - margin, sy); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(margin, sy);
+    ctx.lineTo(width - margin, sy);
+    ctx.stroke();
   }
 
   // Draw blockages (as connected black lines)
@@ -82,19 +104,14 @@ async function drawState(canvas: HTMLCanvasElement, data: any) {
     ctx.strokeStyle = '#000';
     ctx.lineWidth = 3;
     data.bloqueos.forEach((blockage: any) => {
-      if (blockage.segmentos && blockage.segmentos.length > 1) {
+      if (blockage.segmentos?.length > 1) {
         ctx.beginPath();
         blockage.segmentos.forEach((v: any, i: number) => {
           const x = margin + v.posX * scaleX;
           const y = margin + v.posY * scaleY;
-          if (i === 0) {
-            ctx.moveTo(x, y);
-          } else {
-            ctx.lineTo(x, y);
-          }
+          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
         });
         ctx.stroke();
-        // Draw vertices as small filled circles
         blockage.segmentos.forEach((v: any) => {
           const x = margin + v.posX * scaleX;
           const y = margin + v.posY * scaleY;
@@ -112,13 +129,16 @@ async function drawState(canvas: HTMLCanvasElement, data: any) {
     for (const wh of data.almacenes) {
       const x = margin + wh.posicion.posX * scaleX - 16;
       const y = margin + wh.posicion.posY * scaleY - 16;
-      const img = await iconToImage(FaWarehouse, '#444', 32);
+      const icon = wh.isMain ? FaWarehouse : FaIndustry;
+      let color = '#444';
+      if (!wh.isMain) {
+        color = (wh.currentGLP || 0) === 0 ? '#ff0000' : '#00c800';
+      }
+      const img = await iconToImage(icon, color, 32);
       ctx.drawImage(img, x, y, 32, 32);
-      // ID
       ctx.fillStyle = '#000';
       ctx.font = '12px Arial';
       ctx.fillText('W' + (wh.idAlmacen || ''), x + 8, y + 40);
-      // Capacity bar
       if (wh.maxGLP) {
         const perc = wh.currentGLP / wh.maxGLP;
         ctx.fillStyle = '#c8c8c8';
@@ -128,6 +148,7 @@ async function drawState(canvas: HTMLCanvasElement, data: any) {
       }
     }
   }
+
 
   // Draw delivery nodes (as icons)
   if (data.pedidos) {
@@ -139,6 +160,8 @@ async function drawState(canvas: HTMLCanvasElement, data: any) {
     }
   }
 
+
+  vehicleHitboxes.length = 0;
   // Draw vehicles (as icons)
   if (data.vehiculos) {
     for (const v of data.vehiculos) {
@@ -146,28 +169,54 @@ async function drawState(canvas: HTMLCanvasElement, data: any) {
       if (v.estado === 'STUCK') color = '#ff0000';
       else if (v.estado === 'MAINTENANCE') color = '#ffa500';
       else color = '#444';
-      const vx = margin + v.posicionX * scaleX - 16;
-      const vy = margin + v.posicionY * scaleY - 16;
+
+      const vx = margin + v.posicionX * scaleX;
+      const vy = margin + v.posicionY * scaleY;
+
+      // Agregar hitbox para clics
+      vehicleHitboxes.push({
+        x: vx - 16,
+        y: vy - 16,
+        size: 32,
+        vehiculo: v,
+      });
+
+      let flip = false;
+      if (v.rutaActual?.length > 1) {
+        flip = v.rutaActual[1].posX < v.posicionX;
+      }
+
       const img = await iconToImage(FaTruck, color, 32);
-      ctx.drawImage(img, vx, vy, 32, 32);
+      ctx.save();
+      if (flip) {
+        ctx.translate(vx + 16, vy);
+        ctx.scale(-1, 1);
+        ctx.drawImage(img, -16, -16, 32, 32);
+      } else {
+        ctx.drawImage(img, vx - 16, vy - 16, 32, 32);
+      }
+      ctx.restore();
+
       ctx.fillStyle = '#000';
       ctx.font = '12px Arial';
-      ctx.fillText(v.placa || v.idVehiculo || '', vx, vy - 5);
-      // Draw path if available
-      if (v.rutaActual && v.rutaActual.length > 1 && v.estado !== 'STUCK') {
-        ctx.strokeStyle = 'rgba(0,180,0,0.7)';
+      ctx.fillText(v.placa || v.idVehiculo || '', vx - 16, vy - 21);
+
+      if (v.rutaActual?.length > 1 && v.estado !== 'STUCK') {
+        ctx.strokeStyle = 'rgba(46, 0, 252, 0.7)';
         ctx.lineWidth = 2;
         ctx.beginPath();
         v.rutaActual.forEach((p: any, i: number) => {
           const px = margin + p.posX * scaleX;
           const py = margin + p.posY * scaleY;
-          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+          i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
         });
         ctx.stroke();
         ctx.lineWidth = 1;
       }
     }
   }
+
+  ctx.restore();
 }
 
 interface SimulationControlPanelProps {
@@ -370,6 +419,87 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
     onOpen();
   };
 
+  //ZOOM Y PAN
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let panStartX = 0;
+    let panStartY = 0;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const zoomIntensity = 0.1;
+      const delta = e.deltaY < 0 ? 1 + zoomIntensity : 1 - zoomIntensity;
+      zoomScale = Math.min(Math.max(0.25, zoomScale * delta), 4);
+      drawState(canvas, data);
+    };
+
+    const handleMouseDown = (e: MouseEvent) => {
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      panStartX = panX;
+      panStartY = panY;
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      panX = panStartX + (e.clientX - startX);
+      panY = panStartY + (e.clientY - startY);
+      drawState(canvas, data);
+    };
+
+    const handleMouseUp = () => {
+      isDragging = false;
+    };
+
+    canvas.addEventListener('wheel', handleWheel);
+    canvas.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      canvas.removeEventListener('wheel', handleWheel);
+      canvas.removeEventListener('mousedown', handleMouseDown);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [canvasRef, data]);
+
+  const [selectedVehicle, setSelectedVehicle] = useState<any | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleClick = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left - panX) / zoomScale;
+      const y = (e.clientY - rect.top - panY) / zoomScale;
+
+      // buscar vehículo clickeado
+      for (const box of vehicleHitboxes) {
+        if (
+          x >= box.x &&
+          x <= box.x + box.size &&
+          y >= box.y &&
+          y <= box.y + box.size
+        ) {
+          setSelectedVehicle(box.vehiculo);
+          return;
+        }
+      }
+      setSelectedVehicle(null); // si se clickea fuera
+    };
+
+    canvas.addEventListener('click', handleClick);
+    return () => canvas.removeEventListener('click', handleClick);
+  }, [canvasRef, data]);
+
   return (
     <Box borderWidth="1px" borderRadius="md" p={4} mb={4}>
       <VStack align="start" spacing={3}>
@@ -403,6 +533,15 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
         </Modal>
         <Box>
           <canvas ref={canvasRef} width={1100} height={600} style={{ border: '1px solid #ccc', background: '#fff' }} />
+          {selectedVehicle && (
+            <Box mt={4} p={4} border="1px solid #ccc" borderRadius="md">
+              <Text fontWeight="bold">Vehículo seleccionado</Text>
+              <Text>ID: {selectedVehicle.idVehiculo}</Text>
+              <Text>Placa: {selectedVehicle.placa}</Text>
+              <Text>Estado: {selectedVehicle.estado}</Text>
+              <Text>Posición: ({selectedVehicle.posicionX}, {selectedVehicle.posicionY})</Text>
+            </Box>
+          )}
         </Box>
         <Accordion allowToggle w="100%" defaultIndex={[]}> 
           <AccordionItem borderWidth={0}>
