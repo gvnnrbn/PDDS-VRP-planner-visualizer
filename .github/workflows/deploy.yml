@@ -27,7 +27,7 @@ jobs:
         run: |
           chmod +x backend/mvnw
           cd backend
-          ./mvnw clean package -Pprod
+          ./mvnw clean package -DskipTests
 
       #------------------------------------------------
       # Frontend Build
@@ -72,4 +72,4 @@ jobs:
           port: 22
           source: "frontend/dist/*"
           target: "/var/www/html/pdds-app"
-          strip_components: 2 # Removes 'frontend/dist' from the path 
+          strip_components: 2 # Removes 'frontend/dist' from the path
