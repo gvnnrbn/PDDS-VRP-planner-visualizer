@@ -118,6 +118,9 @@ public class Environment {
         for (PlannerOrder order : orders) {
             totalGLP += order.amountGLP;
         }
+        for (PlannerVehicle vehicle : vehicles) {
+            totalGLP += vehicle.maxGLP - vehicle.currentGLP;
+        }
 
         // Calculate the total amount of GLP currently in the vehicles
         int totalGLPInVehicles = 0;
