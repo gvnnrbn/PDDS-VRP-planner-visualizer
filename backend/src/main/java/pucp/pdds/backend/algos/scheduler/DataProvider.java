@@ -15,9 +15,12 @@ import pucp.pdds.backend.algos.utils.Time;
 public interface DataProvider {
     List<PlannerVehicle> getVehicles();
     List<PlannerOrder> getOrders();
+    List<PlannerOrder> getOrdersForWeek(java.time.LocalDateTime startDate);
     List<PlannerBlockage> getBlockages();
     List<PlannerWarehouse> getWarehouses();
     List<PlannerFailure> getFailures();
     List<PlannerMaintenance> getMaintenances();
     Time getInitialTime();
+    void refetchData(SchedulerState state);
+    void pushChanges(SchedulerState state);
 }

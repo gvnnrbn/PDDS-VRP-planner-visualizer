@@ -159,6 +159,7 @@ public class Solution implements Cloneable {
 
             if (vehicle.waitTransition > 0){
                 currentTime = currentTime.addMinutes(vehicle.waitTransition);
+                vehicle.waitTransition = 0;
             }
 
             for (int i = 0; i < route.size() - 1 && currentTime.minutesSince(environment.currentTime) < environment.minutesToSimulate + 60; i++) {
@@ -221,14 +222,6 @@ public class Solution implements Cloneable {
                     // Full fuel refill if not a vehicle
                     if (!refillNode.warehouse.wasVehicle) {
                         vehicle.currentFuel = vehicle.maxFuel;
-                    }
-
-                    // If destination node breaks a refill chain (changes warehouse or goes from warehouse to non-warehouse node), wait the corresponding time
-                    boolean breaksRefillChain = (originNode instanceof ProductRefillNode && !(destinationNode instanceof ProductRefillNode)) ||
-                    (originNode instanceof ProductRefillNode && destinationNode instanceof ProductRefillNode && ((ProductRefillNode) originNode).warehouse.id != ((ProductRefillNode) destinationNode).warehouse.id);
-
-                    if (breaksRefillChain) {
-                        currentTime = currentTime.addMinutes(SimulationProperties.timeAfterRefill);
                     }
                 }
             }

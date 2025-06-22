@@ -8,51 +8,41 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import pucp.pdds.backend.algos.scheduler.Scheduler;
+import pucp.pdds.backend.algos.scheduler.CollapseScheduler;
 import pucp.pdds.backend.algos.scheduler.SchedulerState;
 import pucp.pdds.backend.algos.utils.Time;
 import pucp.pdds.backend.algos.scheduler.DataProvider;
-import pucp.pdds.backend.dto.InitMessage;
 import pucp.pdds.backend.dto.SimulationResponse;
-import pucp.pdds.backend.dto.UpdateFailuresMessage;
 
 @Service
-public class SimulationService {
-    private static final Logger logger = LoggerFactory.getLogger(SimulationService.class);
+public class CollapseService {
+    private static final Logger logger = LoggerFactory.getLogger(CollapseService.class);
     
     private final SimpMessagingTemplate messagingTemplate;
     private final DataProvider dataProvider;
 
-    private Scheduler currentSimulation;
+    private CollapseScheduler currentSimulation;
     private Thread simulationThread;
     private final Object simulationLock = new Object();
     private boolean isSimulationActive = false;
 
-    public void isSimulationActive() {
-        sendResponse("SIMULATION_STATE", isSimulationActive);
-    }
     @Autowired
-    public SimulationService(SimpMessagingTemplate messagingTemplate, 
+    public CollapseService(SimpMessagingTemplate messagingTemplate, 
                            DataProvider dataProvider) {
         this.messagingTemplate = messagingTemplate;
         this.dataProvider = dataProvider;
     }
-
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
-
 
     public void startSimulation(String fechaInicioStr) {
         synchronized (simulationLock) {
             stopCurrentSimulation();
 
             try {
-                logger.info("Starting simulation - loading fresh data from database...");
-                sendResponse("SIMULATION_LOADING", "Loading data from database...");
+                logger.info("Starting collapse simulation - loading fresh data from database...");
+                sendResponse("COLLAPSE_SIMULATION_LOADING", "Loading data from database...");
 
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode root = mapper.readTree(fechaInicioStr);
@@ -66,7 +56,6 @@ public class SimulationService {
 
                 LocalDateTime fechaInicio = LocalDateTime.of(year, month, day, hour, minute);
 
-                // Initialize scheduler state with fresh data from database
                 var vehicles = dataProvider.getVehicles();
                 var orders = dataProvider.getOrdersForWeek(fechaInicio);
                 var blockages = dataProvider.getBlockages();
@@ -98,43 +87,27 @@ public class SimulationService {
                     60
                 );
 
-                currentSimulation = new Scheduler(messagingTemplate);
-                simulationThread = new Thread(currentSimulation, "simulation-thread");
+                currentSimulation = new CollapseScheduler(messagingTemplate);
                 currentSimulation.setState(schedulerState);
+                simulationThread = new Thread(currentSimulation, "collapse-simulation-thread");
                 simulationThread.start();
 
                 isSimulationActive = true;
 
-                logger.info("Simulation started successfully");
-                sendResponse("SIMULATION_STARTED", "Simulation initialized with fresh data from database");
+                logger.info("Collapse simulation started successfully");
+                sendResponse("COLLAPSE_SIMULATION_STARTED", "Collapse simulation initialized with fresh data");
             } catch (Exception e) {
                 isSimulationActive = false;
-                logger.error("Error starting simulation", e);
-                sendResponse("SIMULATION_ERROR", "Error starting simulation: " + e.getMessage());
+                logger.error("Error starting collapse simulation", e);
+                sendResponse("COLLAPSE_SIMULATION_ERROR", "Error starting collapse simulation: " + e.getMessage());
             }
         }
     }
     
-    public void updateFailures(UpdateFailuresMessage message) {
-        synchronized (simulationLock) {
-            if (currentSimulation != null) {
-                try {
-                    currentSimulation.updateFailures(message);
-                    sendResponse("STATE_UPDATED", "State updated successfully");
-                } catch (Exception e) {
-                    sendResponse("ERROR", "Failed to update state: " + e.getMessage());
-                }
-            } else {
-                sendResponse("ERROR", "No active simulation");
-            }
-            isSimulationActive = false;
-        }
-    }
-
     public void stopSimulation() {
         synchronized (simulationLock) {
             stopCurrentSimulation();
-            sendResponse("SIMULATION_STOPPED", "Simulation stopped");
+            sendResponse("COLLAPSE_SIMULATION_STOPPED", "Collapse simulation stopped");
         }
     }
 
@@ -152,10 +125,11 @@ public class SimulationService {
             currentSimulation = null;
             simulationThread = null;
         }
+        isSimulationActive = false;
     }
 
     private void sendResponse(String type, Object data) {
         SimulationResponse response = new SimulationResponse(type, data);
         messagingTemplate.convertAndSend("/topic/simulation", response);
     }
-}
+} 

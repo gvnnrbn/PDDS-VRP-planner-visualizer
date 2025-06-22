@@ -25,6 +25,9 @@ public class Pedido {
     @Column(name = "fecha_registro")
     private LocalDateTime fechaRegistro;
     
+    @Column(name = "fecha_entrega", nullable = true)
+    private LocalDateTime fechaEntrega;
+
     @Column(name = "posicionx")
     private int posicionX;
     
@@ -104,6 +107,14 @@ public class Pedido {
 
     public void setTiempoTolerancia(int tiempoTolerancia) {
         this.tiempoTolerancia = tiempoTolerancia;
+    }
+
+    public LocalDateTime getFechaEntrega() {
+        return fechaEntrega;
+    }
+
+    public void setFechaEntrega(LocalDateTime fechaEntrega) {
+        this.fechaEntrega = fechaEntrega;
     }
 
     public Map<String, Object> toMap() {

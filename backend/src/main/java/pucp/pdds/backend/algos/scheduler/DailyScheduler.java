@@ -10,36 +10,37 @@ import org.springframework.stereotype.Service;
 import pucp.pdds.backend.algos.algorithm.Algorithm;
 import pucp.pdds.backend.algos.algorithm.Solution;
 import pucp.pdds.backend.algos.data.DataChunk;
-import pucp.pdds.backend.algos.entities.PlannerFailure;
 import pucp.pdds.backend.algos.utils.Time;
 import pucp.pdds.backend.dto.SimulationResponse;
-import pucp.pdds.backend.dto.UpdateFailuresMessage;
 import java.time.format.DateTimeFormatter;
+import java.time.LocalDateTime;
+import java.time.Duration;
 
 @Service
-public class Scheduler implements Runnable {
+public class DailyScheduler implements Runnable {
     private SchedulerState state;
-    private Lock stateLock = new ReentrantLock();
+    private final Lock stateLock = new ReentrantLock();
     private final SimpMessagingTemplate messagingTemplate;
     private volatile boolean isRunning;
     private static final DateTimeFormatter SIM_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+    private final DataProvider dataProvider;
 
     public void setState(SchedulerState state) {
         this.state = state;
     }
 
     @Autowired
-    public Scheduler(SimpMessagingTemplate messagingTemplate) {
+    public DailyScheduler(SimpMessagingTemplate messagingTemplate, DataProvider dataProvider) {
         this.messagingTemplate = messagingTemplate;
+        this.dataProvider = dataProvider;
         this.isRunning = true;
     }
 
     @Override
     public void run() {
-        Time endSimulationTime = state.getCurrTime().addTime(new Time(0,0,7,0,0));
-
-        while(state.getCurrTime().isBefore(endSimulationTime) && isRunning && !Thread.currentThread().isInterrupted()) {
+        while(isRunning && !Thread.currentThread().isInterrupted()) {
             try {
+                refetchData();
                 stateLock.lock();
                 // PLAN LOGIC
                 pucp.pdds.backend.algos.algorithm.Environment environment = new pucp.pdds.backend.algos.algorithm.Environment(
@@ -72,8 +73,17 @@ public class Scheduler implements Runnable {
                     onAfterExecution(iteration, sol);
                     stateLock.unlock();
 
+                    stateLock.lock();
+                    pushChanges();
+                    stateLock.unlock();
+
+                    LocalDateTime realTime = state.getCurrTime().toLocalDateTime();
+                    long sleepMillis = Duration.between(LocalDateTime.now(), realTime).toMillis();
+
                     try {
-                        Thread.sleep(200);
+                        if (sleepMillis > 0) {
+                            Thread.sleep(sleepMillis);
+                        }
                     } catch (InterruptedException e) {
                         isRunning = false;
                         Thread.currentThread().interrupt();
@@ -102,15 +112,22 @@ public class Scheduler implements Runnable {
         isRunning = false;
     }
 
-    public void updateFailures(UpdateFailuresMessage message) {
+    public void refetchData() {
         stateLock.lock();
-        int lastId = state.getFailures().size() > 0 ? state.getFailures().getLast().id : 0;
+        try {
+            dataProvider.refetchData(state);
+        } finally {
+            stateLock.unlock();
+        }
+    }
 
-        PlannerFailure failure = new PlannerFailure(
-            lastId + 1, message.getType(), message.getShiftOccurredOn(),
-            message.getVehiclePlaque(), null);
-        state.getFailures().add(failure);
-        stateLock.unlock();
+    public void pushChanges() {
+        stateLock.lock();
+        try {
+            dataProvider.pushChanges(state);
+        } finally {
+            stateLock.unlock();
+        }
     }
 
     private void debugPrint(String message) {
@@ -250,10 +267,16 @@ public class Scheduler implements Runnable {
 
     private void sendResponse(String type, Object data) {
         SimulationResponse response = new SimulationResponse(type, data);
-        messagingTemplate.convertAndSend("/topic/simulation", response);
+        messagingTemplate.convertAndSend("/topic/daily", response);
     }
 
     private void sendError(String message) {
         sendResponse("ERROR", message);
+    }
+
+    private long calculateMillisToNextMinute() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime nextMinute = now.plusMinutes(1).withSecond(0).withNano(0);
+        return Duration.between(now, nextMinute).toMillis();
     }
 }

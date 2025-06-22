@@ -2,11 +2,6 @@ package pucp.pdds.backend.algos.scheduler;
 
 import java.util.List;
 import java.util.ArrayList;
-import org.springframework.stereotype.Component;
-import org.springframework.context.annotation.Scope;
-import org.springframework.context.annotation.ScopedProxyMode;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import pucp.pdds.backend.algos.entities.PlannerVehicle;
@@ -22,21 +17,16 @@ import pucp.pdds.backend.algos.utils.Position;
 import pucp.pdds.backend.algos.utils.PathBuilder;
 import pucp.pdds.backend.algos.utils.SimulationProperties;
 
-@Component
-@Scope(value = "singleton", proxyMode = ScopedProxyMode.TARGET_CLASS)
 public class SchedulerState {
-    public static SchedulerState instance;
-    public static final Lock lock = new ReentrantLock();
-
-    public static SchedulerState getInstance() {
-        if (instance == null) {
-            instance = new SchedulerState();
-        }
-        return instance;
-    }
-
-    public static void setInstance(SchedulerState state) {
-        SchedulerState.instance = state;
+    public SchedulerState(List<PlannerVehicle> vehicles, List<PlannerOrder> orders, List<PlannerBlockage> blockages, List<PlannerWarehouse> warehouses, List<PlannerFailure> failures, List<PlannerMaintenance> maintenances, Time currTime, int minutesToSimulate) {
+        this.vehicles = vehicles != null ? vehicles : new ArrayList<>();
+        this.orders = orders != null ? orders : new ArrayList<>();
+        this.blockages = blockages != null ? blockages : new ArrayList<>();
+        this.warehouses = warehouses != null ? warehouses : new ArrayList<>();
+        this.failures = failures != null ? failures : new ArrayList<>();
+        this.maintenances = maintenances != null ? maintenances : new ArrayList<>();
+        this.currTime = currTime;
+        this.minutesToSimulate = minutesToSimulate;
     }
 
     private List<PlannerVehicle> vehicles = new ArrayList<>();
@@ -47,7 +37,7 @@ public class SchedulerState {
     private List<PlannerMaintenance> maintenances = new ArrayList<>();
 
     private Time currTime;
-    public final int minutesToSimulate = 60;
+    public final int minutesToSimulate;
 
     public List<PlannerVehicle> getVehicles() {
         return vehicles;
@@ -303,7 +293,7 @@ public class SchedulerState {
                 }
                 Node nextNode = route.get(plannerVehicle.nextNodeIndex);
                 // Check if at the node's position
-                if (!plannerVehicle.position.equals(nextNode.getPosition())) {
+                if (Math.abs(plannerVehicle.position.x - nextNode.getPosition().x) > 0.1 || Math.abs(plannerVehicle.position.y - nextNode.getPosition().y) > 0.1) {
                     // Not at node yet: build path to it
                     plannerVehicle.currentPath = PathBuilder.buildPath(plannerVehicle.position, nextNode.getPosition(), getActiveBlockages());
                     continue;

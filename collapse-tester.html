@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Collapse Simulation Tester</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .control-section { margin: 15px 0; padding: 10px; border: 1px solid #ddd; }
+        button { padding: 8px 12px; margin: 5px; }
+        input, select { padding: 5px; margin: 5px; }
+        #log { height: 400px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; margin-top: 10px; background: #f9f9f9; }
+        #status { font-weight: bold; margin: 10px 0; }
+        .connected { color: green; }
+        .disconnected { color: red; }
+    </style>
+</head>
+<body>
+    <h2>Collapse Simulation Tester</h2>
+    
+    <div class="control-section">
+        <h3>Connection</h3>
+        <label>Server URL:</label>
+        <input type="text" id="serverUrl" value="http://localhost:8080" style="width: 300px;">
+        <button onclick="connectToServer()">Connect</button>
+        <button onclick="disconnect()">Disconnect</button>
+        <div id="status" class="disconnected">Status: Disconnected</div>
+    </div>
+    
+    <div class="control-section">
+        <h3>Collapse Simulation Control</h3>
+        <label>Initial Time:</label>
+        <input type="datetime-local" id="initialTime" value="2024-01-01T08:00">
+        <button onclick="startCollapseSimulation()">Start Collapse Simulation</button>
+        <button onclick="stopCollapseSimulation()">Stop Collapse Simulation</button>
+    </div>
+    
+    <div class="control-section">
+        <h3>Simulation Visualizer</h3>
+        <canvas id="simCanvas" width="900" height="700" style="border:1px solid #ccc; background:#fff;"></canvas>
+    </div>
+
+    <div class="control-section">
+        <h3>Log</h3>
+        <button onclick="clearLog()">Clear Log</button>
+        <div id="log"></div>
+    </div>
+
+    <script>
+        class SimulationVisualizerJS {
+            constructor(canvasId) {
+                this.canvas = document.getElementById(canvasId);
+                this.ctx = this.canvas.getContext('2d');
+                this.gridLength = 70;
+                this.gridWidth = 50;
+            }
+
+            draw(state) {
+                const ctx = this.ctx;
+                ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                const margin = 40;
+                const width = this.canvas.width;
+                const height = this.canvas.height;
+                const scaleX = (width - 2 * margin) / this.gridLength;
+                const scaleY = (height - 2 * margin) / this.gridWidth;
+
+                ctx.fillStyle = '#000';
+                ctx.font = '18px Arial';
+                ctx.fillText('Time: ' + (state.currentTime || ''), 20, 30);
+
+                // Draw grid
+                ctx.strokeStyle = '#dcdcdc';
+                for (let x = 0; x <= this.gridLength; x += 10) {
+                    const sx = margin + x * scaleX;
+                    ctx.beginPath(); ctx.moveTo(sx, margin); ctx.lineTo(sx, height - margin); ctx.stroke();
+                }
+                for (let y = 0; y <= this.gridWidth; y += 10) {
+                    const sy = margin + y * scaleY;
+                    ctx.beginPath(); ctx.moveTo(margin, sy); ctx.lineTo(width - margin, sy); ctx.stroke();
+                }
+
+                if (state.blockages) {
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 3;
+                    state.blockages.forEach(blockage => {
+                        if (blockage.vertices && blockage.vertices.length > 1) {
+                            ctx.beginPath();
+                            blockage.vertices.forEach((v, i) => {
+                                const x = margin + v.x * scaleX;
+                                const y = margin + v.y * scaleY;
+                                i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                            });
+                            ctx.stroke();
+                            // Draw vertices as small filled circles
+                            blockage.vertices.forEach((v) => {
+                                const x = margin + v.x * scaleX;
+                                const y = margin + v.y * scaleY;
+                                ctx.beginPath();
+                                ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                                ctx.fill();
+                            });
+                        }
+                    });
+                    ctx.lineWidth = 1;
+                }
+
+                if (state.warehouses) {
+                    state.warehouses.forEach(wh => {
+                        const x = margin + wh.position.x * scaleX - 12;
+                        const y = margin + wh.position.y * scaleY - 12;
+                        // House base
+                        ctx.fillStyle = '#969696';
+                        ctx.fillRect(x, y + 12, 24, 12);
+                        // Roof
+                        ctx.beginPath();
+                        ctx.moveTo(x - 4, y + 12); ctx.lineTo(x + 12, y); ctx.lineTo(x + 28, y + 12); ctx.closePath();
+                        ctx.fill();
+                        // ID
+                        ctx.fillStyle = '#000';
+                        ctx.font = '12px Arial';
+                        ctx.fillText('W' + (wh.id || ''), x + 8, y + 20);
+                        // Capacity bar
+                        if (wh.maxGLP) {
+                            const perc = wh.currentGLP / wh.maxGLP;
+                            ctx.fillStyle = '#c8c8c8';
+                            ctx.fillRect(x + 2, y + 26, 20, 4);
+                            ctx.fillStyle = '#00c800';
+                            ctx.fillRect(x + 2, y + 26, 20 * perc, 4);
+                        }
+                    });
+                }
+
+                // Draw delivery nodes (red circles)
+                if (state.deliveryNodes) {
+                    ctx.fillStyle = '#ff6464';
+                    state.deliveryNodes.forEach(node => {
+                        const x = margin + node.position.x * scaleX - 8;
+                        const y = margin + node.position.y * scaleY - 8;
+                        ctx.beginPath(); ctx.arc(x + 8, y + 8, 8, 0, 2 * Math.PI); ctx.fill();
+                    });
+                }
+
+                if (state.vehicles) {
+                    state.vehicles.forEach(v => {
+                        let color = '#ffc800';
+                        if (v.state === 'STUCK') color = '#ff0000';
+                        else if (v.state === 'MAINTENANCE') color = '#ffa500';
+                        ctx.fillStyle = color;
+                        const vx = margin + v.position.x * scaleX - 10;
+                        const vy = margin + v.position.y * scaleY - 10;
+                        ctx.beginPath(); ctx.arc(vx + 10, vy + 10, 10, 0, 2 * Math.PI); ctx.fill();
+                        
+                        ctx.fillStyle = '#000';
+                        ctx.font = '12px Arial';
+                        ctx.fillText('V' + (v.id || ''), vx, vy - 5);
+
+                        if (v.currentPath && v.currentPath.length > 1) {
+                            ctx.strokeStyle = 'rgba(0,180,0,0.7)';
+                            ctx.lineWidth = 2;
+                            ctx.beginPath();
+                            v.currentPath.forEach((p, i) => {
+                                const px = margin + p.x * scaleX;
+                                const py = margin + p.y * scaleY;
+                                i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+                            });
+                            ctx.stroke();
+                        }
+                    });
+                }
+            }
+        }
+
+        let visualizer = new SimulationVisualizerJS('simCanvas');
+
+        class SimulationClient {
+            constructor() {
+                this.stompClient = null;
+                this.connected = false;
+            }
+
+            connect(serverUrl) {
+                if (this.connected) this.disconnect();
+                this.log(`🔌 Connecting to ${serverUrl}...`);
+                const socket = new SockJS(`${serverUrl}/ws`);
+                this.stompClient = Stomp.over(socket);
+                this.stompClient.connect({}, (f) => this.onConnect(f), (e) => this.onError(e));
+            }
+
+            onConnect(frame) {
+                this.connected = true;
+                this.updateStatus('Connected', 'connected');
+                this.log('✅ Connected to simulation server');
+                this.stompClient.subscribe('/topic/simulation', (message) => {
+                    this.handleMessage(JSON.parse(message.body));
+                });
+            }
+
+            onError(error) {
+                this.connected = false;
+                this.updateStatus('Connection Error', 'disconnected');
+                this.log('❌ Connection error: ' + (error.message || error));
+            }
+
+            disconnect() {
+                if (this.stompClient) this.stompClient.disconnect();
+                this.connected = false;
+                this.updateStatus('Disconnected', 'disconnected');
+                this.log('🔌 Disconnected');
+            }
+
+            handleMessage(response) {
+                if (response.type) {
+                     switch(response.type) {
+                        case 'SIMULATION_UPDATE': // For visualization
+                            this.handleSimulationUpdate(response.data);
+                            break;
+                        case 'COLLAPSE_SIMULATION_LOADING':
+                        case 'COLLAPSE_SIMULATION_STARTED':
+                        case 'COLLAPSE_SIMULATION_STOPPED':
+                        case 'COLLAPSE_HEARTBEAT':
+                        case 'COLLAPSE_SIMULATION_ERROR':
+                            this.log(`📝 ${response.type}: ${JSON.stringify(response.data)}`);
+                            break;
+                        default:
+                            // Ignore other message types like weekly simulation
+                            break;
+                    }
+                }
+            }
+
+            handleSimulationUpdate(data) {
+                this.log(`📊 Received simulation update for minute: ${data.minuto || 'N/A'}`);
+                const state = {
+                    vehicles: (data.vehiculos || []).map(v => ({
+                        id: v.placa, 
+                        position: { x: v.posicionX, y: v.posicionY },
+                        state: v.estado, 
+                        currentPath: (v.rutaActual || []).map(p => ({ x: p.posX, y: p.posY }))
+                    })),
+                    blockages: (data.bloqueos || []).map(b => ({
+                        id: b.idBloqueo,
+                        vertices: (b.segmentos || []).map(s => ({ x: s.posX, y: s.posY }))
+                    })),
+                    warehouses: (data.almacenes || []).map(w => ({
+                        id: w.idAlmacen,
+                        position: { x: w.posicion.posX, y: w.posicion.posY },
+                        currentGLP: w.currentGLP,
+                        maxGLP: w.maxGLP
+                    })),
+                    deliveryNodes: (data.pedidos || []).map(p => ({
+                        position: { x: p.posX, y: p.posY }
+                    })),
+                    currentTime: data.minuto || ''
+                };
+                visualizer.draw(state);
+            }
+
+            convertToTimeObject(datetimeLocal) {
+                const date = new Date(datetimeLocal);
+                return {
+                    year: date.getFullYear(), month: date.getMonth() + 1,
+                    day: date.getDate(), hour: date.getHours(), minute: date.getMinutes()
+                };
+            }
+
+            startCollapseSimulation(initialTime) {
+                if (!this.checkConnection()) return;
+                const timeObj = this.convertToTimeObject(initialTime);
+                this.send('/app/init-collapse', { initialTime: timeObj });
+                this.log(`🚀 Starting collapse simulation...`);
+            }
+
+            stopCollapseSimulation() {
+                if (!this.checkConnection()) return;
+                this.send('/app/stop-collapse', {});
+                this.log('⏹️ Sending stop collapse simulation request...');
+            }
+
+            send(destination, message) {
+                if (!this.checkConnection()) return;
+                this.stompClient.send(destination, {}, JSON.stringify(message));
+            }
+
+            checkConnection() {
+                if (!this.connected) {
+                    this.log('❌ Not connected to server');
+                    return false;
+                }
+                return true;
+            }
+
+            log(message) {
+                const logDiv = document.getElementById('log');
+                logDiv.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${message}</div>`;
+                logDiv.scrollTop = logDiv.scrollHeight;
+            }
+
+            updateStatus(status, className) {
+                document.getElementById('status').textContent = 'Status: ' + status;
+                document.getElementById('status').className = className;
+            }
+
+            clearLog() { document.getElementById('log').innerHTML = ''; }
+        }
+
+        let client = new SimulationClient();
+
+        function connectToServer() { client.connect(document.getElementById('serverUrl').value.trim()); }
+        function disconnect() { client.disconnect(); }
+        function startCollapseSimulation() { client.startCollapseSimulation(document.getElementById('initialTime').value); }
+        function stopCollapseSimulation() { client.stopCollapseSimulation(); }
+        function clearLog() { client.clearLog(); }
+
+        window.onload = function() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('initialTime').value = now.toISOString().slice(0, 16);
+        };
+    </script>
+</body>
+</html> 
