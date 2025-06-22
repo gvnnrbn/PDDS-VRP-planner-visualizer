@@ -69,7 +69,7 @@ public class PlannerFailure implements Cloneable{
                 this.type,
                 this.shiftOccurredOn,
                 this.vehiclePlaque,
-                this.timeOccuredOn
+                this.timeOccuredOn != null ? this.timeOccuredOn.clone() : null
             );
             return clone;
         } catch (Exception e) {
