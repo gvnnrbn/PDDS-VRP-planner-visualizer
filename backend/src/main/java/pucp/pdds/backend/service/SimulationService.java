@@ -35,7 +35,11 @@ public class SimulationService {
     private Scheduler currentSimulation;
     private Thread simulationThread;
     private final Object simulationLock = new Object();
+    private boolean isSimulationActive = false;
 
+    public void isSimulationActive() {
+        sendResponse("SIMULATION_STATE", isSimulationActive);
+    }
     @Autowired
     public SimulationService(SimpMessagingTemplate messagingTemplate, 
                            DataProvider dataProvider,
@@ -104,9 +108,12 @@ public class SimulationService {
                 simulationThread = new Thread(currentSimulation, "simulation-thread");
                 simulationThread.start();
 
+                isSimulationActive = true;
+
                 logger.info("Simulation started successfully");
                 sendResponse("SIMULATION_STARTED", "Simulation initialized with fresh data from database");
             } catch (Exception e) {
+                isSimulationActive = false;
                 logger.error("Error starting simulation", e);
                 sendResponse("SIMULATION_ERROR", "Error starting simulation: " + e.getMessage());
             }
@@ -125,6 +132,7 @@ public class SimulationService {
             } else {
                 sendResponse("ERROR", "No active simulation");
             }
+            isSimulationActive = false;
         }
     }
 
