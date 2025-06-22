@@ -1,7 +1,7 @@
-import { Box, Button, FormControl, FormLabel, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Stack, useColorModeValue, VStack, HStack, useDisclosure, useToast } from '@chakra-ui/react'
+import { Box, Button, FormControl, FormLabel, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Stack, useColorModeValue, VStack, HStack, useDisclosure, useToast, Menu, MenuList, MenuItem, MenuButton } from '@chakra-ui/react'
 import { Route, Routes } from 'react-router-dom'
 import { SectionBar } from '../../components/common/SectionBar'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { Flex } from '@chakra-ui/react'
 import LegendPanel from '../../components/common/Legend'
 import LoadingOverlay from '../../components/common/LoadingOverlay'
@@ -14,7 +14,7 @@ import type { PedidoSimulado } from '../../core/types/pedido'
 import type { IncidenciaSimulada } from '../../core/types/incidencia'
 import type { MantenimientoSimulado } from '../../core/types/manetenimiento'
 import { set } from 'date-fns'
-import { FaSort, FaFilter, FaRegClock } from 'react-icons/fa'
+import { FaSort, FaFilter, FaRegClock, FaPlus } from 'react-icons/fa'
 import { IncidenciaForm } from '../../components/IncidenciaForm'
 import { MapGrid } from '../../components/common/Map'
 import { SimulationProvider, useSimulation } from '../../components/common/SimulationContextSemanal'
@@ -24,6 +24,9 @@ import { FlotaCard } from '../../components/common/cards/FlotaCard'
 import { IncidenciaCard } from '../../components/common/cards/IncidenciaCard'
 import { MantenimientoCard } from '../../components/common/cards/MantenimientoCard'
 import SimulationControlPanel from '../../components/common/SimulationControlPanel'
+import { PedidoForm } from '../../components/PedidoForm'
+import { PedidoService } from '../../core/services/PedidoService'
+import { IncidenciaService } from '../../core/services/IncidenciaService'
 
 
 export default function WeeklySimulation() {
@@ -77,11 +80,51 @@ export default function WeeklySimulation() {
    */
   const PedidosSection = () => {
     const { currentMinuteData } = useSimulation();
+    const { isOpen, onOpen, onClose } = useDisclosure();
+    const toast = useToast();
+    const pedidoService = new PedidoService();
+    const inputRef = useRef<HTMLInputElement>(null);
 
+    const handleImport = async (file: File) => {
+      try {
+        await pedidoService.importarPedidos(file);
+        toast({ title: 'Importación exitosa', status: 'success', duration: 3000 });
+      } catch (error: any) {
+        toast({ title: 'Error al importar', description: error.message, status: 'error', duration: 4000 });
+      }
+    };
     return (
       <Box>
         <VStack spacing={4} align="stretch">
-          <PanelSearchBar onSubmit={() => console.log('searching...')} />
+          {/* <PanelSearchBar onSubmit={() => console.log('searching...')} /> */}
+          <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
+            <ModalOverlay />
+            <ModalContent>
+              <ModalBody>
+                <PedidoForm onFinish={onClose} onCancel={onClose} />
+              </ModalBody>
+            </ModalContent>
+          </Modal>
+          <Menu>
+          <MenuButton
+            as={Button}
+            leftIcon={<FaPlus />}
+            variant="secondary"
+          >
+            Agregar
+          </MenuButton>
+          <MenuList>
+            <MenuItem onClick={onOpen} color="purple.700">Crear un pedido</MenuItem>
+            <MenuItem onClick={() => inputRef.current?.click()} color="purple.700">Importar desde archivo
+              <Input type="file" display="none" ref={inputRef} accept=".csv,.xlsx,.xls,.txt" onChange={e => {
+                if (e.target.files && e.target.files[0]) {
+                  handleImport(e.target.files[0]);
+                  e.target.value = '';
+                }
+              }} />
+            </MenuItem>
+          </MenuList>
+        </Menu>
           {currentMinuteData?.pedidos?.map((pedido) => (
             <PedidoCard key={pedido.idPedido} pedido={pedido} onClick={()=>console.log('enfocando...')}/>
           ))}
@@ -96,7 +139,7 @@ export default function WeeklySimulation() {
     return (
       <Box>
         <VStack spacing={4} align="stretch">
-          <PanelSearchBar onSubmit={() => console.log('searching...')} />
+          {/* <PanelSearchBar onSubmit={() => console.log('searching...')} /> */}
           {currentMinuteData?.vehiculos?.map((v) => (
             <FlotaCard key={v.idVehiculo} vehiculo={v} onClick={()=>console.log('enfocando...')}/>
           ))}
@@ -107,11 +150,50 @@ export default function WeeklySimulation() {
 
   const AveriaSection = () => {
     const { currentMinuteData } = useSimulation();
+    const { isOpen, onOpen, onClose } = useDisclosure();
+    const incidenciaService = new IncidenciaService();
+    const toast = useToast();
+      const inputRef = useRef<HTMLInputElement>(null);
+      const [searchValue, setSearchValue] = useState('');
 
+      // Solo registrar avería, no importar
+      const handleRegister = async (data: Record<string, unknown>) => {
+        try {
+          await incidenciaService.createIncidencia(data);
+          toast({ title: 'Avería registrada', status: 'success', duration: 3000 });
+          onClose();
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+          toast({ title: 'Error al registrar', description: errorMessage, status: 'error', duration: 4000 });
+        }
+  };
     return (
       <Box>
         <VStack spacing={4} align="stretch">
-          <PanelSearchBar onSubmit={() => console.log('searching...')} />
+          {/* <PanelSearchBar onSubmit={() => console.log('searching...')} /> */}
+          <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
+            <ModalOverlay />
+            <ModalContent>
+              <ModalBody>
+                <IncidenciaForm onFinish={onClose} onCancel={onClose} />
+              </ModalBody>
+            </ModalContent>
+          </Modal>
+          <Menu>
+          <MenuButton
+            as={Button}
+            leftIcon={<FaPlus />}
+            variant="secondary"
+          >
+            Agregar
+          </MenuButton>
+          <MenuList>
+              <MenuItem onClick={onOpen}>Crear una avería</MenuItem>
+              <MenuItem onClick={() => inputRef.current?.click()}>Importar desde archivo
+                <Input type="file" display="none" ref={inputRef} accept=".csv,.xlsx,.xls,.txt" onChange={() => {}} />
+              </MenuItem>
+            </MenuList>
+          </Menu>
           {currentMinuteData?.incidencias?.map((i) => (
             <IncidenciaCard key={i.idIncidencia} incidencia={i} onClick={()=>console.log('enfocando...')}/>
           ))}
@@ -317,4 +399,32 @@ function AveriasPanel({ currentMinuteData }: { currentMinuteData: any }) {
       </Modal>
     </Box>
   );
+}
+
+function PedidosSection() {
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const toast = useToast();
+
+  const handleImport = async (file: File) => {
+    try {
+      await pedidoService.importarPedidos(file);
+      toast({ title: 'Importación exitosa', status: 'success', duration: 3000 });
+    } catch (error: any) {
+      toast({ title: 'Error al importar', description: error.message, status: 'error', duration: 4000 });
+    }
+  };
+  return (
+    <Box>
+      <PedidosActionsBar onAdd={onOpen} onImport={handleImport} />
+      {/* Aquí iría la tabla de pedidos o el contenido principal */}
+      <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalBody>
+            <PedidoForm onFinish={onClose} onCancel={onClose} />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+    </Box>
+  )
 }

@@ -101,7 +101,7 @@ export const PedidoForm = ({ pedido, onFinish, onCancel }: PedidoFormProps) => {
 
         <HStack spacing={4}>
           <Button 
-            colorScheme="blue" 
+            variant={'primary'}
             onClick={handleSubmit}
           >
             {pedido ? 'Guardar Cambios' : 'Crear Pedido'}

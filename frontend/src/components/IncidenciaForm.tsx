@@ -67,7 +67,7 @@ export const IncidenciaForm = ({ incidencia, onFinish, onCancel }: IncidenciaFor
     <Box p={4}>
       <VStack spacing={4} align="stretch">
         <Text fontSize="xl" fontWeight="bold">
-          {incidencia ? 'Editar Incidencia' : 'Nueva Incidencia'}
+          {incidencia ? 'Editar Incidencia' : 'Nueva Avería'}
         </Text>
 
         <FormControl>
@@ -118,7 +118,7 @@ export const IncidenciaForm = ({ incidencia, onFinish, onCancel }: IncidenciaFor
         </FormControl>
 
         <HStack spacing={4}>
-          <Button colorScheme="blue" onClick={handleSubmit}>
+          <Button variant={'primary'} onClick={handleSubmit}>
             {incidencia ? 'Actualizar' : 'Crear'}
           </Button>
           <Button onClick={onCancel}>Cancelar</Button>
