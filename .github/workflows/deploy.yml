@@ -70,7 +70,7 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           password: ${{ secrets.VPS_PASSWORD }}
           port: 22
-          script: echo '${{ secrets.VPS_PASSWORD }}' | sudo -S systemctl restart pdds-backend.service
+          script: echo '${{ secrets.VPS_PASSWORD }}' | sudo -S systemctl restart backend.service
 
       - name: 🚀 Deploy Frontend to Server
         uses: appleboy/scp-action@master
