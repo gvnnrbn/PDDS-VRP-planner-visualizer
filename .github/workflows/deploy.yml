@@ -1,0 +1,75 @@
+name: Build and Deploy Full Stack App
+
+on:
+  push:
+    branches:
+      - production
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🚚 Checkout Code
+        uses: actions/checkout@v4
+
+      #------------------------------------------------
+      # Backend Build
+      #------------------------------------------------
+      - name: ☕ Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: 🔨 Build Backend with Maven
+        run: |
+          chmod +x backend/mvnw
+          cd backend
+          ./mvnw clean package -Pprod
+
+      #------------------------------------------------
+      # Frontend Build
+      #------------------------------------------------
+      - name: 📦 Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: 📝 Create .env.production file
+        run: |
+          echo "VITE_ENV_BACKEND_URL=http://${{ secrets.VPS_HOST }}" >> frontend/.env.production
+
+      - name: 🌐 Build Frontend
+        run: |
+          cd frontend
+          npm install
+          npm run build
+
+      #------------------------------------------------
+      # Deployment
+      #------------------------------------------------
+      - name: 🚀 Deploy Backend to Server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          source: "backend/target/*.jar"
+          target: "/opt/pdds-app"
+          strip_components: 2 # Removes 'backend/target' from the path
+
+      - name: 🚀 Deploy Frontend to Server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          source: "frontend/dist/*"
+          target: "/var/www/html/pdds-app"
+          strip_components: 2 # Removes 'frontend/dist' from the path 
