@@ -53,7 +53,7 @@ function isSimulationStopped(response: unknown): response is { type: string; dat
 let panX = 0;
 let panY = 0;
 let zoomScale = 1;
-
+export const vehicleHitboxes: { x: number; y: number; size: number; vehiculo: any }[] = [];
 
 
 // Dibuja el estado de la simulación en el canvas usando íconos
@@ -160,6 +160,8 @@ async function drawState(canvas: HTMLCanvasElement, data: any) {
     }
   }
 
+
+  vehicleHitboxes.length = 0;
   // Draw vehicles (as icons)
   if (data.vehiculos) {
     for (const v of data.vehiculos) {
@@ -170,6 +172,14 @@ async function drawState(canvas: HTMLCanvasElement, data: any) {
 
       const vx = margin + v.posicionX * scaleX;
       const vy = margin + v.posicionY * scaleY;
+
+      // Agregar hitbox para clics
+      vehicleHitboxes.push({
+        x: vx - 16,
+        y: vy - 16,
+        size: 32,
+        vehiculo: v,
+      });
 
       let flip = false;
       if (v.rutaActual?.length > 1) {
@@ -460,6 +470,36 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
     };
   }, [canvasRef, data]);
 
+  const [selectedVehicle, setSelectedVehicle] = useState<any | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleClick = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left - panX) / zoomScale;
+      const y = (e.clientY - rect.top - panY) / zoomScale;
+
+      // buscar vehículo clickeado
+      for (const box of vehicleHitboxes) {
+        if (
+          x >= box.x &&
+          x <= box.x + box.size &&
+          y >= box.y &&
+          y <= box.y + box.size
+        ) {
+          setSelectedVehicle(box.vehiculo);
+          return;
+        }
+      }
+      setSelectedVehicle(null); // si se clickea fuera
+    };
+
+    canvas.addEventListener('click', handleClick);
+    return () => canvas.removeEventListener('click', handleClick);
+  }, [canvasRef, data]);
+
   return (
     <Box borderWidth="1px" borderRadius="md" p={4} mb={4}>
       <VStack align="start" spacing={3}>
@@ -493,6 +533,15 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
         </Modal>
         <Box>
           <canvas ref={canvasRef} width={1100} height={600} style={{ border: '1px solid #ccc', background: '#fff' }} />
+          {selectedVehicle && (
+            <Box mt={4} p={4} border="1px solid #ccc" borderRadius="md">
+              <Text fontWeight="bold">Vehículo seleccionado</Text>
+              <Text>ID: {selectedVehicle.idVehiculo}</Text>
+              <Text>Placa: {selectedVehicle.placa}</Text>
+              <Text>Estado: {selectedVehicle.estado}</Text>
+              <Text>Posición: ({selectedVehicle.posicionX}, {selectedVehicle.posicionY})</Text>
+            </Box>
+          )}
         </Box>
         <Accordion allowToggle w="100%" defaultIndex={[]}> 
           <AccordionItem borderWidth={0}>
