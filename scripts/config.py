@@ -15,12 +15,9 @@ DB_CONFIG = {
 # CSV data directory
 DATA_DIR = 'data'
 
-# Supported CSV files
-CSV_FILES = {
-    'orders': 'orders.csv',
-    'vehicles': 'vehicles.csv',
-    'warehouses': 'warehouses.csv',
-    'blockages': 'blockages.csv',
-    'maintenances': 'maintenances.csv',
-    'failures': 'failures.csv'
+# Supported files
+TXT_FILES = {
+    'vehicles': 'vehiculos.txt',
+    'warehouses': 'almacenes.txt',
+    'failures': 'averias.txt'
 } 
