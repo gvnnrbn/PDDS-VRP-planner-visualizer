@@ -1,10 +1,5 @@
 package pucp.pdds.backend.algos.scheduler;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -15,13 +10,7 @@ import org.springframework.stereotype.Service;
 import pucp.pdds.backend.algos.algorithm.Algorithm;
 import pucp.pdds.backend.algos.algorithm.Solution;
 import pucp.pdds.backend.algos.data.DataChunk;
-import pucp.pdds.backend.algos.entities.PlannerVehicle;
-import pucp.pdds.backend.algos.entities.PlannerOrder;
-import pucp.pdds.backend.algos.entities.PlannerWarehouse;
-import pucp.pdds.backend.algos.entities.PlannerBlockage;
 import pucp.pdds.backend.algos.entities.PlannerFailure;
-import pucp.pdds.backend.algos.entities.PlannerMaintenance;
-import pucp.pdds.backend.algos.utils.SimulationVisualizer;
 import pucp.pdds.backend.algos.utils.Time;
 import pucp.pdds.backend.dto.SimulationResponse;
 import pucp.pdds.backend.dto.UpdateFailuresMessage;
@@ -29,26 +18,29 @@ import java.time.format.DateTimeFormatter;
 
 @Service
 public class Scheduler implements Runnable {
-    private final SchedulerState state;
+    private SchedulerState state;
+    private Lock stateLock = new ReentrantLock();
     private final SimpMessagingTemplate messagingTemplate;
     private volatile boolean isRunning;
     private static final DateTimeFormatter SIM_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
-    @Autowired
-    public Scheduler(SchedulerState state, SimpMessagingTemplate messagingTemplate) {
+    public void setState(SchedulerState state) {
         this.state = state;
+    }
+
+    @Autowired
+    public Scheduler(SimpMessagingTemplate messagingTemplate) {
         this.messagingTemplate = messagingTemplate;
         this.isRunning = true;
     }
 
     @Override
     public void run() {
-        initializeState();
-
         Time endSimulationTime = state.getCurrTime().addTime(new Time(0,0,7,0,0));
 
         while(state.getCurrTime().isBefore(endSimulationTime) && isRunning && !Thread.currentThread().isInterrupted()) {
             try {
+                stateLock.lock();
                 // PLAN LOGIC
                 pucp.pdds.backend.algos.algorithm.Environment environment = new pucp.pdds.backend.algos.algorithm.Environment(
                     state.getActiveVehicles(), 
@@ -61,6 +53,7 @@ public class Scheduler implements Runnable {
                     state.minutesToSimulate
                 );
                 debugPrint("Planning interval " + state.getCurrTime() + " started at " + state.getCurrTime() + " with " + state.getActiveVehicles().size() + " vehicles and " + state.getActiveOrders().size() + " orders");
+                stateLock.unlock();
                 Algorithm algorithm = new Algorithm(true);
                 Solution sol = algorithm.run(environment, state.minutesToSimulate);
                 debugPrint(sol.toString());
@@ -74,8 +67,10 @@ public class Scheduler implements Runnable {
                 state.initializeVehicles();
 
                 for (int iteration = 0; iteration < state.minutesToSimulate && isRunning && !Thread.currentThread().isInterrupted(); iteration++) {
+                    stateLock.lock();
                     state.advance(sol);
                     onAfterExecution(iteration, sol);
+                    stateLock.unlock();
 
                     try {
                         Thread.sleep(200);
@@ -108,16 +103,14 @@ public class Scheduler implements Runnable {
     }
 
     public void updateFailures(UpdateFailuresMessage message) {
+        stateLock.lock();
         int lastId = state.getFailures().size() > 0 ? state.getFailures().getLast().id : 0;
 
         PlannerFailure failure = new PlannerFailure(
             lastId + 1, message.getType(), message.getShiftOccurredOn(),
             message.getVehiclePlaque(), null);
         state.getFailures().add(failure);
-    }
-
-    private void initializeState() {
-        // State is now initialized in SimulationService
+        stateLock.unlock();
     }
 
     private void debugPrint(String message) {
@@ -159,13 +152,6 @@ public class Scheduler implements Runnable {
 
     // Formatters for each list
     private void formatAlmacenes(java.util.List<?> almacenes) {
-        for (Object a : almacenes) {
-            try {
-                var field = a.getClass().getField("posicion");
-                Object pos = field.get(a);
-                // No date fields in almacenes
-            } catch (Exception ignored) {}
-        }
     }
     private void formatVehiculos(java.util.List<?> vehiculos) {
         for (Object v : vehiculos) {

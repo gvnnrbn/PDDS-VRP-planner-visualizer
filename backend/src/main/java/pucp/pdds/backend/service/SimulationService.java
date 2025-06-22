@@ -7,8 +7,6 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.springframework.core.env.Environment;
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -29,8 +27,6 @@ public class SimulationService {
     
     private final SimpMessagingTemplate messagingTemplate;
     private final DataProvider dataProvider;
-    private final SchedulerState schedulerState;
-    private final Environment environment;
 
     private Scheduler currentSimulation;
     private Thread simulationThread;
@@ -42,13 +38,9 @@ public class SimulationService {
     }
     @Autowired
     public SimulationService(SimpMessagingTemplate messagingTemplate, 
-                           DataProvider dataProvider,
-                           SchedulerState schedulerState,
-                           Environment environment) {
+                           DataProvider dataProvider) {
         this.messagingTemplate = messagingTemplate;
         this.dataProvider = dataProvider;
-        this.schedulerState = schedulerState;
-        this.environment = environment;
     }
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
@@ -94,17 +86,20 @@ public class SimulationService {
                     w.currentGLP = w.maxGLP;
                 });
 
-                schedulerState.setVehicles(vehicles.stream().map(v -> v.clone()).toList());
-                schedulerState.setOrders(new java.util.ArrayList<>(orders.stream().map(o -> o.clone()).toList()));
-                schedulerState.setBlockages(blockages.stream().map(b -> b.clone()).toList());
-                schedulerState.setWarehouses(warehouses.stream().map(w -> w.clone()).toList());
-                schedulerState.setFailures(new java.util.ArrayList<>(failures.stream().map(f -> f.clone()).toList()));
-                schedulerState.setMaintenances(maintenances.stream().map(m -> m.clone()).toList());
-                schedulerState.setCurrTime(
+                SchedulerState schedulerState = new SchedulerState(
+                    vehicles.stream().map(v -> v.clone()).toList(),
+                    orders.stream().map(o -> o.clone()).toList(),
+                    blockages.stream().map(b -> b.clone()).toList(),
+                    warehouses.stream().map(w -> w.clone()).toList(),
+                    failures.stream().map(f->f.clone()).toList(),
+                    maintenances.stream().map(m -> m.clone()).toList(),
                     new Time(fechaInicio.getYear(), fechaInicio.getMonthValue(), 
-                    fechaInicio.getDayOfMonth(), fechaInicio.getHour(), fechaInicio.getMinute()));
+                    fechaInicio.getDayOfMonth(), fechaInicio.getHour(), fechaInicio.getMinute()),
+                    60
+                );
 
-                currentSimulation = new Scheduler(schedulerState, messagingTemplate);
+                currentSimulation = new Scheduler(messagingTemplate);
+                currentSimulation.setState(schedulerState);
                 simulationThread = new Thread(currentSimulation, "simulation-thread");
                 simulationThread.start();
 
