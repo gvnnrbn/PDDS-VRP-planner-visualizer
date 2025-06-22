@@ -3,9 +3,17 @@ package pucp.pdds.backend.algos.scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+
+import pucp.pdds.backend.algos.algorithm.Algorithm;
+import pucp.pdds.backend.algos.algorithm.Solution;
+import pucp.pdds.backend.algos.data.DataChunk;
 import pucp.pdds.backend.algos.utils.Time;
 import pucp.pdds.backend.dto.SimulationResponse;
-import pucp.pdds.backend.dto.SimulationStateDTO;
+import pucp.pdds.backend.dto.UpdateFailuresMessage;
+
+import java.time.format.DateTimeFormatter;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class CollapseScheduler implements Runnable {
 
@@ -13,6 +21,8 @@ public class CollapseScheduler implements Runnable {
     private final SimpMessagingTemplate messagingTemplate;
     private volatile boolean running = true;
     private SchedulerState state;
+    private Lock stateLock = new ReentrantLock();
+    private static final DateTimeFormatter SIM_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     public CollapseScheduler(SimpMessagingTemplate messagingTemplate) {
         this.messagingTemplate = messagingTemplate;
@@ -31,38 +41,86 @@ public class CollapseScheduler implements Runnable {
     public void run() {
         logger.info("Collapse simulation thread started.");
         
-        while (running) {
-            // TODO: Implement the core logic for the "simulation to collapse".
-            // This loop should advance time, check for collapse conditions (e.g., no more vehicles,
-            // no more GLP, unable to fulfill orders, etc.), and send updates.
-            
-            // Placeholder: Send a heartbeat message every 5 seconds.
+        while (running && !Thread.currentThread().isInterrupted()) {
             try {
-                Thread.sleep(1000); // Reduced sleep time to 1 second for more fluid visualization
-                if (state != null) {
-                    // Create DTO with current state
-                    SimulationStateDTO stateDTO = new SimulationStateDTO(
-                        state.getCurrTime().toString(),
-                        state.getVehicles(),
-                        state.getOrders(),
-                        state.getBlockages(),
-                        state.getWarehouses()
-                    );
-                    
-                    // Send the full state for visualization
-                    sendResponse("SIMULATION_UPDATE", stateDTO);
+                stateLock.lock();
+                pucp.pdds.backend.algos.algorithm.Environment environment = new pucp.pdds.backend.algos.algorithm.Environment(
+                    state.getActiveVehicles(), 
+                    state.getActiveOrders(), 
+                    state.getWarehouses(), 
+                    state.getActiveBlockages(), 
+                    state.getFailures(), 
+                    state.getActiveMaintenances(), 
+                    state.getCurrTime(), 
+                    state.minutesToSimulate
+                );
+                logger.info("Planning interval for collapse simulation started at " + state.getCurrTime());
+                stateLock.unlock();
 
-                    // Advance simulation time by 1 minute
-                    Time newTime = state.getCurrTime().addMinutes(1);
-                    state.setCurrTime(newTime);
+                Algorithm algorithm = new Algorithm(true);
+                Solution sol = algorithm.run(environment, state.minutesToSimulate);
+
+                if (!sol.isFeasible(environment)) {
+                    sendError("System collapsed. Could not find a feasible plan for the next " + state.minutesToSimulate + " minutes.");
+                    running = false;
+                    break;
                 }
 
-            } catch (InterruptedException e) {
+                state.initializeVehicles();
+
+                for (int i = 0; i < state.minutesToSimulate && running && !Thread.currentThread().isInterrupted(); i++) {
+                    stateLock.lock();
+                    state.advance(sol);
+                    sendSimulationUpdate(sol);
+                    stateLock.unlock();
+
+                    try {
+                        Thread.sleep(200);
+                    } catch (InterruptedException e) {
+                        running = false;
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+            } catch (Exception e) {
+                logger.error("Error during collapse simulation", e);
+                sendError("Unexpected error during collapse simulation: " + e.getMessage());
                 running = false;
-                Thread.currentThread().interrupt();
             }
         }
+        sendResponse("COLLAPSE_SIMULATION_STOPPED", "Collapse simulation finished.");
         logger.info("Collapse simulation thread finished.");
+    }
+
+    private void sendSimulationUpdate(Solution sol) {
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        response.put("minuto", formatSimTime(state.getCurrTime()));
+        var almacenes = DataChunk.convertWarehousesToDataChunk(state.getWarehouses());
+        var vehiculos = DataChunk.convertVehiclesToDataChunk(state.getActiveVehicles(), sol.routes);
+        var pedidos = DataChunk.convertOrdersToDataChunk(state.getActiveOrders(), state.getActiveVehicles(), sol.routes, state.getCurrTime());
+        var incidencias = DataChunk.convertIncidentsToDataChunk(state.getFailures(), state.getActiveMaintenances());
+        var mantenimientos = DataChunk.convertMaintenancesToDataChunk(state.getActiveMaintenances());
+        var bloqueos = DataChunk.convertBlockagesToDataChunk(state.getActiveBlockages());
+        
+        response.put("almacenes", almacenes);
+        response.put("vehiculos", vehiculos);
+        response.put("pedidos", pedidos);
+        response.put("incidencias", incidencias);
+        response.put("mantenimientos", mantenimientos);
+        response.put("bloqueos", bloqueos);
+        
+        sendResponse("SIMULATION_UPDATE", response);
+    }
+    
+    private String formatSimTime(Object timeObj) {
+        if (timeObj == null) return "";
+        if (timeObj instanceof pucp.pdds.backend.algos.utils.Time t) {
+            return String.format("%02d/%02d/%04d %02d:%02d", t.getDay(), t.getMonth(), t.getYear(), t.getHour(), t.getMinute());
+        }
+        if (timeObj instanceof java.time.LocalDateTime ldt) {
+            return ldt.format(SIM_FORMATTER);
+        }
+        return timeObj.toString();
     }
 
     private void sendResponse(String type, Object data) {
@@ -70,5 +128,9 @@ public class CollapseScheduler implements Runnable {
             SimulationResponse response = new SimulationResponse(type, data);
             messagingTemplate.convertAndSend("/topic/simulation", response);
         }
+    }
+
+    private void sendError(String message) {
+        sendResponse("COLLAPSE_SIMULATION_ERROR", message);
     }
 } 

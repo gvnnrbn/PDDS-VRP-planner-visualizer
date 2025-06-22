@@ -68,6 +68,17 @@
                 ctx.font = '18px Arial';
                 ctx.fillText('Time: ' + (state.currentTime || ''), 20, 30);
 
+                // Draw grid
+                ctx.strokeStyle = '#dcdcdc';
+                for (let x = 0; x <= this.gridLength; x += 10) {
+                    const sx = margin + x * scaleX;
+                    ctx.beginPath(); ctx.moveTo(sx, margin); ctx.lineTo(sx, height - margin); ctx.stroke();
+                }
+                for (let y = 0; y <= this.gridWidth; y += 10) {
+                    const sy = margin + y * scaleY;
+                    ctx.beginPath(); ctx.moveTo(margin, sy); ctx.lineTo(width - margin, sy); ctx.stroke();
+                }
+
                 if (state.blockages) {
                     ctx.strokeStyle = '#000';
                     ctx.lineWidth = 3;
@@ -80,6 +91,14 @@
                                 i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
                             });
                             ctx.stroke();
+                            // Draw vertices as small filled circles
+                            blockage.vertices.forEach((v) => {
+                                const x = margin + v.x * scaleX;
+                                const y = margin + v.y * scaleY;
+                                ctx.beginPath();
+                                ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                                ctx.fill();
+                            });
                         }
                     });
                     ctx.lineWidth = 1;
@@ -89,11 +108,35 @@
                     state.warehouses.forEach(wh => {
                         const x = margin + wh.position.x * scaleX - 12;
                         const y = margin + wh.position.y * scaleY - 12;
+                        // House base
                         ctx.fillStyle = '#969696';
                         ctx.fillRect(x, y + 12, 24, 12);
+                        // Roof
                         ctx.beginPath();
                         ctx.moveTo(x - 4, y + 12); ctx.lineTo(x + 12, y); ctx.lineTo(x + 28, y + 12); ctx.closePath();
                         ctx.fill();
+                        // ID
+                        ctx.fillStyle = '#000';
+                        ctx.font = '12px Arial';
+                        ctx.fillText('W' + (wh.id || ''), x + 8, y + 20);
+                        // Capacity bar
+                        if (wh.maxGLP) {
+                            const perc = wh.currentGLP / wh.maxGLP;
+                            ctx.fillStyle = '#c8c8c8';
+                            ctx.fillRect(x + 2, y + 26, 20, 4);
+                            ctx.fillStyle = '#00c800';
+                            ctx.fillRect(x + 2, y + 26, 20 * perc, 4);
+                        }
+                    });
+                }
+
+                // Draw delivery nodes (red circles)
+                if (state.deliveryNodes) {
+                    ctx.fillStyle = '#ff6464';
+                    state.deliveryNodes.forEach(node => {
+                        const x = margin + node.position.x * scaleX - 8;
+                        const y = margin + node.position.y * scaleY - 8;
+                        ctx.beginPath(); ctx.arc(x + 8, y + 8, 8, 0, 2 * Math.PI); ctx.fill();
                     });
                 }
 
@@ -107,6 +150,10 @@
                         const vy = margin + v.position.y * scaleY - 10;
                         ctx.beginPath(); ctx.arc(vx + 10, vy + 10, 10, 0, 2 * Math.PI); ctx.fill();
                         
+                        ctx.fillStyle = '#000';
+                        ctx.font = '12px Arial';
+                        ctx.fillText('V' + (v.id || ''), vx, vy - 5);
+
                         if (v.currentPath && v.currentPath.length > 1) {
                             ctx.strokeStyle = 'rgba(0,180,0,0.7)';
                             ctx.lineWidth = 2;
@@ -186,15 +233,22 @@
                 const state = {
                     vehicles: (data.vehiculos || []).map(v => ({
                         id: v.placa, 
-                        position: v.position,
-                        state: v.state, 
-                        currentPath: (v.currentPath || []).map(p => ({ x: p.x, y: p.y }))
+                        position: { x: v.posicionX, y: v.posicionY },
+                        state: v.estado, 
+                        currentPath: (v.rutaActual || []).map(p => ({ x: p.posX, y: p.posY }))
                     })),
                     blockages: (data.bloqueos || []).map(b => ({
-                        vertices: (b.vertices || []).map(s => ({ x: s.x, y: s.y }))
+                        id: b.idBloqueo,
+                        vertices: (b.segmentos || []).map(s => ({ x: s.posX, y: s.posY }))
                     })),
                     warehouses: (data.almacenes || []).map(w => ({
-                        position: w.position
+                        id: w.idAlmacen,
+                        position: { x: w.posicion.posX, y: w.posicion.posY },
+                        currentGLP: w.currentGLP,
+                        maxGLP: w.maxGLP
+                    })),
+                    deliveryNodes: (data.pedidos || []).map(p => ({
+                        position: { x: p.posX, y: p.posY }
                     })),
                     currentTime: data.minuto || ''
                 };
