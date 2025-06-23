@@ -12,8 +12,8 @@ import pucp.pdds.backend.algos.entities.PlannerVehicle;
 public class Algorithm {
     // Hyperparameters
     private static int maxTimeMs = 30 * 1000;
-    private static int maxNoImprovement = 4000;
-    private static int maxNoImprovementFeasible = 1000; 
+    private static int maxNoImprovement = 250;
+    private static int maxNoImprovementFeasible = 100; 
 
     private boolean isDebug;
 
