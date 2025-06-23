@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import pucp.pdds.backend.algos.entities.PlannerBlockage;
 
@@ -26,6 +27,41 @@ public class PathBuilder {
             return positions.equals(other.positions) && blockages.equals(other.blockages);
         }
         @Override public int hashCode() { return hash; }
+    }
+
+    private static class LazyDistanceCalculator {
+        private final List<PlannerBlockage> blockages;
+        private final Map<Position, Map<Position, Double>> cache = new HashMap<>();
+        private final boolean noBlockages;
+
+        LazyDistanceCalculator(List<PlannerBlockage> blockages) {
+            this.blockages = blockages;
+            this.noBlockages = (blockages == null || blockages.isEmpty());
+        }
+
+        public double getDistance(Position from, Position to) {
+            // Check cache first, handling symmetrical case
+            if (cache.containsKey(from) && cache.get(from).containsKey(to)) {
+                return cache.get(from).get(to);
+            }
+            if (cache.containsKey(to) && cache.get(to).containsKey(from)) {
+                return cache.get(to).get(from);
+            }
+
+            // If not in cache, calculate it
+            double distance;
+            if (noBlockages) {
+                distance = Math.abs(from.x - to.x) + Math.abs(from.y - to.y);
+            } else {
+                List<Position> path = buildPath(from, to, blockages);
+                distance = (path != null) ? calculateDistance(path) : Double.POSITIVE_INFINITY;
+            }
+
+            // Store in cache
+            cache.computeIfAbsent(from, k -> new HashMap<>()).put(to, distance);
+
+            return distance;
+        }
     }
 
     // Returns null if no path is found, empty list if from == to, otherwise returns the path
@@ -150,41 +186,39 @@ public class PathBuilder {
     }
 
     public static Map<Position, Map<Position, Double>> generateDistances(List<Position> positions, List<PlannerBlockage> blockages) {
-        // --- Optimization: static cache for (positions, blockages) ---
-        // Only works if blockages are static and positions are the same objects each time
-        // For now, use a simple cache key based on hashCodes
-        CacheKey key = new CacheKey(positions, blockages);
-        if (StaticCacheHolder.cache.containsKey(key)) {
-            return StaticCacheHolder.cache.get(key);
-        }
+        LazyDistanceCalculator calculator = new LazyDistanceCalculator(blockages);
+        Map<Position, Map<Position, Double>> outerMap = new HashMap<>();
 
-        Map<Position, Map<Position, Double>> distances = new HashMap<>();
-        for (Position position : positions) {
-            distances.put(position, new HashMap<>());
-        }
+        for (Position from : positions) {
+            // The inner map is a lazy map. It calculates distances on demand.
+            Map<Position, Double> innerMap = new java.util.AbstractMap<>() {
+                @Override
+                public boolean containsKey(Object key) {
+                    return positions.contains(key);
+                }
 
-        boolean noBlockages = (blockages == null || blockages.isEmpty());
-        // Parallelize the outer loop
-        java.util.stream.IntStream.range(0, positions.size()).parallel().forEach(i -> {
-            Position position = positions.get(i);
-            for (int j = i + 1; j < positions.size(); j++) {
-                Position other = positions.get(j);
-                double distance;
-                if (noBlockages) {
-                    // Fast path: Manhattan distance
-                    distance = Math.abs(position.x - other.x) + Math.abs(position.y - other.y);
-                } else {
-                    List<Position> path = buildPath(position, other, blockages);
-                    distance = (path != null) ? calculateDistance(path) : Double.POSITIVE_INFINITY;
+                @Override
+                public Double get(Object key) {
+                    if (!(key instanceof Position)) {
+                        return null;
+                    }
+                    return calculator.getDistance(from, (Position) key);
                 }
-                synchronized (distances) {
-                    distances.get(position).put(other, distance);
-                    distances.get(other).put(position, distance);
+                
+                // This is required by AbstractMap. It's not efficient, but we assume
+                // the primary use case is .get(), not iteration.
+                @Override
+                public java.util.Set<Entry<Position, Double>> entrySet() {
+                    java.util.Set<Entry<Position, Double>> entries = new java.util.HashSet<>();
+                    for (Position to : positions) {
+                        entries.add(new java.util.AbstractMap.SimpleEntry<>(to, get(to)));
+                    }
+                    return entries;
                 }
-            }
-        });
-        StaticCacheHolder.cache.put(key, distances);
-        return distances;
+            };
+            outerMap.put(from, innerMap);
+        }
+        return outerMap;
     }
 
     // Static holder for cache
