@@ -15,24 +15,38 @@ export const FlotaCard = ({
     const idPedido = vehiculo.idPedido || 0;// cambiar a como este el ultimo json
     const codigoPedido = `PE${idPedido.toString().padStart(3, '0')}`;
     const hasOrder = idPedido > 0;
-    let cardColor;
+    let cardColor = 'white'; // Default color
     let isFocus = false;
     let hasRoute = true;
     let combustiblePercentage = 0;
     let isBroken = false;
+    let estadoText = '';
 
     switch(estado.toUpperCase()){
-            case 'AVERIADO': 
+            case 'STUCK': 
             cardColor = '#FFCFCF';
             isBroken = true;
+            estadoText = 'Averiado';
         break;
-        case 'EN MANTENIMIENTO':
+        case 'MAINTENANCE':
             cardColor = '#FFF9CD';
+            estadoText = 'En Mantenimiento';
             break;
-        case 'SIN PROGRAMACIÓN':
-            cardColor = 'white';
+        case 'IDLE':
             hasRoute = false;
             isFocus = true;
+            estadoText = 'Sin Programación';
+            break;
+        case 'ONTHEWAY':
+            estadoText = 'En Ruta';
+            break;
+        case 'RETURNING_TO_BASE':
+            estadoText = 'Regresando a almacén';
+            break;
+        case 'FINISHED':
+            hasRoute = false;
+            isFocus = true;
+            estadoText = 'Sin Programación';
             break;
         default:
             cardColor = 'white';
@@ -49,7 +63,7 @@ export const FlotaCard = ({
                 <Text id={"placa"} fontWeight={600} fontSize={18} color='purple.200'>
                     {vehiculo.placa}
                 </Text>
-                <Text id={'state'} pl={4}>{vehiculo.estado}</Text>
+                <Text id={'state'} pl={4}>{estadoText}</Text>
             </Flex>
                 
             </Box>

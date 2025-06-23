@@ -34,22 +34,12 @@ export const SectionBar = ({
         variant='enclosed' 
         orientation='vertical' 
         h='full' 
+
       >
         <TabList 
           aria-orientation='vertical'
           sx={{ gap: '3px' }}
         >
-          {/* <Tab
-            onClick={onToggleCollapse}
-            bg={notSelectedColor}
-            borderLeftRadius='10px'
-            borderTopRightRadius='0'
-            _hover={{
-              bg: selectedColor,
-            }}
-          >
-            {isCollapsed ? '<' : '>'}
-          </Tab> */}
           {sections.map((section) => (
             <Tab
             height='100%'
@@ -86,10 +76,10 @@ export const SectionBar = ({
             </Tab>
           ))}
         </TabList>
-        <TabPanels bg={selectedColor}>
-          {/* <TabPanel key={sections[0].title}>
-            {sections[0].content}
-          </TabPanel> */}
+        <TabPanels 
+          bg={selectedColor}
+          overflowY={'auto'}
+        >
           {sections.map((section) => (
             <TabPanel
               key={section.title}

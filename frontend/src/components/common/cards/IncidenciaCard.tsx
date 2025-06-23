@@ -14,16 +14,15 @@ export const IncidenciaCard = ({
     let cardColor;
     let isFocus = false;
     let isEstimada = false;
+    let estadoText = '';
     const primaryTextSize = 18;
     switch(incidencia.estado.toUpperCase()){
-            case 'EN CURSO': 
+        case 'ACTIVE': 
+            estadoText = 'En curso';
             cardColor = '#FFCFCF';
-        break;
-        case 'ESTIMADA':
-            cardColor = 'white';
-            isEstimada = true;
             break;
-        case 'RESUELTA':
+        case 'FINISHED':
+            estadoText = 'Resuelta';
             cardColor = '#C4C4C4'
             isFocus = true;
             break;
@@ -44,14 +43,14 @@ export const IncidenciaCard = ({
                     <Text id={"turno"} fontWeight={600} fontSize={primaryTextSize} color='purple.200'>
                         {"Turno "+incidencia.turno.replace("T", "")}
                     </Text>
-                    <Text id='state' variant='outline' pl={4}>{incidencia.estado}</Text>
+                    <Text id='state' variant='outline' pl={4}>{estadoText}</Text>
                 </Flex>
                 :
                 <Flex gap={4} align='center'>
                     <Text id='fechaInicio' fontWeight={600} fontSize={primaryTextSize} color='purple.200'>
                         {incidencia.fechaInicio}
                     </Text>
-                    <Text id='estado'>{incidencia.estado}</Text>
+                    <Text id='estado'>{estadoText}</Text>
                 </Flex>
                 }
                 

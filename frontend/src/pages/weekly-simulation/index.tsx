@@ -127,9 +127,12 @@ export default function WeeklySimulation() {
             </MenuItem>
           </MenuList>
         </Menu> */}
-          {currentMinuteData?.pedidos?.map((pedido) => (
-            <PedidoCard key={pedido.idPedido} pedido={pedido} onClick={()=>console.log('enfocando...')}/>
-          ))}
+          {currentMinuteData?.pedidos
+            ?.slice()
+            .sort((a, b) => a.idPedido - b.idPedido)
+            .map((pedido) => (
+              <PedidoCard key={pedido.idPedido} pedido={pedido} onClick={() => console.log('enfocando...')} />
+            ))}
         </VStack>
       </Box>
     );
