@@ -6,6 +6,7 @@ import { Box, Button, Input, VStack, HStack, useToast, Modal, ModalOverlay, Moda
 import { FaTruck, FaWarehouse, FaMapMarkerAlt, FaIndustry } from 'react-icons/fa';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { set } from 'date-fns';
+import BottomLeftControls from './MapActions';
 
 interface LogEntry {
   timestamp: string;
@@ -76,9 +77,11 @@ async function drawState(canvas: HTMLCanvasElement, data: any) {
   ctx.scale(zoomScale, zoomScale);
 
   // Draw current time
+  /*
   ctx.fillStyle = '#000';
   ctx.font = '18px Arial';
   ctx.fillText('Time: ' + (data.minuto || ''), 20, 30);
+  */
 
   //Lineas GRID
   ctx.strokeStyle = 'rgba(220, 220, 220, 0.55)';
@@ -472,6 +475,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
 
   const [selectedVehicle, setSelectedVehicle] = useState<any | null>(null);
 
+  //CLICK VEHICULO
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -489,6 +493,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
           y >= box.y &&
           y <= box.y + box.size
         ) {
+          console.log('Se clickeo! No se pero alguno fue');
           setSelectedVehicle(box.vehiculo);
           return;
         }
@@ -503,16 +508,57 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
   return (
     <Box borderWidth="1px" borderRadius="md" p={4} mb={4}>
       <VStack align="start" spacing={3}>
-        <Flex gap={4} align="center">
-          <Button colorScheme="green" size="md" onClick={onIniciarSimulacion} isDisabled={isSimulating}>
-            Iniciar Simulación
-          </Button>
-          {isSimulating && (
-            <Button colorScheme="red" size="md" onClick={stopSimulation}>
-              Detener Simulación
+        
+        <Box position="relative" width="100%" height="calc(100vh - 64px)">
+          <canvas ref={canvasRef} width={1720} height={1080} 
+            style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            border: '1px solid #ccc',
+            background: '#fff',
+            zIndex: 1,}} />
+        </Box>
+        {/* Botón central antes de simular */}
+        {!isSimulating && (
+          <Flex
+            position="absolute"
+            top="50%"
+            left="50%"
+            transform="translate(-50%, -50%)"
+            zIndex={2}
+            justify="center"
+            align="center"
+          >
+            <Button
+              colorScheme="green"
+              size="lg"
+              onClick={onIniciarSimulacion}
+              isDisabled={isSimulating}
+            >
+              Iniciar Simulación
             </Button>
+          </Flex>
+        )}   
+        {selectedVehicle && (
+            <Box mt={4} p={4} border="1px solid #ccc" borderRadius="md">
+              <Text fontWeight="bold">Vehículo seleccionado</Text>
+              <Text>ID: {selectedVehicle.idVehiculo}</Text>
+              <Text>Placa: {selectedVehicle.placa}</Text>
+              <Text>Estado: {selectedVehicle.estado}</Text>
+              <Text>Posición: ({selectedVehicle.posicionX}, {selectedVehicle.posicionY})</Text>
+            </Box>
           )}
-        </Flex>
+        {/* Controles inferiores (Detener + Fecha) */}
+        {isSimulating && (
+          <BottomLeftControls
+            variant="date-pause"
+            date={`Tiempo: ${data?.minuto || "N/A"}`}
+            onStop={stopSimulation}
+          />
+        )}
         <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
           <ModalOverlay />
           <ModalContent borderRadius="lg" p={2}>
@@ -531,18 +577,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
             </ModalFooter>
           </ModalContent>
         </Modal>
-        <Box>
-          <canvas ref={canvasRef} width={1100} height={600} style={{ border: '1px solid #ccc', background: '#fff' }} />
-          {selectedVehicle && (
-            <Box mt={4} p={4} border="1px solid #ccc" borderRadius="md">
-              <Text fontWeight="bold">Vehículo seleccionado</Text>
-              <Text>ID: {selectedVehicle.idVehiculo}</Text>
-              <Text>Placa: {selectedVehicle.placa}</Text>
-              <Text>Estado: {selectedVehicle.estado}</Text>
-              <Text>Posición: ({selectedVehicle.posicionX}, {selectedVehicle.posicionY})</Text>
-            </Box>
-          )}
-        </Box>
+
         {/* <Accordion allowToggle w="100%" defaultIndex={[]}> 
           <AccordionItem borderWidth={0}>
             <AccordionButton px={0} _hover={{ bg: 'gray.100' }}>
