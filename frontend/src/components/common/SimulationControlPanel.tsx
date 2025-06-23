@@ -11,6 +11,12 @@ import SimulationCompleteModal from './SimulationCompletionModal';
 import { ModalInsertAveria } from './modals/ModalInsertAveria';
 import { register } from 'module';
 import { on } from 'process';
+import type { AlmacenSimulado } from '../../core/types/almacen';
+import type { BloqueoSimulado } from '../../core/types/bloqueos';
+import type { IncidenciaSimulada } from '../../core/types/incidencia';
+import type { MantenimientoSimulado } from '../../core/types/manetenimiento';
+import type { PedidoSimulado } from '../../core/types/pedido';
+import type { VehiculoSimulado, VehiculoSimuladoV2 } from '../../core/types/vehiculo';
 
 interface LogEntry {
   timestamp: string;
@@ -245,11 +251,19 @@ export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
   return { margin, scaleX, scaleY };
 }
 
-
+export interface SimulacionMinuto {
+  minuto: string;
+  almacenes: AlmacenSimulado[];
+  bloqueos: BloqueoSimulado[];
+  incidencias: IncidenciaSimulada[];
+  mantenimientos: MantenimientoSimulado[]; 
+  pedidos: PedidoSimulado[];
+  vehiculos: VehiculoSimulado[];
+}
 
 interface SimulationControlPanelProps {
-  setData: (data: any) => void;
-  data: any;
+  setData: (data: SimulacionMinuto) => void;
+  data: SimulacionMinuto;
 }
 
 const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData, data }) => {
@@ -380,6 +394,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
             if (result) setScale(result);
           }
           setData(typedResponse.data);
+          console.log('Data updated:', typedResponse.data);
           return;
         case 'SIMULATION_STATE':
           if (typeof typedResponse.data === 'boolean') {
@@ -388,7 +403,6 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
             }
           }
           setData(typedResponse.data);
-          console.log('Data updated:', typedResponse.data);
           logMessage('📝 ' + JSON.stringify(response));
           return;
         default:
@@ -576,9 +590,9 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
   const { isOpen: isOpenAveria, onOpen: onOpenAveria, onClose: onCloseAveria } = useDisclosure();
   const [estadoVehiculo, setEstadoVehiculo] = useState('');
   const [averiaData, setAveriaData] = useState<any>({
-      turno: 'T1',
       tipo: 'Ti1',
       placa: selectedVehicle ? selectedVehicle.placa : '',
+      turno: 'T1',
   })
   useEffect(() => {
     if (selectedVehicle) {
@@ -605,9 +619,23 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
           setEstadoVehiculo('En Ruta');
             break;
       }
+      const [horaStr, minutoStr] = data.minuto.split(" ")[1].split(":");
+
+      const hora = Number(horaStr);
+      let turnoActual = 'T1';
+      if( hora >= 0 && hora < 8) {
+        turnoActual = 'T1';
+      }
+      else if( hora >= 8 && hora < 16) {
+        turnoActual = 'T2';
+      }
+      else if( hora >= 16 && hora < 24) {
+        turnoActual = 'T3';
+      }
       setAveriaData({
         ...averiaData,
         placa: selectedVehicle.placa,
+        turno: turnoActual,
       });
     }
   }, [selectedVehicle]);
@@ -618,7 +646,11 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
     }
     stompClient.current.publish({ 
       destination: '/app/update-failures', 
-      body: JSON.stringify(averiaData)
+      body: JSON.stringify({
+        vehiclePlaque: averiaData.placa,
+        type: averiaData.tipo,
+        shiftOccurredOn: averiaData.turno,
+      })
     });
     logMessage('Sending insert Averia request...');
     console.log('Sending insert Averia request...');

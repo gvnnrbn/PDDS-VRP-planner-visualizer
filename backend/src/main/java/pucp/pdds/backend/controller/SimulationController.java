@@ -28,6 +28,7 @@ public class SimulationController {
 
     @MessageMapping("/update-failures")
     public void updateFailures(UpdateFailuresMessage message) {
+        System.out.println("failure request message: " + message);
         System.out.println("Received failure simulation request");
         simulationService.updateFailures(message);
 

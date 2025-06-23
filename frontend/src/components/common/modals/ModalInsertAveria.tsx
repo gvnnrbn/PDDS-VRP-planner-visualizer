@@ -26,7 +26,7 @@ export const ModalInsertAveria = ({
             <ModalBody>
                 <Box p={4}>
                     <VStack spacing={4} align="stretch">
-                        <FormControl>
+                        {/* <FormControl>
                             <FormLabel>Turno en el que puede ocurrir</FormLabel>
                             <Select
                                 value={averiaData.turno}
@@ -36,7 +36,7 @@ export const ModalInsertAveria = ({
                                 <option value="T2">Turno 08:00 - 15:59</option>
                                 <option value="T3">Turno 16:00 - 23:59</option>
                             </Select>
-                        </FormControl>
+                        </FormControl> */}
                         <FormControl>
                             <FormLabel>Tipo de avería</FormLabel>
                             <Select
