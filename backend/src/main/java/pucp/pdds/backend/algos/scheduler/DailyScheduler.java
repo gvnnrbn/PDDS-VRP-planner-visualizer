@@ -60,11 +60,6 @@ public class DailyScheduler implements Runnable {
                 debugPrint(sol.toString());
                 // PLAN LOGIC
 
-                if (!sol.isFeasible(environment)) {
-                    sendError("Can't continue delivering, couldn't find a feasible plan for next " + state.minutesToSimulate + " minutes");
-                    break;
-                }
-
                 state.initializeVehicles();
 
                 for (int iteration = 0; iteration < state.minutesToSimulate && isRunning && !Thread.currentThread().isInterrupted(); iteration++) {

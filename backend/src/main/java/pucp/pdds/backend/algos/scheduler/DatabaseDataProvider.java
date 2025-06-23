@@ -86,55 +86,15 @@ public class DatabaseDataProvider implements DataProvider {
 
     @Override
     public void refetchData(SchedulerState state) {
-        // Fetch new orders
-        var newOrders = pedidoRepository.findAll()
-            .stream()
-            .filter(order -> state.getOrders().stream().noneMatch(o -> o.id == order.getId()))
-            .map(PlannerOrder::fromEntity)
-            .toList();
-        if (!newOrders.isEmpty()) {
-            state.getOrders().addAll(newOrders);
-        }
+        state.setOrders(pedidoRepository.findCurrent(state.getCurrTime().toLocalDateTime()).stream().map(PlannerOrder::fromEntity).collect(Collectors.toList()));
 
-        // Fetch new blockages
-        var newBlockages = bloqueoRepository.findAll()
-            .stream()
-            .filter(blockage -> state.getBlockages().stream().noneMatch(b -> b.id == blockage.getId()))
-            .map(PlannerBlockage::fromEntity)
-            .toList();
-        if (!newBlockages.isEmpty()) {
-            state.getBlockages().addAll(newBlockages);
-        }
+        state.setBlockages(bloqueoRepository.findCurrent(state.getCurrTime().toLocalDateTime()).stream().map(PlannerBlockage::fromEntity).collect(Collectors.toList()));
 
-        // Fetch new failures
-        var newFailures = incidenciaRepository.findAll()
-            .stream()
-            .filter(failure -> state.getFailures().stream().noneMatch(f -> f.id == failure.getId()))
-            .map(PlannerFailure::fromEntity)
-            .toList();
-        if (!newFailures.isEmpty()) {
-            state.getFailures().addAll(newFailures);
-        }
+        state.setFailures(incidenciaRepository.findAll().stream().map(PlannerFailure::fromEntity).collect(Collectors.toList()));
 
-        // Fetch new maintenances
-        var newMaintenances = mantenimientoRepository.findAll()
-            .stream()
-            .filter(maintenance -> state.getMaintenances().stream().noneMatch(m -> m.id == maintenance.getId()))
-            .map(PlannerMaintenance::fromEntity)
-            .toList();
-        if (!newMaintenances.isEmpty()) {
-            state.getMaintenances().addAll(newMaintenances);
-        }
+        state.setMaintenances(mantenimientoRepository.findAll().stream().map(PlannerMaintenance::fromEntity).collect(Collectors.toList()));
 
-        // Fetch new warehouses
-        var newWarehouses = almacenRepository.findAll()
-            .stream()
-            .filter(warehouse -> state.getWarehouses().stream().noneMatch(w -> w.id == warehouse.getId()))
-            .map(PlannerWarehouse::fromEntity)
-            .toList();
-        if (!newWarehouses.isEmpty()) {
-            state.getWarehouses().addAll(newWarehouses);
-        }
+        state.setWarehouses(almacenRepository.findAll().stream().map(PlannerWarehouse::fromEntity).collect(Collectors.toList()));
     }
 
     @Override

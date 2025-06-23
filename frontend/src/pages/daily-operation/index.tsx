@@ -8,6 +8,8 @@ import { IncidenciaForm } from '../../components/IncidenciaForm'
 import { IncidenciaService } from '../../core/services/IncidenciaService'
 import { VehiculoForm } from '../../components/VehiculosForm'
 import { VehiculoService } from '../../core/services/VehiculoService'
+import { OperacionProvider, useOperacion } from '../../components/common/SimulationContextDiario';
+import DailyOperationControlPanel from './DailyOperationControlPanel';
 
 const pedidoService = new PedidoService();
 const incidenciaService = new IncidenciaService();
@@ -86,18 +88,6 @@ function AveriasPanel() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [searchValue, setSearchValue] = useState('');
 
-  // Solo registrar avería, no importar
-  const handleRegister = async (data: Record<string, unknown>) => {
-    try {
-      await incidenciaService.createIncidencia(data);
-      toast({ title: 'Avería registrada', status: 'success', duration: 3000 });
-      onClose();
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      toast({ title: 'Error al registrar', description: errorMessage, status: 'error', duration: 4000 });
-    }
-  };
-
   return (
     <Box>
       {/* Barra de búsqueda */}
@@ -136,7 +126,7 @@ function AveriasPanel() {
         <ModalContent>
           <ModalHeader>Registrar Avería</ModalHeader>
           <ModalBody>
-            <IncidenciaForm onFinish={handleRegister} onCancel={onClose} />
+            <IncidenciaForm onFinish={onClose} onCancel={onClose} />
           </ModalBody>
         </ModalContent>
       </Modal>
@@ -148,17 +138,6 @@ function FlotaPanel() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
   const [searchValue, setSearchValue] = useState('');
-
-  const handleRegister = async (data: Record<string, unknown>) => {
-    try {
-      await vehiculoService.createVehiculo(data);
-      toast({ title: 'Vehículo registrado', status: 'success', duration: 3000 });
-      onClose();
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      toast({ title: 'Error al registrar', description: errorMessage, status: 'error', duration: 4000 });
-    }
-  };
 
   return (
     <Box>
@@ -188,7 +167,7 @@ function FlotaPanel() {
         <ModalContent>
           <ModalHeader>Registrar Vehículo</ModalHeader>
           <ModalBody>
-            <VehiculoForm onFinish={handleRegister} onCancel={onClose} />
+            <VehiculoForm onFinish={onClose} onCancel={onClose} />
           </ModalBody>
         </ModalContent>
       </Modal>
@@ -235,21 +214,23 @@ export default function DailyOperation() {
   const bgColor = useColorModeValue('white', '#1a1a1a')
   const [currentSection, setCurrentSection] = useState('Pedidos')
   const [isCollapsed, setIsCollapsed] = useState(false)
+  // State for real-time operation data
+  const [operationData, setOperationData] = useState<any>(null);
 
   return (
-    <Flex height="full" overflowY="auto" position="relative">
-      <Box flex={1} p={4} bg={bgColor} h="full">
-        <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
-          Contenido principal
-        </Text>
-      </Box>
-      <SectionBar
-        sections={sections}
-        onSectionChange={setCurrentSection}
-        currentSection={currentSection}
-        isCollapsed={isCollapsed}
-        onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
-      />
-    </Flex>
+    <OperacionProvider>
+      <Flex height="full" overflowY="auto" position="relative">
+        <Box flex={1} p={4} bg={bgColor} h="full">
+          <DailyOperationControlPanel data={operationData} setData={setOperationData} />
+        </Box>
+        <SectionBar
+          sections={sections}
+          onSectionChange={setCurrentSection}
+          currentSection={currentSection}
+          isCollapsed={isCollapsed}
+          onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+        />
+      </Flex>
+    </OperacionProvider>
   )
 }
