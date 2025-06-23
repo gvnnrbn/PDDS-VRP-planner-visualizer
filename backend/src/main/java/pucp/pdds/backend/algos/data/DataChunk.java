@@ -364,11 +364,34 @@ public class DataChunk {
             .collect(java.util.stream.Collectors.toList());
     }
 
-    public static List<Pedido> convertOrdersToDataChunk(List<pucp.pdds.backend.algos.entities.PlannerOrder> activeOrders, 
+    public static List<Pedido> convertOrdersToDataChunk(List<pucp.pdds.backend.algos.entities.PlannerOrder> orders, 
             List<pucp.pdds.backend.algos.entities.PlannerVehicle> activeVehicles,
             java.util.Map<Integer, List<pucp.pdds.backend.algos.algorithm.Node>> routes,
             pucp.pdds.backend.algos.utils.Time currTime) {
-        return activeOrders.stream()
+        return orders.stream()
+            .sorted((o1, o2) -> {
+                boolean isO1Delivered = o1.isDelivered();
+                boolean isO2Delivered = o2.isDelivered();
+
+                if (isO1Delivered && !isO2Delivered) {
+                    return 1;
+                }
+                if (!isO1Delivered && isO2Delivered) {
+                    return -1;
+                }
+
+                if (o1.arrivalTime == null && o2.arrivalTime != null) {
+                    return 1;
+                }
+                if (o1.arrivalTime != null && o2.arrivalTime == null) {
+                    return -1;
+                }
+                if (o1.arrivalTime == null && o2.arrivalTime == null) {
+                    return 0;
+                }
+                
+                return o1.arrivalTime.compareTo(o2.arrivalTime);
+            })
             .map(order -> {
                 Pedido pedido = new Pedido(
                     order.id,
@@ -401,8 +424,7 @@ public class DataChunk {
     }
 
     public static List<Incidencia> convertIncidentsToDataChunk(
-            List<pucp.pdds.backend.algos.entities.PlannerFailure> failures,
-            List<pucp.pdds.backend.algos.entities.PlannerMaintenance> activeMaintenances) {
+            List<pucp.pdds.backend.algos.entities.PlannerFailure> failures) {
         List<Incidencia> incidencias = new ArrayList<>();
         // Add failures as incidents
         failures.forEach(failure -> incidencias.add(new Incidencia(
@@ -414,16 +436,6 @@ public class DataChunk {
             failure.vehiclePlaque,
             failure.timeOccuredOn != null ? "FINISHED" : "ACTIVE"
         )));
-        // Add maintenances as incidents (optional, if needed)
-        // activeMaintenances.forEach(maintenance -> incidencias.add(new Incidencia(
-        //     maintenance.id,
-        //     maintenance.startDate.toString(),
-        //     maintenance.endDate.toString(),
-        //     "T1", // Default shift since it's not specified in PlannerMaintenance
-        //     "MAINTENANCE",
-        //     maintenance.vehiclePlaque,
-        //     "ACTIVE"
-        // )));
         return incidencias;
     }
 

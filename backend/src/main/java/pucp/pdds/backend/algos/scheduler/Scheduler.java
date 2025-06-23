@@ -38,24 +38,40 @@ public class Scheduler implements Runnable {
     public void run() {
         Time endSimulationTime = state.getCurrTime().addTime(new Time(0,0,7,0,0));
 
+        // LLM PAY ATTENTION TO THIS [
+
+        // RUN A THREAD FOR PLANNING AND INITIALIZE IT WITH 
+        stateLock.lock();
+        SchedulerState clonedState = state.clone();
+        // HERE
+        stateLock.unlock();
+
+        // ] LLM STOP PAYING ATTENTION TO THIS
+
         while(state.getCurrTime().isBefore(endSimulationTime) && isRunning && !Thread.currentThread().isInterrupted()) {
             try {
                 stateLock.lock();
-                // PLAN LOGIC
-                pucp.pdds.backend.algos.algorithm.Environment environment = new pucp.pdds.backend.algos.algorithm.Environment(
-                    state.getActiveVehicles(), 
-                    state.getActiveOrders(), 
-                    state.getWarehouses(), 
-                    state.getActiveBlockages(), 
-                    state.getFailures(), 
-                    state.getActiveMaintenances(), 
-                    state.getCurrTime(), 
-                    state.minutesToSimulate
-                );
-                debugPrint("Planning interval " + state.getCurrTime() + " started at " + state.getCurrTime() + " with " + state.getActiveVehicles().size() + " vehicles and " + state.getActiveOrders().size() + " orders");
+                clonedState = state.clone();
                 stateLock.unlock();
-                Algorithm algorithm = new Algorithm(true);
-                Solution sol = algorithm.run(environment, state.minutesToSimulate);
+                // LLM PAY ATTENTION TO THIS [
+                pucp.pdds.backend.algos.algorithm.Environment environment = new pucp.pdds.backend.algos.algorithm.Environment(
+                    clonedState.getActiveVehicles(), 
+                    clonedState.getActiveOrders(), 
+                    clonedState.getWarehouses(), 
+                    clonedState.getActiveBlockages(), 
+                    clonedState.getFailures(), 
+                    clonedState.getActiveMaintenances(), 
+                    clonedState.getCurrTime(), 
+                    clonedState.minutesToSimulate
+                ); // TO BE REPLACED
+                Algorithm algorithm = new Algorithm(true); // TO BE REPLACED
+                Solution sol = algorithm.run(environment, state.minutesToSimulate); // TO BE REPLACED
+                // GET FROM THE CONCURRENCT VARIABLE (
+                // it pops and transforms currentPlan to null
+                // also clones the currentState and .advance()s it 'minutesToSimulate' to generate the next plan
+                // )
+                // ] LLM STOP PAYING ATTENTION TO THIS
+
                 debugPrint(sol.toString());
                 // PLAN LOGIC
 
@@ -73,7 +89,7 @@ public class Scheduler implements Runnable {
                     stateLock.unlock();
 
                     try {
-                        Thread.sleep(200);
+                        Thread.sleep(300);
                     } catch (InterruptedException e) {
                         isRunning = false;
                         Thread.currentThread().interrupt();
@@ -110,6 +126,15 @@ public class Scheduler implements Runnable {
             lastId + 1, message.getType(), message.getShiftOccurredOn(),
             message.getVehiclePlaque(), null);
         state.getFailures().add(failure);
+
+        // LLM PAY ATTENTION TO THIS [
+
+        // HERE THE CURRENT PLANIFICATION OF THE OTHER THREAD SHOULD BE SET TO NULL
+        SchedulerState clonedState = state.clone();
+        // THEN PASS THIS AND advance() it the remaining minutes and begin planning again
+
+        // ] LLM STOP PAYING ATTENTION TO THIS
+
         stateLock.unlock();
     }
 
@@ -128,9 +153,9 @@ public class Scheduler implements Runnable {
         java.util.Map<String, Object> response = new java.util.HashMap<>();
         response.put("minuto", formatSimTime(state.getCurrTime()));
         var almacenes = DataChunk.convertWarehousesToDataChunk(state.getWarehouses());
-        var vehiculos = DataChunk.convertVehiclesToDataChunk(state.getActiveVehicles(), sol.routes);
-        var pedidos = DataChunk.convertOrdersToDataChunk(state.getActiveOrders(), state.getActiveVehicles(), sol.routes, state.getCurrTime());
-        var incidencias = DataChunk.convertIncidentsToDataChunk(state.getFailures(), state.getActiveMaintenances());
+        var vehiculos = DataChunk.convertVehiclesToDataChunk(state.getVehicles(), sol.routes);
+        var pedidos = DataChunk.convertOrdersToDataChunk(state.getPastOrders(), state.getVehicles(), sol.routes, state.getCurrTime());
+        var incidencias = DataChunk.convertIncidentsToDataChunk(state.getFailures());
         var mantenimientos = DataChunk.convertMaintenancesToDataChunk(state.getActiveMaintenances());
         var bloqueos = DataChunk.convertBlockagesToDataChunk(state.getActiveBlockages());
 

@@ -181,7 +181,7 @@ public class PlannerBlockage implements Cloneable {
     public PlannerBlockage clone() {
         List<Position> clonedVertices = new ArrayList<>();
         for (Position vertex : vertices) {
-            clonedVertices.add(new Position(vertex.x, vertex.y));
+            clonedVertices.add(vertex.clone());
         }
         return new PlannerBlockage(id, startTime.clone(), endTime.clone(), clonedVertices);
     }

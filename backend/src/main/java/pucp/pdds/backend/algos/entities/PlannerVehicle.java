@@ -192,11 +192,21 @@ public class PlannerVehicle implements Cloneable {
             
             // Clone mutable fields
             clone.waitTransition = this.waitTransition;
-            clone.currentPath = this.currentPath != null ? new ArrayList<>(this.currentPath) : null;
+            if (this.currentPath != null) {
+                clone.currentPath = new ArrayList<>();
+                for (Position p : this.currentPath) {
+                    clone.currentPath.add(p.clone());
+                }
+            } else {
+                clone.currentPath = null;
+            }
             clone.nextNodeIndex = this.nextNodeIndex;
             clone.currentFailure = this.currentFailure != null ? this.currentFailure.clone() : null;
             clone.currentMaintenance = this.currentMaintenance != null ? this.currentMaintenance.clone() : null;
             clone.initialPosition = this.initialPosition.clone();
+            clone.failure = this.failure != null ? this.failure.clone() : null;
+            clone.minutesUntilFailure = this.minutesUntilFailure;
+            clone.reincorporationTime = this.reincorporationTime != null ? this.reincorporationTime.clone() : null;
             
             return clone;
         } catch (Exception e) {

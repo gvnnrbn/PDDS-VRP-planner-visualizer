@@ -128,6 +128,10 @@ public class SchedulerState {
         }
     }
 
+    public List<PlannerOrder> getPastOrders() {  
+        return orders.stream().filter(order -> order.arrivalTime.isBeforeOrAt(currTime)).collect(Collectors.toList());
+    }
+
     public synchronized void advance(Solution sol) {
         debugPrint("--- Time: " + currTime + " ---");
 
@@ -318,6 +322,30 @@ public class SchedulerState {
         }
 
         currTime = currTime.addMinutes(1);
+    }
+
+    public SchedulerState clone() {
+        List<PlannerVehicle> clonedVehicles = vehicles.stream()
+            .map(PlannerVehicle::clone)
+            .collect(Collectors.toList());
+        List<PlannerOrder> clonedOrders = orders.stream()
+            .map(PlannerOrder::clone)
+            .collect(Collectors.toList());
+        List<PlannerBlockage> clonedBlockages = blockages.stream()
+            .map(PlannerBlockage::clone)
+            .collect(Collectors.toList());
+        List<PlannerWarehouse> clonedWarehouses = warehouses.stream()
+            .map(PlannerWarehouse::clone)
+            .collect(Collectors.toList());
+        List<PlannerFailure> clonedFailures = failures.stream()
+            .map(PlannerFailure::clone)
+            .collect(Collectors.toList());
+        List<PlannerMaintenance> clonedMaintenances = maintenances.stream()
+            .map(PlannerMaintenance::clone)
+            .collect(Collectors.toList());
+        Time clonedTime = currTime.clone();
+
+        return new SchedulerState(clonedVehicles, clonedOrders, clonedBlockages, clonedWarehouses, clonedFailures, clonedMaintenances, clonedTime, minutesToSimulate);
     }
 
     private void debugPrint(String message) {
