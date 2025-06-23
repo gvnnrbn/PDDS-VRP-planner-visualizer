@@ -176,7 +176,6 @@ async function drawState(canvas: HTMLCanvasElement, data: any) {
       const vx = margin + v.posicionX * scaleX;
       const vy = margin + v.posicionY * scaleY;
 
-      // Agregar hitbox para clics
       vehicleHitboxes.push({
         x: vx - 16,
         y: vy - 16,
@@ -184,20 +183,34 @@ async function drawState(canvas: HTMLCanvasElement, data: any) {
         vehiculo: v,
       });
 
-      let flip = false;
+      const img = await iconToImage(FaTruck, color, 32);
+
+      ctx.save();
+      ctx.translate(vx, vy); // centro
+
       if (v.rutaActual?.length > 1) {
-        flip = v.rutaActual[1].posX < v.posicionX;
+        const next = v.rutaActual[1];
+        const dx = next.posX - v.posicionX;
+        const dy = next.posY - v.posicionY;
+
+        if (Math.abs(dx) > Math.abs(dy)) {
+          // Movimiento horizontal
+          if (dx < 0) {
+            ctx.scale(-1, 1); // flip horizontal para izquierda
+          }
+          // si va a la derecha, no hacemos nada (rotación base)
+        } else {
+          if (dy < 0) {
+            ctx.rotate(-Math.PI / 2); // solo hacia arriba
+          }
+          // si va hacia abajo, no rotamos (queda en horizontal base)
+          else{
+            ctx.rotate(Math.PI /2);
+          }
+        }
       }
 
-      const img = await iconToImage(FaTruck, color, 32);
-      ctx.save();
-      if (flip) {
-        ctx.translate(vx + 16, vy);
-        ctx.scale(-1, 1);
-        ctx.drawImage(img, -16, -16, 32, 32);
-      } else {
-        ctx.drawImage(img, vx - 16, vy - 16, 32, 32);
-      }
+      ctx.drawImage(img, -16, -16, 32, 32);
       ctx.restore();
 
       ctx.fillStyle = '#000';
