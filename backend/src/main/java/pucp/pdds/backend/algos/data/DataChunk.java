@@ -364,11 +364,12 @@ public class DataChunk {
             .collect(java.util.stream.Collectors.toList());
     }
 
-    public static List<Pedido> convertOrdersToDataChunk(List<pucp.pdds.backend.algos.entities.PlannerOrder> activeOrders, 
+    public static List<Pedido> convertOrdersToDataChunk(List<pucp.pdds.backend.algos.entities.PlannerOrder> orders, 
             List<pucp.pdds.backend.algos.entities.PlannerVehicle> activeVehicles,
             java.util.Map<Integer, List<pucp.pdds.backend.algos.algorithm.Node>> routes,
             pucp.pdds.backend.algos.utils.Time currTime) {
-        return activeOrders.stream()
+        return orders.stream()
+            .sorted((o1, o2) -> o1.arrivalTime.compareTo(o2.arrivalTime))
             .map(order -> {
                 Pedido pedido = new Pedido(
                     order.id,
