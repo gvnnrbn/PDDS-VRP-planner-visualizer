@@ -17,7 +17,7 @@ import pucp.pdds.backend.dto.UpdateFailuresMessage;
 import java.time.format.DateTimeFormatter;
 
 @Service
-public class Scheduler implements Runnable {
+public class WeeklyScheduler implements Runnable {
     private SchedulerState state;
     private Lock stateLock = new ReentrantLock();
     private final SimpMessagingTemplate messagingTemplate;
@@ -29,7 +29,7 @@ public class Scheduler implements Runnable {
     }
 
     @Autowired
-    public Scheduler(SimpMessagingTemplate messagingTemplate) {
+    public WeeklyScheduler(SimpMessagingTemplate messagingTemplate) {
         this.messagingTemplate = messagingTemplate;
         this.isRunning = true;
     }
@@ -57,7 +57,6 @@ public class Scheduler implements Runnable {
 
                 Algorithm algorithm = new Algorithm(true);
                 Solution sol = algorithm.run(environment, state.minutesToSimulate);
-                debugPrint(sol.toString());
 
                 if (!sol.isFeasible(environment)) {
                     sendError("Can't continue delivering, couldn't find a feasible plan for next " + state.minutesToSimulate + " minutes");
