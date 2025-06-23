@@ -7,6 +7,7 @@ import { FaTruck, FaWarehouse, FaMapMarkerAlt, FaIndustry } from 'react-icons/fa
 import { renderToStaticMarkup } from 'react-dom/server';
 import { set } from 'date-fns';
 import BottomLeftControls from './MapActions';
+import SimulationCompleteModal from './SimulationCompletionModal';
 
 interface LogEntry {
   timestamp: string;
@@ -58,9 +59,14 @@ export const vehicleHitboxes: { x: number; y: number; size: number; vehiculo: an
 
 
 // Dibuja el estado de la simulación en el canvas usando íconos
-async function drawState(canvas: HTMLCanvasElement, data: any) {
+export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
+  margin: number;
+  scaleX: number;
+  scaleY: number;
+}> {
   const ctx = canvas.getContext('2d');
-  if (!ctx) return;
+  if (!ctx) return { margin: 0, scaleX: 1, scaleY: 1 };
+
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   const margin = 40;
   const width = canvas.width;
@@ -233,7 +239,10 @@ async function drawState(canvas: HTMLCanvasElement, data: any) {
   }
 
   ctx.restore();
+  return { margin, scaleX, scaleY };
 }
+
+
 
 interface SimulationControlPanelProps {
   setData: (data: any) => void;
@@ -254,6 +263,13 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  
+
+  const [scale, setScale] = useState<{ margin: number; scaleX: number; scaleY: number }>({
+    margin: 40,
+    scaleX: 1,
+    scaleY: 1,
+  });
 
   useEffect(() => {
     if (!connected) {
@@ -323,7 +339,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
     logMessage('🔌 Disconnected');
   };
 
-  const handleMessage = (response: unknown) => {
+  const handleMessage = async (response: unknown) => {
     if (isSimulationStopped(response)) {
       logMessage('⏹️ ' + response.data);
       setIsSimulating(false);
@@ -357,7 +373,8 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
           // Handle simulation update data
           if (canvasRef.current) {
             // console.log('Data updated:', data);
-            drawState(canvasRef.current, typedResponse.data);
+            const result = await drawState(canvasRef.current, typedResponse.data);
+            if (result) setScale(result);
           }
           setData(typedResponse.data);
           return;
@@ -386,9 +403,12 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
     // Visualización: dibujar en canvas
     if (canvasRef.current && typeof response === 'object' && response !== null) {
       if ('type' in response && (response as any).type === 'SIMULATION_UPDATE' && 'data' in response) {
-        drawState(canvasRef.current, (response as any).data);
+        const result = await drawState(canvasRef.current, (response as any).data);
+        if (result) setScale(result);
       } else {
-        drawState(canvasRef.current, response);
+        const result = await drawState(canvasRef.current, response);
+        if (result) setScale(result);
+
       }
     }
   };
@@ -446,12 +466,13 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
     let panStartX = 0;
     let panStartY = 0;
 
-    const handleWheel = (e: WheelEvent) => {
+    const handleWheel = async (e: WheelEvent) => {
       e.preventDefault();
       const zoomIntensity = 0.1;
       const delta = e.deltaY < 0 ? 1 + zoomIntensity : 1 - zoomIntensity;
       zoomScale = Math.min(Math.max(0.25, zoomScale * delta), 4);
-      drawState(canvas, data);
+      const result = await drawState(canvas, data);
+      if (result) setScale(result);
     };
 
     const handleMouseDown = (e: MouseEvent) => {
@@ -462,11 +483,12 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
       panStartY = panY;
     };
 
-    const handleMouseMove = (e: MouseEvent) => {
+    const handleMouseMove = async (e: MouseEvent) => {
       if (!isDragging) return;
       panX = panStartX + (e.clientX - startX);
       panY = panStartY + (e.clientY - startY);
-      drawState(canvas, data);
+      const result = await drawState(canvas, data);
+      if (result) setScale(result);
     };
 
     const handleMouseUp = () => {
@@ -488,35 +510,82 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
 
   const [selectedVehicle, setSelectedVehicle] = useState<any | null>(null);
 
+  //AUXILIAR
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    // Solo una vez al montar
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+  }, []);
+
+
   //CLICK VEHICULO
+  const [vehiclePanelPos, setVehiclePanelPos] = useState<{ left: number; top: number } | null>(null);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const handleClick = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
-      const x = (e.clientX - rect.left - panX) / zoomScale;
-      const y = (e.clientY - rect.top - panY) / zoomScale;
+      const scaleXcss = canvas.width / rect.width;
+      const scaleYcss = canvas.height / rect.height;
 
-      // buscar vehículo clickeado
+      const rawX = (e.clientX - rect.left) * scaleXcss;
+      const rawY = (e.clientY - rect.top) * scaleYcss;
+
+      const canvasX = (rawX - panX) / zoomScale;
+      const canvasY = (rawY - panY) / zoomScale;
+
       for (const box of vehicleHitboxes) {
         if (
-          x >= box.x &&
-          x <= box.x + box.size &&
-          y >= box.y &&
-          y <= box.y + box.size
+          canvasX >= box.x &&
+          canvasX <= box.x + box.size &&
+          canvasY >= box.y &&
+          canvasY <= box.y + box.size
         ) {
-          console.log('Se clickeo! No se pero alguno fue');
           setSelectedVehicle(box.vehiculo);
+
+          // Calcular posición del panel flotante
+          const { margin, scaleX, scaleY } = scale;
+          const vx = margin + box.vehiculo.posicionX * scaleX;
+          const vy = margin + box.vehiculo.posicionY * scaleY;
+          const screenX = (vx + panX) * zoomScale + rect.left;
+          const screenY = (vy + panY) * zoomScale + rect.top;
+
+          setVehiclePanelPos({ left: screenX, top: screenY });
           return;
         }
       }
-      setSelectedVehicle(null); // si se clickea fuera
+
+      setSelectedVehicle(null);
+      setVehiclePanelPos(null);
     };
 
     canvas.addEventListener('click', handleClick);
-    return () => canvas.removeEventListener('click', handleClick);
-  }, [canvasRef, data]);
+    return () => {
+      canvas.removeEventListener('click', handleClick);
+    };
+  }, [canvasRef, data, scale]);
+
+  //Modal final
+  const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+
+  //Falta ver como se saca la info
+  const resumenData = {
+    fechaInicio: initialTime,
+    fechaFin: new Date().toISOString().slice(0, 16),
+    duracion: "00:10:00",
+    pedidosEntregados: 124,
+    consumoPetroleo: 763.2,
+    tiempoPlanificacion: "00:00:15",
+  };
+  const handleStopAndShowSummary = () => {
+    stopSimulation(); // sigue deteniendo la simulación
+    setIsSummaryOpen(true); // abre modal
+  };
 
   return (
     <Box borderWidth="1px" borderRadius="md" p={4} mb={4}>
@@ -555,21 +624,40 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
             </Button>
           </Flex>
         )}   
-        {selectedVehicle && (
-            <Box mt={4} p={4} border="1px solid #ccc" borderRadius="md">
-              <Text fontWeight="bold">Vehículo seleccionado</Text>
-              <Text>ID: {selectedVehicle.idVehiculo}</Text>
-              <Text>Placa: {selectedVehicle.placa}</Text>
-              <Text>Estado: {selectedVehicle.estado}</Text>
-              <Text>Posición: ({selectedVehicle.posicionX}, {selectedVehicle.posicionY})</Text>
-            </Box>
-          )}
+        {selectedVehicle && vehiclePanelPos && (
+          <Box
+            position="absolute"
+            left={vehiclePanelPos.left}
+            top={vehiclePanelPos.top}
+            transform="translate(-50%, -120%)"
+            bg="white"
+            p={3}
+            border="1px solid #ccc"
+            borderRadius="md"
+            boxShadow="lg"
+            zIndex={1000}
+            minW="200px"
+          >
+            <Flex justify="space-between" align="center" mb={2}>
+              <Text fontWeight="bold">Vehículo</Text>
+              <Button size="xs" onClick={() => setSelectedVehicle(null)} variant="ghost" colorScheme="red">
+                ✕
+              </Button>
+            </Flex>
+            <Text>ID: {selectedVehicle.idVehiculo}</Text>
+            <Text>Placa: {selectedVehicle.placa}</Text>
+            <Text>Estado: {selectedVehicle.estado}</Text>
+            <Text>
+              Posición: ({selectedVehicle.posicionX}, {selectedVehicle.posicionY})
+            </Text>
+          </Box>
+        )}
         {/* Controles inferiores (Detener + Fecha) */}
         {isSimulating && (
           <BottomLeftControls
             variant="date-pause"
             date={`Tiempo: ${data?.minuto || "N/A"}`}
-            onStop={stopSimulation}
+            onStop={handleStopAndShowSummary}
           />
         )}
         <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
@@ -590,6 +678,12 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
             </ModalFooter>
           </ModalContent>
         </Modal>
+
+        <SimulationCompleteModal
+          isOpen={isSummaryOpen}
+          onClose={() => setIsSummaryOpen(false)}
+          {...resumenData}
+        />
 
         {/* <Accordion allowToggle w="100%" defaultIndex={[]}> 
           <AccordionItem borderWidth={0}>
