@@ -85,57 +85,40 @@ public class PlannerVehicle implements Cloneable {
             return;
         }
 
-        Position from = currentPath.get(0);
-        Position to = currentPath.get(1);
-
-        double totalSegmentDistance = PathBuilder.calculateDistance(List.of(from, to));
-        double fuelCostForSegment = totalSegmentDistance * (this.weight / 1000 + this.currentGLP * 0.5) / 180;
-        double fuelPerUnit = (totalSegmentDistance > 0) ? fuelCostForSegment / totalSegmentDistance : 0;
-
-
         while (units > 0 && currentPath.size() > 1 && this.currentFuel > 0) {
-            double distance = PathBuilder.calculateDistance(List.of(from, to));
-            double possible_distance = (fuelPerUnit > 0) ? this.currentFuel / fuelPerUnit : Double.POSITIVE_INFINITY;
-            
-            if (distance > units) { // we can't reach the end of the segment
-                double dist_to_move = Math.min(units, possible_distance);
-                double ratio = (distance > 0) ? dist_to_move / distance : 0;
+            Position from = currentPath.get(0);
+            Position to = currentPath.get(1);
+
+            double segmentDistance = PathBuilder.calculateDistance(List.of(from, to));
+            if (segmentDistance <= 0) {
+                currentPath.remove(0);
+                continue;
+            }
+
+            double fuelCostForSegment = segmentDistance * (this.weight / 1000 + this.currentGLP * 0.5) / 180;
+            double fuelPerUnit = fuelCostForSegment / segmentDistance;
+
+            double maxDistWithFuel = (fuelPerUnit > 0) ? this.currentFuel / fuelPerUnit : Double.POSITIVE_INFINITY;
+            double distanceToMove = Math.min(units, Math.min(segmentDistance, maxDistWithFuel));
+
+            this.currentFuel -= distanceToMove * fuelPerUnit;
+            units -= distanceToMove;
+
+            if (distanceToMove >= segmentDistance) {
+                this.position = to;
+                currentPath.remove(0);
+            } else {
+                double ratio = distanceToMove / segmentDistance;
                 double deltaX = (to.x - from.x) * ratio;
                 double deltaY = (to.y - from.y) * ratio;
                 Position newPosition = new Position(from.x + deltaX, from.y + deltaY);
-                currentPath.set(0, newPosition);
                 this.position = newPosition;
-                this.currentFuel -= dist_to_move * fuelPerUnit;
-                units = 0; // we have consumed all units
-            } else if (distance <= units) { // we can reach the end of the segment
-                double dist_to_move = Math.min(distance, possible_distance);
-                if (dist_to_move < distance) { // not enough fuel to reach the end
-                    double ratio = (distance > 0) ? dist_to_move / distance : 0;
-                    double deltaX = (to.x - from.x) * ratio;
-                    double deltaY = (to.y - from.y) * ratio;
-                    Position newPosition = new Position(from.x + deltaX, from.y + deltaY);
-                    currentPath.set(0, newPosition);
-                    this.position = newPosition;
-                    this.currentFuel = 0;
-                    units -= dist_to_move;
-                } else { // enough fuel to reach the end
-                    currentPath.remove(0);
-                    this.position = to;
-                    this.currentFuel -= distance * fuelPerUnit;
-                    units -= distance;
-                    if (currentPath.size() > 1) {
-                        from = currentPath.get(0);
-                        to = currentPath.get(1);
-                        // Recalculate fuel rate for the new segment
-                        totalSegmentDistance = PathBuilder.calculateDistance(List.of(from, to));
-                        fuelCostForSegment = totalSegmentDistance * (this.weight / 1000 + this.currentGLP * 0.5) / 180;
-                        fuelPerUnit = (totalSegmentDistance > 0) ? fuelCostForSegment / totalSegmentDistance : 0;
-                    }
-                }
+                currentPath.set(0, newPosition);
             }
         }
 
         if (this.currentFuel <= 0) {
+            this.currentFuel = 0;
             this.state = VehicleState.STUCK;
         }
     }
