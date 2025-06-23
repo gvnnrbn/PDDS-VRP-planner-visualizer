@@ -128,6 +128,10 @@ public class SchedulerState {
         }
     }
 
+    public List<PlannerOrder> getPastOrders() {  
+        return orders.stream().filter(order -> order.arrivalTime.isBeforeOrAt(currTime)).collect(Collectors.toList());
+    }
+
     public synchronized void advance(Solution sol) {
         debugPrint("--- Time: " + currTime + " ---");
 

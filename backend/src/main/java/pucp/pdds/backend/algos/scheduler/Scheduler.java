@@ -89,7 +89,7 @@ public class Scheduler implements Runnable {
                     stateLock.unlock();
 
                     try {
-                        Thread.sleep(200);
+                        Thread.sleep(300);
                     } catch (InterruptedException e) {
                         isRunning = false;
                         Thread.currentThread().interrupt();
@@ -153,9 +153,9 @@ public class Scheduler implements Runnable {
         java.util.Map<String, Object> response = new java.util.HashMap<>();
         response.put("minuto", formatSimTime(state.getCurrTime()));
         var almacenes = DataChunk.convertWarehousesToDataChunk(state.getWarehouses());
-        var vehiculos = DataChunk.convertVehiclesToDataChunk(state.getActiveVehicles(), sol.routes);
-        var pedidos = DataChunk.convertOrdersToDataChunk(state.getActiveOrders(), state.getActiveVehicles(), sol.routes, state.getCurrTime());
-        var incidencias = DataChunk.convertIncidentsToDataChunk(state.getFailures(), state.getActiveMaintenances());
+        var vehiculos = DataChunk.convertVehiclesToDataChunk(state.getVehicles(), sol.routes);
+        var pedidos = DataChunk.convertOrdersToDataChunk(state.getPastOrders(), state.getVehicles(), sol.routes, state.getCurrTime());
+        var incidencias = DataChunk.convertIncidentsToDataChunk(state.getFailures());
         var mantenimientos = DataChunk.convertMaintenancesToDataChunk(state.getActiveMaintenances());
         var bloqueos = DataChunk.convertBlockagesToDataChunk(state.getActiveBlockages());
 
