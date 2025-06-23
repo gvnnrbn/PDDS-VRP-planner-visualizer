@@ -155,7 +155,7 @@ async function drawState(canvas: HTMLCanvasElement, data: any) {
 
   // Draw delivery nodes (as icons)
   if (data.pedidos) {
-    for (const node of data.pedidos) {
+    for (const node of data.pedidos.filter((pedido: any) => pedido.estado.toUpperCase() !== 'COMPLETADO')) {
       const x = margin + node.posX * scaleX - 12;
       const y = margin + node.posY * scaleY - 24;
       const img = await iconToImage(FaMapMarkerAlt, '#ff2d2d', 24);

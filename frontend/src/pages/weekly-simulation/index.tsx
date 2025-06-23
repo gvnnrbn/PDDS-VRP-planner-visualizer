@@ -129,7 +129,6 @@ export default function WeeklySimulation() {
         </Menu> */}
           {currentMinuteData?.pedidos
             ?.slice()
-            .sort((a, b) => a.idPedido - b.idPedido)
             .map((pedido) => (
               <PedidoCard key={pedido.idPedido} pedido={pedido} onClick={() => console.log('enfocando...')} />
             ))}
