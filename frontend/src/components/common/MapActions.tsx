@@ -11,6 +11,8 @@ interface BottomLeftControlsProps {
   onStop?: () => void;
   speed?: string;
   onSpeedChange?: (value: string) => void;
+  onIniciarSimulacion: () => void;
+  isSimulating?: boolean;
 }
 
 const BottomLeftControls: React.FC<BottomLeftControlsProps> = ({
@@ -18,6 +20,8 @@ const BottomLeftControls: React.FC<BottomLeftControlsProps> = ({
     date = "Día 1 | 02/04/2025 | 13:00",
     onStop,
     onSpeedChange,
+    onIniciarSimulacion,
+    isSimulating,
     }) => {
     const panelBg = useColorModeValue("white", "gray.800");
 
@@ -62,24 +66,56 @@ const BottomLeftControls: React.FC<BottomLeftControlsProps> = ({
                 </Box>
             )}
 
-            {showPause && (
-                <Box
-                    bg={panelBg}
-                    borderRadius="md"
-                    px={4}
-                    py={2}
-                    boxShadow={boxShadow}
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    border="1px solid"
-                    borderColor="blue.600"
-                    _hover={{ bg: "gray.100" }} // Cambia el color al pasar el mouse
-                >
-                    <Button size="xs" colorScheme="red" onClick={onStop}/>
+            {isSimulating && (
+                // <Box
+                //     bg={panelBg}
+                //     borderRadius="md"
+                //     px={4}
+                //     py={2}
+                //     boxShadow={boxShadow}
+                //     display="flex"
+                //     alignItems="center"
+                //     justifyContent="center"
+                //     border="1px solid"
+                //     borderColor="blue.600"
+                //     _hover={{ bg: "gray.100" }} // Cambia el color al pasar el mouse
+                // >
+                //     <Button size="xs" colorScheme="red" onClick={onStop}/>
                 
-                </Box>
+                // </Box>
+                <Button
+                    colorScheme="red"
+                    size="s"
+                    p={3}
+                    onClick={onStop}
+                >
+                    Detener Simulación
+                </Button>
             )}
+            {!isSimulating &&
+                (
+                // <Box
+                //     bg={panelBg}
+                //     borderRadius="md"
+                //     boxShadow={boxShadow}
+                //     display="flex"
+                //     alignItems="center"
+                //     justifyContent="center"
+                //     border="1px solid"
+                //     borderColor="blue.600"
+                //     _hover={{ bg: "gray.100" }} // Cambia el color al pasar el mouse
+                // >
+                    <Button
+                        colorScheme="green"
+                        size="s"
+                        p={3}
+                        onClick={onIniciarSimulacion}
+                    >
+                        Iniciar Simulación
+                    </Button>
+                // </Box>
+                )
+            }
 
             {showSpeed && (
                 <Box

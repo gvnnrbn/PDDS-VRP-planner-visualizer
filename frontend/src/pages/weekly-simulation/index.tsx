@@ -27,6 +27,7 @@ import SimulationControlPanel from '../../components/common/SimulationControlPan
 import { PedidoForm } from '../../components/PedidoForm'
 import { PedidoService } from '../../core/services/PedidoService'
 import { IncidenciaService } from '../../core/services/IncidenciaService'
+import { ModalInsertAveria } from '../../components/common/modals/ModalInsertAveria'
 
 
 export default function WeeklySimulation() {
@@ -176,16 +177,12 @@ export default function WeeklySimulation() {
         <VStack spacing={4} align="stretch">
           {/* <PanelSearchBar onSubmit={() => console.log('searching...')} /> */}
           {/* Modal para crear avería */}
-          <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
-            <ModalOverlay />
-            <ModalContent>
-              <ModalHeader>Registrar Avería</ModalHeader>
-              <ModalBody>
-                <IncidenciaForm onFinish={handleRegister} onCancel={onClose} />
-              </ModalBody>
-            </ModalContent>
-          </Modal>
-          {/* Boton con acciones desplegables */}
+          {/* <ModalInsertAveria
+            isOpen={isOpen}
+            onClose={onClose}
+            handleSubmit={handleRegister}
+            plaque={''}
+          />
           <Menu>
             <MenuButton
               as={Button}
@@ -200,7 +197,7 @@ export default function WeeklySimulation() {
                 <Input type="file" display="none" ref={inputRef} accept=".csv,.xlsx,.xls,.txt" onChange={() => {}} />
               </MenuItem>
             </MenuList>
-          </Menu>
+          </Menu> */}
           {currentMinuteData?.incidencias?.map((i) => (
             <IncidenciaCard key={i.idIncidencia} incidencia={i} onClick={()=>console.log('enfocando...')}/>
           ))}

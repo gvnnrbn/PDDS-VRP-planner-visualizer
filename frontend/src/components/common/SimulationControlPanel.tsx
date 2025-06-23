@@ -8,6 +8,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { set } from 'date-fns';
 import BottomLeftControls from './MapActions';
 import SimulationCompleteModal from './SimulationCompletionModal';
+import { ModalInsertAveria } from './modals/ModalInsertAveria';
+import { register } from 'module';
+import { on } from 'process';
 
 interface LogEntry {
   timestamp: string;
@@ -569,7 +572,58 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
       canvas.removeEventListener('click', handleClick);
     };
   }, [canvasRef, data, scale]);
-
+  //Modal averia
+  const { isOpen: isOpenAveria, onOpen: onOpenAveria, onClose: onCloseAveria } = useDisclosure();
+  const [estadoVehiculo, setEstadoVehiculo] = useState('');
+  const [averiaData, setAveriaData] = useState<any>({
+      turno: 'T1',
+      tipo: 'Ti1',
+      placa: selectedVehicle ? selectedVehicle.placa : '',
+  })
+  useEffect(() => {
+    if (selectedVehicle) {
+      switch(selectedVehicle.estado) {
+        case 'STUCK':
+          setEstadoVehiculo('Inmovilizado');
+          break;
+        case 'MAINTENANCE':
+          setEstadoVehiculo('En Mantenimiento');
+          break;
+        case 'IDLE':
+          setEstadoVehiculo('Sin Programación');
+          break;
+        case 'ONTHEWAY':
+          setEstadoVehiculo('En Ruta');
+          break;
+        case 'RETURNING_TO_BASE':
+          setEstadoVehiculo('Regresando a almacén');
+          break;
+        case 'FINISHED':
+          setEstadoVehiculo('Ruta Finalizada');
+          break;
+        default:
+          setEstadoVehiculo('En Ruta');
+            break;
+      }
+      setAveriaData({
+        ...averiaData,
+        placa: selectedVehicle.placa,
+      });
+    }
+  }, [selectedVehicle]);
+  const registerAveria = () =>{
+    if (!connected || !stompClient.current) {
+      toast({ title: 'No conectado', status: 'error', duration: 2000 });
+      return;
+    }
+    stompClient.current.publish({ 
+      destination: '/app/update-failures', 
+      body: JSON.stringify(averiaData)
+    });
+    logMessage('Sending insert Averia request...');
+    console.log('Sending insert Averia request...');
+    onCloseAveria();
+  }
   //Modal final
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
 
@@ -604,7 +658,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
             zIndex: 1,}} />
         </Box>
         {/* Botón central antes de simular */}
-        {!isSimulating && (
+        {/* {!isSimulating && (
           <Flex
             position="absolute"
             top="50%"
@@ -623,7 +677,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
               Iniciar Simulación
             </Button>
           </Flex>
-        )}   
+        )}    */}
         {selectedVehicle && vehiclePanelPos && (
           <Box
             position="absolute"
@@ -646,18 +700,28 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
             </Flex>
             <Text>ID: {selectedVehicle.idVehiculo}</Text>
             <Text>Placa: {selectedVehicle.placa}</Text>
-            <Text>Estado: {selectedVehicle.estado}</Text>
-            <Text>
-              Posición: ({selectedVehicle.posicionX}, {selectedVehicle.posicionY})
-            </Text>
+            <Text>Estado: {estadoVehiculo}</Text>
+            {/* <Text>Posición: ({selectedVehicle.posicionX}, {selectedVehicle.posicionY})</Text> */}
+            <Button variant={'primary'} size={'sm'} onClick={onOpenAveria} mt={2}>
+              Registrar Avería
+            </Button>
           </Box>
         )}
+        <ModalInsertAveria
+          isOpen={isOpenAveria}
+          onClose={onCloseAveria}
+          onSubmit={registerAveria}
+          averiaData={averiaData}
+          setAveriaData={setAveriaData}
+        />
         {/* Controles inferiores (Detener + Fecha) */}
-        {isSimulating && (
+        {(
           <BottomLeftControls
             variant="date-pause"
-            date={`Tiempo: ${data?.minuto || "N/A"}`}
+            date={`Tiempo: ${data?.minuto || "dd/mm/yyyy"}`}
             onStop={handleStopAndShowSummary}
+            onIniciarSimulacion={onIniciarSimulacion}
+            isSimulating={isSimulating}
           />
         )}
         <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">

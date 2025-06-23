@@ -23,7 +23,7 @@ export const FlotaCard = ({
     let estadoText = '';
 
     switch(estado.toUpperCase()){
-            case 'STUCK': 
+        case 'STUCK': 
             cardColor = '#FFCFCF';
             isBroken = true;
             estadoText = 'Averiado';
