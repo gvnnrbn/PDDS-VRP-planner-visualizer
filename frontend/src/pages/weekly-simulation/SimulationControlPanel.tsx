@@ -6,9 +6,9 @@ import { Box, Button, Input, VStack, HStack, useToast, Modal, ModalOverlay, Moda
 import { FaTruck, FaWarehouse, FaMapMarkerAlt, FaIndustry } from 'react-icons/fa';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { set } from 'date-fns';
-import BottomLeftControls from './MapActions';
-import SimulationCompleteModal from './SimulationCompletionModal';
-import { ModalInsertAveria } from './modals/ModalInsertAveria';
+import BottomLeftControls from '../../components/common/MapActions';
+import SimulationCompleteModal from '../../components/common/SimulationCompletionModal';
+import { ModalInsertAveria } from '../../components/common/modals/ModalInsertAveria';
 import { register } from 'module';
 import { on } from 'process';
 import type { AlmacenSimulado } from '../../core/types/almacen';
