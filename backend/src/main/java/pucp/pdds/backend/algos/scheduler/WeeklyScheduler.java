@@ -17,7 +17,7 @@ import pucp.pdds.backend.dto.UpdateFailuresMessage;
 import java.time.format.DateTimeFormatter;
 
 @Service
-public class Scheduler implements Runnable {
+public class WeeklyScheduler implements Runnable {
     private SchedulerState state;
     private Lock stateLock = new ReentrantLock();
     private final SimpMessagingTemplate messagingTemplate;
@@ -29,7 +29,7 @@ public class Scheduler implements Runnable {
     }
 
     @Autowired
-    public Scheduler(SimpMessagingTemplate messagingTemplate) {
+    public WeeklyScheduler(SimpMessagingTemplate messagingTemplate) {
         this.messagingTemplate = messagingTemplate;
         this.isRunning = true;
     }
@@ -38,22 +38,12 @@ public class Scheduler implements Runnable {
     public void run() {
         Time endSimulationTime = state.getCurrTime().addTime(new Time(0,0,7,0,0));
 
-        // LLM PAY ATTENTION TO THIS [
-
-        // RUN A THREAD FOR PLANNING AND INITIALIZE IT WITH 
-        stateLock.lock();
-        SchedulerState clonedState = state.clone();
-        // HERE
-        stateLock.unlock();
-
-        // ] LLM STOP PAYING ATTENTION TO THIS
-
         while(state.getCurrTime().isBefore(endSimulationTime) && isRunning && !Thread.currentThread().isInterrupted()) {
             try {
                 stateLock.lock();
-                clonedState = state.clone();
+                SchedulerState clonedState = state.clone();
                 stateLock.unlock();
-                // LLM PAY ATTENTION TO THIS [
+
                 pucp.pdds.backend.algos.algorithm.Environment environment = new pucp.pdds.backend.algos.algorithm.Environment(
                     clonedState.getActiveVehicles(), 
                     clonedState.getActiveOrders(), 
@@ -63,17 +53,10 @@ public class Scheduler implements Runnable {
                     clonedState.getActiveMaintenances(), 
                     clonedState.getCurrTime(), 
                     clonedState.minutesToSimulate
-                ); // TO BE REPLACED
-                Algorithm algorithm = new Algorithm(true); // TO BE REPLACED
-                Solution sol = algorithm.run(environment, state.minutesToSimulate); // TO BE REPLACED
-                // GET FROM THE CONCURRENCT VARIABLE (
-                // it pops and transforms currentPlan to null
-                // also clones the currentState and .advance()s it 'minutesToSimulate' to generate the next plan
-                // )
-                // ] LLM STOP PAYING ATTENTION TO THIS
+                );
 
-                debugPrint(sol.toString());
-                // PLAN LOGIC
+                Algorithm algorithm = new Algorithm(true);
+                Solution sol = algorithm.run(environment, state.minutesToSimulate);
 
                 if (!sol.isFeasible(environment)) {
                     sendError("Can't continue delivering, couldn't find a feasible plan for next " + state.minutesToSimulate + " minutes");
@@ -89,7 +72,7 @@ public class Scheduler implements Runnable {
                     stateLock.unlock();
 
                     try {
-                        Thread.sleep(300);
+                        Thread.sleep(240);
                     } catch (InterruptedException e) {
                         isRunning = false;
                         Thread.currentThread().interrupt();
@@ -126,15 +109,6 @@ public class Scheduler implements Runnable {
             lastId + 1, message.getType(), message.getShiftOccurredOn(),
             message.getVehiclePlaque(), null);
         state.getFailures().add(failure);
-
-        // LLM PAY ATTENTION TO THIS [
-
-        // HERE THE CURRENT PLANIFICATION OF THE OTHER THREAD SHOULD BE SET TO NULL
-        SchedulerState clonedState = state.clone();
-        // THEN PASS THIS AND advance() it the remaining minutes and begin planning again
-
-        // ] LLM STOP PAYING ATTENTION TO THIS
-
         stateLock.unlock();
     }
 
@@ -145,7 +119,6 @@ public class Scheduler implements Runnable {
     private void onAfterExecution(int iteration, Solution sol) {
         java.util.Map<String, Object> response = buildSimulationUpdateResponse(state, sol);
         sendResponse("SIMULATION_UPDATE", response);
-
             // SimulationVisualizer.draw(state.getActiveVehicles(), state.getActiveBlockages(), state.getCurrTime(), state.minutesToSimulate, state.getWarehouses(), sol);
     }
 

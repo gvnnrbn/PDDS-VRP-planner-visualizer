@@ -13,7 +13,7 @@ import java.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import pucp.pdds.backend.algos.scheduler.Scheduler;
+import pucp.pdds.backend.algos.scheduler.WeeklyScheduler;
 import pucp.pdds.backend.algos.scheduler.SchedulerState;
 import pucp.pdds.backend.algos.utils.Time;
 import pucp.pdds.backend.algos.scheduler.DataProvider;
@@ -28,7 +28,7 @@ public class SimulationService {
     private final SimpMessagingTemplate messagingTemplate;
     private final DataProvider dataProvider;
 
-    private Scheduler currentSimulation;
+    private WeeklyScheduler currentSimulation;
     private Thread simulationThread;
     private final Object simulationLock = new Object();
     private boolean isSimulationActive = false;
@@ -98,7 +98,7 @@ public class SimulationService {
                     60
                 );
 
-                currentSimulation = new Scheduler(messagingTemplate);
+                currentSimulation = new WeeklyScheduler(messagingTemplate);
                 simulationThread = new Thread(currentSimulation, "simulation-thread");
                 currentSimulation.setState(schedulerState);
                 simulationThread.start();

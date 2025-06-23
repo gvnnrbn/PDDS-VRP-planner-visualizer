@@ -6,56 +6,94 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import pucp.pdds.backend.algos.entities.PlannerOrder;
-import pucp.pdds.backend.algos.entities.PlannerVehicle;
-
 public class Algorithm {
     // Hyperparameters
     private static int maxTimeMs = 30 * 1000;
-    private static int maxNoImprovement = 250;
+    private static int maxNoImprovement = 500;
     private static int maxNoImprovementFeasible = 100; 
 
     private boolean isDebug;
+    private static final Random random = new Random();
 
     public Algorithm(boolean isDebug) {
         this.isDebug = isDebug;
     }
 
     public Solution run(Environment environment, int minutes) {
-        Solution bestSolution = null;
-        Solution bestFeasibleSolution = null;
-        double bestFitness = Double.NEGATIVE_INFINITY;
-        double bestFeasibleFitness = Double.NEGATIVE_INFINITY;
         long startTime = System.currentTimeMillis();
-        int feasibleSolutionsFound = 0;
-        
-        // Ensure we have at least one solution
-        bestSolution = _run(environment, minutes);
-        bestFitness = bestSolution.fitness(environment);
+        if (isDebug) {
+            System.out.println("Algorithm started. Max time: " + maxTimeMs + "ms");
+        }
+
+        // Initial solution using one run of local search from a random start
+        Solution bestSolution = _run(environment, minutes, null);
+        double bestFitness = bestSolution.fitness(environment);
+        Solution bestFeasibleSolution = null;
+        double bestFeasibleFitness = Double.NEGATIVE_INFINITY;
+
         if (bestSolution.isFeasible(environment)) {
             bestFeasibleSolution = bestSolution;
             bestFeasibleFitness = bestFitness;
-            feasibleSolutionsFound++;
+            if (isDebug) {
+                System.out.println("Initial feasible solution found. Fitness: " + bestFeasibleFitness);
+            }
+        } else {
+            if (isDebug) {
+                System.out.println("Initial solution is not feasible. Fitness: " + bestFitness);
+            }
         }
-        
+
+        int iterations = 0;
+        long fastFeasibleTimeMs = 500; // 0.5 seconds
         while (System.currentTimeMillis() - startTime < maxTimeMs) {
-            Solution solution = _run(environment, minutes);
-            double fitness = solution.fitness(environment);
+            iterations++;
             
-            if (solution.isFeasible(environment)) {
-                feasibleSolutionsFound++;
-                if (fitness > bestFeasibleFitness) {
-                    bestFeasibleFitness = fitness;
-                    bestFeasibleSolution = solution;
+            // If 2 seconds have passed and we have a feasible solution, return it.
+            long elapsedTime = System.currentTimeMillis() - startTime;
+            if (bestFeasibleSolution != null && elapsedTime >= fastFeasibleTimeMs) {
+                if (isDebug) {
+                    System.out.println("\nFeasible solution found, returning after " + elapsedTime + "ms.");
                 }
-                if (feasibleSolutionsFound >= 3) {
-                    return bestFeasibleSolution;
+                return bestFeasibleSolution;
+            }
+
+            // Perturb the current best solution to escape local optima. Prefer perturbing the best feasible solution.
+            Solution solutionToPerturb = bestFeasibleSolution != null ? bestFeasibleSolution : bestSolution;
+            Solution perturbedSolution = perturb(solutionToPerturb, environment);
+
+            // Run local search from the perturbed solution
+            Solution newSolution = _run(environment, minutes, perturbedSolution);
+            double newFitness = newSolution.fitness(environment);
+
+            boolean newIsFeasible = newSolution.isFeasible(environment);
+
+            // Update best overall solution (feasible or not)
+            if (newFitness > bestFitness) {
+                bestSolution = newSolution;
+                bestFitness = newFitness;
+                if (isDebug) {
+                    System.out.println("New best infeasible solution found at iteration " + iterations + ". Fitness: " + bestFitness);
                 }
             }
-            
-            if (fitness > bestFitness) {
-                bestFitness = fitness;
-                bestSolution = solution;
+
+            // Update best feasible solution
+            if (newIsFeasible) {
+                if (bestFeasibleSolution == null || newFitness > bestFeasibleFitness) {
+                    bestFeasibleSolution = newSolution;
+                    bestFeasibleFitness = newFitness;
+                    if (isDebug) {
+                        System.out.println("New best feasible solution found at iteration " + iterations + ". Fitness: " + bestFeasibleFitness);
+                    }
+                }
+            }
+        }
+
+        if (isDebug) {
+            System.out.println("Algorithm finished in " + (System.currentTimeMillis() - startTime) + "ms after " + iterations + " iterations.");
+            if (bestFeasibleSolution != null) {
+                System.out.println("Best feasible solution fitness: " + bestFeasibleFitness);
+            } else {
+                System.out.println("No feasible solution found. Best infeasible solution fitness: " + bestFitness);
             }
         }
         
@@ -63,12 +101,11 @@ public class Algorithm {
         return bestFeasibleSolution != null ? bestFeasibleSolution : bestSolution;
     }
 
-    private Solution _run(Environment environment, int minutes) {
-        Solution currSolution = environment.getRandomSolution();
+    private Solution _run(Environment environment, int minutes, Solution initialSolution) {
+        Solution currSolution = (initialSolution == null) ? environment.getRandomSolution() : initialSolution.clone();
         Solution bestSolution = currSolution.clone();
         double bestFitness = bestSolution.fitness(environment);
         double currFitness = bestFitness;
-        int iterations = 0;
         int noImprovementCount = 0;
 
         while (true) {
@@ -118,49 +155,35 @@ public class Algorithm {
                 }
             } else {
                 // No improvement found, stop (hill climbing terminates at local optimum)
-                if (isDebug) {
-                    System.out.println("No improving neighbor found, terminating hill climbing at iteration " + iterations);
-                }
                 break;
             }
-
-            if (isDebug && iterations % 100 == 0) {
-                System.out.println("--------------------------------");
-                System.out.println("Iteration " + iterations +
-                        ": Current fitness: " + String.format("%.4f", currFitness) +
-                        ", Best fitness: " + String.format("%.4f", bestFitness) +
-                        ", currSolution Feasible: " + currSolution.isFeasible(environment) +
-                        ", bestSolution Feasible: " + bestSolution.isFeasible(environment) +
-                        ", No improvement: " + noImprovementCount);
-            }
-
-            iterations++;
         }
 
         bestSolution.compress();
 
-        if (!bestSolution.isFeasible(environment)) {
-            System.out.println("Best solution: " + bestSolution);
-            int totalGLPToDeliver = 0;
-            for (PlannerOrder order : environment.orders) {
-                totalGLPToDeliver += order.amountGLP;
-            }
-            System.out.println("GLP to deliver: " + totalGLPToDeliver);
-            int totalGLPInVehicles = 0;
-            for (PlannerVehicle vehicle : environment.vehicles) {
-                totalGLPInVehicles += vehicle.currentGLP;
-            }
-            System.out.println("GLP in vehicles: " + totalGLPInVehicles);
-            int totalGLPToRefill = 0;
-            for (Node node : bestSolution.routes.values().stream().flatMap(List::stream).toList()) {
-                if (node instanceof ProductRefillNode) {
-                    totalGLPToRefill += ((ProductRefillNode) node).amountGLP;
-                }
-            }
-            System.out.println("GLP to refill during simulation: " + totalGLPToRefill);
-            System.out.println("foo");
-        }
         return bestSolution;
+    }
+
+    private Solution perturb(Solution solution, Environment environment) {
+        Solution perturbedSolution = solution.clone();
+        // Apply a number of random, strong moves to escape local optima
+        int perturbations = 5 + random.nextInt(6); // 5 to 10 perturbations
+
+        for (int i = 0; i < perturbations; i++) {
+            Neighbor neighbor;
+            double moveType = random.nextDouble();
+
+            if (moveType < 0.5) { // 50% chance for inter-route move
+                neighbor = NeighborhoodGenerator.interRouteMove(perturbedSolution);
+            } else { // 50% chance for inter-route cross-exchange
+                neighbor = NeighborhoodGenerator.interRouteCrossExchange(perturbedSolution);
+            }
+            
+            if (neighbor != null) {
+                perturbedSolution = neighbor.solution;
+            }
+        }
+        return perturbedSolution;
     }
 
     public static class Movement {
@@ -248,10 +271,16 @@ public class Algorithm {
             Map<Integer, Node> startNodes = new HashMap<>();
             Map<Integer, Node> finalNodes = new HashMap<>();
             for (Map.Entry<Integer, List<Node>> entry : trimmedSolution.routes.entrySet()) {
-                startNodes.put(entry.getKey(), entry.getValue().get(0).clone());
-                finalNodes.put(entry.getKey(), entry.getValue().get(entry.getValue().size() - 1).clone());
-                entry.getValue().remove(0);
-                entry.getValue().remove(entry.getValue().size() - 1);
+                if (entry.getValue().size() >= 2) {
+                    startNodes.put(entry.getKey(), entry.getValue().get(0).clone());
+                    finalNodes.put(entry.getKey(), entry.getValue().get(entry.getValue().size() - 1).clone());
+                    entry.getValue().remove(0);
+                    entry.getValue().remove(entry.getValue().size() - 1);
+                } else {
+                    // For routes with less than 2 nodes, we can't trim them.
+                    // We'll clear them in the trimmed solution to avoid issues in operators.
+                    entry.getValue().clear();
+                }
             }
 
             for (Movement.MovementType operator : Movement.MovementType.values()) {

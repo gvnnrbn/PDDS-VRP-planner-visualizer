@@ -80,32 +80,46 @@ public class PlannerVehicle implements Cloneable {
             return;
         }
 
-        Position from = currentPath.get(0);
-        Position to = currentPath.get(1);
+        if (this.currentFuel <= 0) {
+            this.state = VehicleState.STUCK;
+            return;
+        }
 
-        while (units > 0 && currentPath.size() > 1) {
-            double distance = PathBuilder.calculateDistance(List.of(from, to));
-            if (distance > units) {
-                // Move 'from' position the corresponding amount of units
-                double ratio = units / distance;
+        while (units > 0 && currentPath.size() > 1 && this.currentFuel > 0) {
+            Position from = currentPath.get(0);
+            Position to = currentPath.get(1);
+
+            double segmentDistance = PathBuilder.calculateDistance(List.of(from, to));
+            if (segmentDistance <= 0) {
+                currentPath.remove(0);
+                continue;
+            }
+
+            double fuelCostForSegment = segmentDistance * (this.weight / 1000 + this.currentGLP * 0.5) / 180;
+            double fuelPerUnit = fuelCostForSegment / segmentDistance;
+
+            double maxDistWithFuel = (fuelPerUnit > 0) ? this.currentFuel / fuelPerUnit : Double.POSITIVE_INFINITY;
+            double distanceToMove = Math.min(units, Math.min(segmentDistance, maxDistWithFuel));
+
+            this.currentFuel -= distanceToMove * fuelPerUnit;
+            units -= distanceToMove;
+
+            if (distanceToMove >= segmentDistance) {
+                this.position = to;
+                currentPath.remove(0);
+            } else {
+                double ratio = distanceToMove / segmentDistance;
                 double deltaX = (to.x - from.x) * ratio;
                 double deltaY = (to.y - from.y) * ratio;
                 Position newPosition = new Position(from.x + deltaX, from.y + deltaY);
+                this.position = newPosition;
                 currentPath.set(0, newPosition);
-                this.position = newPosition;  // Update vehicle position
-                units = 0;
-            } else if (distance <= units) {
-                // Remove 'from' position from path
-                currentPath.remove(0);
-                this.position = to;  // Update vehicle position
-                units -= distance;
-                
-                // Update from and to for next iteration
-                if (currentPath.size() > 1) {
-                    from = currentPath.get(0);
-                    to = currentPath.get(1);
-                }
             }
+        }
+
+        if (this.currentFuel <= 0) {
+            this.currentFuel = 0;
+            this.state = VehicleState.STUCK;
         }
     }
 
