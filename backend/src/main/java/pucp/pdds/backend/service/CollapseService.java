@@ -16,6 +16,7 @@ import pucp.pdds.backend.algos.scheduler.SchedulerState;
 import pucp.pdds.backend.algos.utils.Time;
 import pucp.pdds.backend.algos.scheduler.DataProvider;
 import pucp.pdds.backend.dto.SimulationResponse;
+import pucp.pdds.backend.dto.collapse.CollapseSimulationResponse;
 
 @Service
 public class CollapseService {
@@ -129,7 +130,7 @@ public class CollapseService {
     }
 
     private void sendResponse(String type, Object data) {
-        SimulationResponse response = new SimulationResponse(type, data);
-        messagingTemplate.convertAndSend("/topic/simulation", response);
+        CollapseSimulationResponse response = new CollapseSimulationResponse(type, data);
+        messagingTemplate.convertAndSend("/topic/collapse-simulation", response);
     }
 } 
