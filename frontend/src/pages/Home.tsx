@@ -24,7 +24,7 @@ export default function Home() {
           bg="white"
         />
         <Heading as="h1" size="xl" color={text} textAlign="center">
-          ¡Bienvenido a PLG-PapuSystem!
+          ¡Bienvenido a PLG!
         </Heading>
         <Text fontSize="lg" color={text} textAlign="center">
           Optimiza y visualiza la planificación de rutas, pedidos, incidencias, vehículos y almacenes de manera eficiente y profesional. Utiliza el menú lateral para navegar por las diferentes secciones del sistema.

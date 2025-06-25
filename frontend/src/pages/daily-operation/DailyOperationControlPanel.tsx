@@ -2,11 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import type { IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { Box, Button, VStack, useToast, useDisclosure, Flex, Text } from '@chakra-ui/react';
+import { Box, Button, VStack, useToast, useDisclosure, Flex, Text, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, Input } from '@chakra-ui/react';
 import { FaTruck, FaWarehouse, FaMapMarkerAlt, FaIndustry } from 'react-icons/fa';
 import { renderToStaticMarkup } from 'react-dom/server';
 import BottomLeftControls from '../../components/common/MapActions';
 import { ModalInsertAveria } from '../../components/common/modals/ModalInsertAveria';
+import useDailyStomp from './useDailyStomp';
 
 // --- Canvas drawing logic (copied from SimulationControlPanel) ---
 const iconImageCache: Record<string, HTMLImageElement> = {};
@@ -188,10 +189,9 @@ interface DailyOperationControlPanelProps {
 }
 
 const DailyOperationControlPanel: React.FC<DailyOperationControlPanelProps> = ({ setData, data }) => {
-  const [connected, setConnected] = useState(false);
+  const { connected, subscribe, unsubscribe, publish } = useDailyStomp(`${backend_url}/ws`);
   const [status, setStatus] = useState<'connected' | 'disconnected' | 'error'>('disconnected');
   const [log, setLog] = useState<{ timestamp: string; message: string }[]>([]);
-  const stompClient = useRef<Client | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const toast = useToast();
   const [scale, setScale] = useState<{ margin: number; scaleX: number; scaleY: number }>({
@@ -199,12 +199,43 @@ const DailyOperationControlPanel: React.FC<DailyOperationControlPanelProps> = ({
     scaleX: 1,
     scaleY: 1,
   });
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [initialTime, setInitialTime] = useState(() => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    return now.toISOString().slice(0, 16);
+  });
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const scaleRef = useRef<{ margin: number; scaleX: number; scaleY: number }>({ margin: 40, scaleX: 1, scaleY: 1 });
+
   useEffect(() => {
-    connect();
-    return () => {
-      disconnect();
+    if (!connected) return;
+    const handleMessage = async (message: any) => {
+      const response = JSON.parse(message.body);
+      if (typeof response === 'object' && response !== null && 'type' in response) {
+        const typedResponse = response as { type: string; data: any };
+        switch (typedResponse.type) {
+          case 'SIMULATION_UPDATE':
+            if (canvasRef.current) {
+              const result = await drawState(canvasRef.current, typedResponse.data);
+              if (result) setScale(result);
+            }
+            setData(typedResponse.data);
+            return;
+          case 'ERROR':
+            toast({ title: 'Error', description: typedResponse.data, status: 'error', duration: 4000 });
+            return;
+          default:
+            // ignore
+        }
+      }
     };
-  }, []);
+    subscribe('/topic/daily-simulation', handleMessage);
+    return () => {
+      unsubscribe('/topic/daily-simulation');
+    };
+  }, [connected]);
+
   const logMessage = (message: string) => {
     setLog((prev) => [
       ...prev,
@@ -214,81 +245,30 @@ const DailyOperationControlPanel: React.FC<DailyOperationControlPanelProps> = ({
   const updateStatus = (s: typeof status) => {
     setStatus(s);
   };
-  const connect = () => {
-    if (connected) {
-      disconnect();
+  const startSimulation = () => {
+    if (!connected) {
+      toast({ title: 'No conectado', status: 'error', duration: 2000 });
+      return;
     }
-    logMessage(`🔌 Connecting to ${backend_url}...`);
-    const client = new Client({
-      brokerURL: undefined,
-      webSocketFactory: () => new SockJS(`${backend_url}/ws`),
-      debug: () => {},
-      reconnectDelay: 5000,
-      onConnect: () => {
-        setConnected(true);
-        updateStatus('connected');
-        logMessage('✅ Connected to daily operation server');
-        client.subscribe('/topic/daily', (message: IMessage) => {
-          try {
-            handleMessage(JSON.parse(message.body));
-          } catch (error: unknown) {
-            if (error instanceof Error) {
-              logMessage('❌ Error parsing message: ' + error.message);
-            } else {
-              logMessage('❌ Error parsing message');
-            }
-          }
-        });
-      },
-      onStompError: (frame) => {
-        setConnected(false);
-        updateStatus('error');
-        logMessage('❌ Connection error: ' + frame.headers['message']);
-      },
-      onWebSocketClose: () => {
-        setConnected(false);
-        updateStatus('disconnected');
-        logMessage('🔌 Disconnected');
-      },
-    });
-    stompClient.current = client;
-    client.activate();
+    const date = new Date(initialTime);
+    const timeObj = {
+      year: date.getFullYear(),
+      month: date.getMonth() + 1,
+      day: date.getDate(),
+      hour: date.getHours(),
+      minute: date.getMinutes(),
+    };
+    publish('/app/init-daily', JSON.stringify({ initialTime: timeObj }));
+    setIsSimulating(true);
+    onClose();
   };
-  const disconnect = () => {
-    if (stompClient.current) {
-      stompClient.current.deactivate();
-      stompClient.current = null;
+  const stopSimulation = () => {
+    if (!connected) {
+      toast({ title: 'No conectado', status: 'error', duration: 2000 });
+      return;
     }
-    setConnected(false);
-    updateStatus('disconnected');
-    logMessage('🔌 Disconnected');
-  };
-  const handleMessage = async (response: unknown) => {
-    // Only handle SIMULATION_UPDATE and direct data
-    if (typeof response === 'object' && response !== null && 'type' in response) {
-      const typedResponse = response as { type: string; data: any };
-      switch (typedResponse.type) {
-        case 'SIMULATION_UPDATE':
-          if (canvasRef.current) {
-            const result = await drawState(canvasRef.current, typedResponse.data);
-            if (result) setScale(result);
-          }
-          setData(typedResponse.data);
-          return;
-        case 'ERROR':
-          logMessage('❌ ' + typedResponse.data);
-          toast({ title: 'Error', description: typedResponse.data, status: 'error', duration: 4000 });
-          return;
-        default:
-          logMessage('📝 ' + JSON.stringify(response));
-      }
-    } else {
-      logMessage('📝 ' + JSON.stringify(response));
-    }
-    if (canvasRef.current && typeof response === 'object' && response !== null) {
-      const result = await drawState(canvasRef.current, response);
-      if (result) setScale(result);
-    }
+    publish('/app/stop-daily', '{}');
+    setIsSimulating(false);
   };
   // ZOOM Y PAN
   useEffect(() => {
@@ -459,24 +439,30 @@ const DailyOperationControlPanel: React.FC<DailyOperationControlPanelProps> = ({
             <Text>ID: {selectedVehicle.idVehiculo}</Text>
             <Text>Placa: {selectedVehicle.placa}</Text>
             <Text>Estado: {estadoVehiculo}</Text>
-            <Button variant={'primary'} size={'sm'} onClick={onOpenAveria} mt={2}>
-              Registrar Avería
-            </Button>
           </Box>
         )}
-        <ModalInsertAveria
-          isOpen={isOpenAveria}
-          onClose={onCloseAveria}
-          onSubmit={() => {}}
-          averiaData={averiaData}
-          setAveriaData={setAveriaData}
-        />
+        <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
+          <ModalOverlay />
+          <ModalContent borderRadius="lg" p={2}>
+            <ModalHeader fontWeight="bold" fontSize="2xl" color="gray.700">Iniciar Simulación</ModalHeader>
+            <ModalBody>
+              <VStack spacing={4} align="stretch">
+                <Text>Seleccione la fecha y hora de inicio de la simulación</Text>
+                <Input type="datetime-local" value={initialTime} onChange={e => setInitialTime(e.target.value)} />
+              </VStack>
+            </ModalBody>
+            <ModalFooter>
+              <Button onClick={onClose} variant="ghost" mr={3}>Cancelar</Button>
+              <Button colorScheme="green" onClick={startSimulation} isDisabled={!connected}>Simular</Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
         <BottomLeftControls
           variant="date-pause"
           date={`Tiempo: ${data?.minuto || "dd/mm/yyyy"}`}
-          onStop={() => {}}
-          onIniciarSimulacion={() => {}}
-          isSimulating={true}
+          onStop={stopSimulation}
+          onIniciarSimulacion={onOpen}
+          isSimulating={isSimulating}
         />
       </VStack>
     </Box>

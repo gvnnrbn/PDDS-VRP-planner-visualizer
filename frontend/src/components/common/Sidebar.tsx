@@ -23,7 +23,7 @@ export const SidebarProvider = ({ children }: { children: React.ReactNode }) => 
 
 export const Sidebar = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
   const menuItems = [
-    { name: 'Registrar Pedidos', path: '/pedidos', icon: <FiPackage /> },
+    { name: 'Pedidos', path: '/pedidos', icon: <FiPackage /> },
     { name: 'Incidencias', path: '/incidencias', icon: <FiAlertCircle /> },
     { name: 'Vehículos', path: '/vehiculos', icon: <FiTruck /> },
     { name: 'Almacenes', path: '/almacen', icon: <FiHome /> },

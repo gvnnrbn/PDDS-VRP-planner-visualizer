@@ -94,6 +94,6 @@ public class DailyService {
 
     private void sendResponse(String type, Object data) {
         SimulationResponse response = new SimulationResponse(type, data);
-        messagingTemplate.convertAndSend("/topic/simulation", response);
+        messagingTemplate.convertAndSend("/topic/daily-simulation", response);
     }
 }
