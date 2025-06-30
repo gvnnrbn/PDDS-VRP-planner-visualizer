@@ -1,5 +1,7 @@
 package pucp.pdds.backend.algos.scheduler;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -9,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import pucp.pdds.backend.algos.algorithm.Algorithm;
 import pucp.pdds.backend.algos.algorithm.Solution;
+import pucp.pdds.backend.algos.algorithm.Environment;
 import pucp.pdds.backend.algos.data.DataChunk;
 import pucp.pdds.backend.algos.entities.PlannerFailure;
 import pucp.pdds.backend.algos.utils.Time;
@@ -44,7 +47,7 @@ public class WeeklyScheduler implements Runnable {
                 SchedulerState clonedState = state.clone();
                 stateLock.unlock();
 
-                pucp.pdds.backend.algos.algorithm.Environment environment = new pucp.pdds.backend.algos.algorithm.Environment(
+                Environment environment = new Environment(
                     clonedState.getActiveVehicles(), 
                     clonedState.getActiveOrders(), 
                     clonedState.getWarehouses(), 
@@ -108,7 +111,9 @@ public class WeeklyScheduler implements Runnable {
         PlannerFailure failure = new PlannerFailure(
             lastId + 1, message.getType(), message.getShiftOccurredOn(),
             message.getVehiclePlaque(), null);
-        state.getFailures().add(failure);
+        List<PlannerFailure> failures = new ArrayList<>(state.getFailures());
+        failures.add(failure);
+        state.setFailures(failures);
         stateLock.unlock();
     }
 
