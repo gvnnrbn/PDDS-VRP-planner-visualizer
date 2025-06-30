@@ -89,7 +89,7 @@ const LegendPanel: React.FC<LegendPanelProps> = ({ isSidebarCollapsed }) => {
                 <Text fontSize="sm">Tanque disponible</Text>
               </HStack>
               <HStack>
-                <FontAwesomeIcon icon={faSquare} size="lg" />
+                <FontAwesomeIcon icon={faSquare} size="lg" color="red"/>
                 <Text fontSize="sm">Bloqueo</Text>
               </HStack>
               <HStack>
