@@ -10,6 +10,7 @@ import pucp.pdds.backend.algos.data.DataChunk;
 import pucp.pdds.backend.algos.utils.Time;
 import pucp.pdds.backend.dto.SimulationResponse;
 import pucp.pdds.backend.dto.UpdateFailuresMessage;
+import pucp.pdds.backend.dto.collapse.CollapseSimulationResponse;
 
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.locks.Lock;
@@ -125,8 +126,8 @@ public class CollapseScheduler implements Runnable {
 
     private void sendResponse(String type, Object data) {
         if (this.messagingTemplate != null) {
-            SimulationResponse response = new SimulationResponse(type, data);
-            messagingTemplate.convertAndSend("/topic/simulation", response);
+            CollapseSimulationResponse response = new CollapseSimulationResponse(type, data);
+            messagingTemplate.convertAndSend("/topic/collapse-simulation", response);
         }
     }
 
