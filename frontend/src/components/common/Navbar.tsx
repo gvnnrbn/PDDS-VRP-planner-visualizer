@@ -72,7 +72,7 @@ export const Navbar = () => {
             fontWeight="bold"
             _hover={{ textDecoration: "none" }}
           >
-            PLG-PapuSystem
+            PLG-System
           </Link>
         </Flex>
         {/* Lado derecho: NAV LINKS */}
