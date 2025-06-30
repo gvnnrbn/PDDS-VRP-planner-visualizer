@@ -119,7 +119,7 @@ export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
 
   // Draw blockages (as connected black lines)
   if (data.bloqueos) {
-    ctx.strokeStyle = '#000';
+    ctx.strokeStyle = '#F80707';
     ctx.lineWidth = 3;
     data.bloqueos.forEach((blockage: any) => {
       if (blockage.segmentos?.length > 1) {
@@ -141,7 +141,8 @@ export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
     });
     ctx.lineWidth = 1;
   }
-
+  let mainWHx = 0;
+  let mainWHy = 0;
   // Draw warehouses (as icons)
   if (data.almacenes) {
     for (const wh of data.almacenes) {
@@ -151,6 +152,8 @@ export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
       let color = '#444';
       if (!wh.isMain) {
         color = (wh.currentGLP || 0) === 0 ? '#ff0000' : '#00c800';
+        mainWHx = x;
+        mainWHy = y;
       }
       const img = await iconToImage(icon, color, 32);
       ctx.drawImage(img, x, y, 32, 32);
@@ -183,6 +186,10 @@ export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
   // Draw vehicles (as icons)
   if (data.vehiculos) {
     for (const v of data.vehiculos) {
+      if (v.posicionX === mainWHx && v.posicionY === mainWHy){
+        console.log('Vehículo en almacén principal, no dibujando:', v.idVehiculo);
+        continue;
+      }
       let color = '#ffc800';
       if (v.estado === 'STUCK') color = '#ff0000';
       else if (v.estado === 'MAINTENANCE') color = '#ffa500';
@@ -394,7 +401,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
             if (result) setScale(result);
           }
           setData(typedResponse.data);
-          console.log('Data updated:', typedResponse.data);
+          // console.log('Data updated:', typedResponse.data);
           return;
         case 'SIMULATION_STATE':
           if (typeof typedResponse.data === 'boolean') {
@@ -411,11 +418,11 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
     } else {
       logMessage('📝 ' + JSON.stringify(response));
     }
-    useEffect(()=>{
-      if(data){
-        console.log('Data updated:', data);
-      }
-    },[data])
+    // useEffect(()=>{
+    //   if(data){
+    //     console.log('Data updated:', data);
+    //   }
+    // },[data])
     
     // Visualización: dibujar en canvas
     if (canvasRef.current && typeof response === 'object' && response !== null) {

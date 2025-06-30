@@ -15,7 +15,9 @@ import org.slf4j.LoggerFactory;
 
 import pucp.pdds.backend.algos.scheduler.WeeklyScheduler;
 import pucp.pdds.backend.algos.scheduler.SchedulerState;
+import pucp.pdds.backend.algos.utils.Position;
 import pucp.pdds.backend.algos.utils.Time;
+import pucp.pdds.backend.algos.entities.PlannerVehicle.VehicleState;
 import pucp.pdds.backend.algos.scheduler.DataProvider;
 import pucp.pdds.backend.dto.InitMessage;
 import pucp.pdds.backend.dto.SimulationResponse;
@@ -76,10 +78,21 @@ public class SimulationService {
                 
                 logger.info("Loaded {} vehicles, {} orders, {} blockages, {} warehouses, {} failures, {} maintenances", 
                     vehicles.size(), orders.size(), blockages.size(), warehouses.size(), failures.size(), maintenances.size());
+
+                Position mainWarehousePosition = warehouses.stream().filter(w -> w.isMain).findFirst().orElseThrow().position;
                 
                 vehicles.forEach(v -> {
                     v.currentFuel = v.maxFuel;
                     v.currentGLP = v.maxGLP;
+                    v.initialPosition = mainWarehousePosition;
+                    v.position = mainWarehousePosition;
+                    v.currentPath = null;
+                    v.nextNodeIndex = 0;
+                    v.currentFailure = null;
+                    v.minutesUntilFailure = 0;
+                    v.reincorporationTime = null;
+                    v.state = VehicleState.IDLE;
+                    v.waitTransition = 0;
                 });
 
                 warehouses.forEach(w -> {
