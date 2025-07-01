@@ -18,7 +18,7 @@ export const FlotaCard = ({
     let cardColor = 'white'; // Default color
     let isFocus = false;
     let hasRoute = true;
-    let combustiblePercentage = 0;
+    let combustiblePercentage = '';
     let isBroken = false;
     let estadoText = '';
 
@@ -53,7 +53,7 @@ export const FlotaCard = ({
             break;
     }
     if(vehiculo.estado.toUpperCase() != 'SIN PROGRAMACIÓN'){
-        combustiblePercentage = vehiculo.combustible / vehiculo.maxCombustible * 100;
+        combustiblePercentage = (vehiculo.combustible / vehiculo.maxCombustible * 100).toFixed(2);
     }
   return (<>
     <Flex direction='column' bg={cardColor} borderRadius='10px' py={3} px={4} mx={-1} gap={1}>

@@ -150,16 +150,16 @@ export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
       const y = margin + wh.posicion.posY * scaleY - 16;
       const icon = wh.isMain ? FaWarehouse : FaIndustry;
       let color = '#444';
-      if (!wh.isMain) {
+      if (wh.isMain) {
         color = (wh.currentGLP || 0) === 0 ? '#ff0000' : '#00c800';
-        mainWHx = x;
-        mainWHy = y;
+        mainWHx = wh.posicion.posX;
+        mainWHy = wh.posicion.posY;
       }
       const img = await iconToImage(icon, color, 32);
       ctx.drawImage(img, x, y, 32, 32);
       ctx.fillStyle = '#000';
       ctx.font = '12px Arial';
-      ctx.fillText('W' + (wh.idAlmacen || ''), x + 8, y + 40);
+      ctx.fillText('W' + (wh.idAlmacen || ''), x + 4, y + 50);
       if (wh.maxGLP) {
         const perc = wh.currentGLP / wh.maxGLP;
         ctx.fillStyle = '#c8c8c8';
@@ -176,7 +176,7 @@ export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
     for (const node of data.pedidos.filter((pedido: any) => pedido.estado.toUpperCase() !== 'COMPLETADO')) {
       const x = margin + node.posX * scaleX - 12;
       const y = margin + node.posY * scaleY - 24;
-      const img = await iconToImage(FaMapMarkerAlt, '#ff2d2d', 24);
+      const img = await iconToImage(FaMapMarkerAlt, '#5459EA', 24);
       ctx.drawImage(img, x, y, 24, 24);
     }
   }
@@ -235,12 +235,12 @@ export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
       ctx.drawImage(img, -16, -16, 32, 32);
       ctx.restore();
 
-      ctx.fillStyle = '#000';
+      ctx.fillStyle = '#444';
       ctx.font = '12px Arial';
       ctx.fillText(v.placa || v.idVehiculo || '', vx - 16, vy - 21);
 
       if (v.rutaActual?.length > 1 && v.estado !== 'STUCK') {
-        ctx.strokeStyle = 'rgba(46, 0, 252, 0.7)';
+        ctx.strokeStyle = '#444';
         ctx.lineWidth = 2;
         ctx.beginPath();
         v.rutaActual.forEach((p: any, i: number) => {

@@ -93,7 +93,7 @@ const LegendPanel: React.FC<LegendPanelProps> = ({ isSidebarCollapsed }) => {
                 <Text fontSize="sm">Bloqueo</Text>
               </HStack>
               <HStack>
-                <FontAwesomeIcon icon={faLocationDot} size="lg" color="red" />
+                <FontAwesomeIcon icon={faLocationDot} size="lg" color="#5459EA" />
                 <Text fontSize="sm">Destino</Text>
               </HStack>
             </SimpleGrid>
