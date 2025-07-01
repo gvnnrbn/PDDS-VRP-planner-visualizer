@@ -79,7 +79,7 @@ export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
     ctx.stroke();
   }
   if (data.bloqueos) {
-    ctx.strokeStyle = '#000';
+    ctx.strokeStyle = '#F80707';
     ctx.lineWidth = 3;
     data.bloqueos.forEach((blockage: any) => {
       if (blockage.segmentos?.length > 1) {
@@ -101,6 +101,8 @@ export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
     });
     ctx.lineWidth = 1;
   }
+  let mainWHx = 0;
+  let mainWHy = 0;
   if (data.almacenes) {
     for (const wh of data.almacenes) {
       const x = margin + wh.posicion.posX * scaleX - 16;
@@ -109,6 +111,8 @@ export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
       let color = '#444';
       if (!wh.isMain) {
         color = (wh.currentGLP || 0) === 0 ? '#ff0000' : '#00c800';
+        mainWHx = x;
+        mainWHy = y;
       }
       const img = await iconToImage(icon, color, 32);
       ctx.drawImage(img, x, y, 32, 32);

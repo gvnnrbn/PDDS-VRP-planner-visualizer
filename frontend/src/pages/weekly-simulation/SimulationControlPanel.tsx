@@ -187,7 +187,6 @@ export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
   if (data.vehiculos) {
     for (const v of data.vehiculos) {
       if (v.posicionX === mainWHx && v.posicionY === mainWHy){
-        console.log('Vehículo en almacén principal, no dibujando:', v.idVehiculo);
         continue;
       }
       let color = '#ffc800';
@@ -396,12 +395,10 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
         case 'SIMULATION_UPDATE':
           // Handle simulation update data
           if (canvasRef.current) {
-            // console.log('Data updated:', data);
             const result = await drawState(canvasRef.current, typedResponse.data);
             if (result) setScale(result);
           }
           setData(typedResponse.data);
-          // console.log('Data updated:', typedResponse.data);
           return;
         case 'SIMULATION_STATE':
           if (typeof typedResponse.data === 'boolean') {
@@ -418,11 +415,6 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
     } else {
       logMessage('📝 ' + JSON.stringify(response));
     }
-    // useEffect(()=>{
-    //   if(data){
-    //     console.log('Data updated:', data);
-    //   }
-    // },[data])
     
     // Visualización: dibujar en canvas
     if (canvasRef.current && typeof response === 'object' && response !== null) {
@@ -659,8 +651,6 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
         shiftOccurredOn: averiaData.turno,
       })
     });
-    logMessage('Sending insert Averia request...');
-    console.log('Sending insert Averia request...');
     onCloseAveria();
   }
   //Modal final
