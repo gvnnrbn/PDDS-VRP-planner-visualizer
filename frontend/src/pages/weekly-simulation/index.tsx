@@ -28,6 +28,7 @@ import { PedidoForm } from '../../components/PedidoForm'
 import { PedidoService } from '../../core/services/PedidoService'
 import { IncidenciaService } from '../../core/services/IncidenciaService'
 import { ModalInsertAveria } from '../../components/common/modals/ModalInsertAveria'
+import { IndicadoresCard } from '../../components/common/cards/IndicadoresCard'
 
 
 export default function WeeklySimulation() {
@@ -221,6 +222,31 @@ export default function WeeklySimulation() {
     );
   };
 
+  const IndicadoresSection = () => {
+    const { currentMinuteData } = useSimulation();
+    
+    const indicadores = {
+      fuelCounterTA: 1200,
+      fuelCounterTB: 950,
+      fuelCounterTC: 800,
+      fuelCounterTD: 1100,
+      fuelCounterTotal: 4050,
+      glpFilledNorth: 300,
+      glpFilledEast: 250,
+      glpFilledMain: 400,
+      glpFilledTotal: 950,
+      meanDeliveryTime: 42,
+      completedOrders: 87,
+    };
+    return (
+      <Box>
+        <VStack spacing={4} align="stretch">
+            <IndicadoresCard key={currentMinuteData?.minuto} indicadores={indicadores}/>
+        </VStack>
+      </Box>
+    );
+  };
+
   const sections = [
   {
     title: 'Pedidos',
@@ -237,6 +263,10 @@ export default function WeeklySimulation() {
   {
     title: 'Mantenimiento',
     content: <MantenimientoSection/>
+  },
+  {
+    title: 'Indicadores',
+    content: <IndicadoresSection/>
   },
   ];
 

@@ -7,6 +7,7 @@ import {
 import type { ReactNode } from "react";
 import type { PedidoSimulado } from "../../core/types/pedido";
 import type { VehiculoSimuladoV2 } from "../../core/types/vehiculo";
+import type { IndicadoresSimulado } from "../../core/types/indicadores";
 
 
 export interface MinutoSimulacion {
@@ -16,6 +17,7 @@ export interface MinutoSimulacion {
   almacenes: any[];
   incidencias: any[];
   mantenimientos: any[];
+  indicadores: IndicadoresSimulado
 }
 
 interface SimulationContextType {
