@@ -132,6 +132,7 @@ public class SchedulerState {
     public void initializeVehicles() {
         for (PlannerVehicle plannerVehicle : getActiveVehicles()) {
             plannerVehicle.nextNodeIndex = 1;
+            plannerVehicle.currentPath = null;
             if (plannerVehicle.state == PlannerVehicle.VehicleState.FINISHED) {
                 plannerVehicle.state = PlannerVehicle.VehicleState.IDLE;
             }
