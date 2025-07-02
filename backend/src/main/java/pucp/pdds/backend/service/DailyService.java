@@ -64,7 +64,9 @@ public class DailyService {
                 maintenances.stream().map(m -> m.clone()).toList(),
                 new Time(fechaInicio.getYear(), fechaInicio.getMonthValue(), 
                 fechaInicio.getDayOfMonth(), fechaInicio.getHour(), fechaInicio.getMinute()),
-               10
+               10,
+               new Time(fechaInicio.getYear(), fechaInicio.getMonthValue(),
+                fechaInicio.getDayOfMonth(), fechaInicio.getHour(), fechaInicio.getMinute())
             );
 
             currentSimulation = new DailyScheduler(messagingTemplate, dataProvider);

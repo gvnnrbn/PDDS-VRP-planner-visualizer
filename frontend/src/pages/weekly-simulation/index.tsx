@@ -29,6 +29,7 @@ import { PedidoService } from '../../core/services/PedidoService'
 import { IncidenciaService } from '../../core/services/IncidenciaService'
 import { ModalInsertAveria } from '../../components/common/modals/ModalInsertAveria'
 import { IndicadoresCard } from '../../components/common/cards/IndicadoresCard'
+import type { totalmem } from 'os'
 
 
 export default function WeeklySimulation() {
@@ -224,24 +225,34 @@ export default function WeeklySimulation() {
 
   const IndicadoresSection = () => {
     const { currentMinuteData } = useSimulation();
-    
-    const indicadores = {
-      fuelCounterTA: 1200,
-      fuelCounterTB: 950,
-      fuelCounterTC: 800,
-      fuelCounterTD: 1100,
-      fuelCounterTotal: 4050,
-      glpFilledNorth: 300,
-      glpFilledEast: 250,
-      glpFilledMain: 400,
-      glpFilledTotal: 950,
-      meanDeliveryTime: 42,
-      completedOrders: 87,
+     const [indicadoresVisibles, setIndicadoresVisibles] = useState(currentMinuteData?.indicadores);
+
+    useEffect(() => {
+      const interval = setInterval(() => {
+        setIndicadoresVisibles(currentMinuteData?.indicadores);
+      }, 2000000); // cada 10 segundos
+
+      return () => clearInterval(interval); // limpieza al desmontar
+    }, [currentMinuteData?.indicadores]); // reinicia si cambian los indicadores (opcional)
+
+    const indicadores = indicadoresVisibles?? {
+      fuelCounterTA: 0,
+      fuelCounterTB: 0,
+      fuelCounterTC: 0,
+      fuelCounterTD: 0,
+      fuelCounterTotal: 0,
+      glpFilledNorth: 0,
+      glpFilledEast: 0,
+      glpFilledMain: 0,
+      glpFilledTotal: 0,
+      meanDeliveryTime: 0,
+      completedOrders: 0,
+      totalOrders: 0,
     };
     return (
       <Box>
         <VStack spacing={4} align="stretch">
-            <IndicadoresCard key={currentMinuteData?.minuto} indicadores={indicadores}/>
+            <IndicadoresCard key={'indicadores-default'} indicadores={indicadores}/>
         </VStack>
       </Box>
     );

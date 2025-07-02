@@ -10,4 +10,5 @@ export interface IndicadoresSimulado{
     glpFilledTotal: number;
     meanDeliveryTime: number; // minutos
     completedOrders: number;
+    totalOrders: number;
 }

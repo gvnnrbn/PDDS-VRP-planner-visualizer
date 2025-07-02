@@ -19,7 +19,7 @@ import pucp.pdds.backend.algos.utils.PathBuilder;
 import pucp.pdds.backend.algos.utils.SimulationProperties;
 
 public class SchedulerState {
-    public SchedulerState(List<PlannerVehicle> vehicles, List<PlannerOrder> orders, List<PlannerBlockage> blockages, List<PlannerWarehouse> warehouses, List<PlannerFailure> failures, List<PlannerMaintenance> maintenances, Time currTime, int minutesToSimulate) {
+    public SchedulerState(List<PlannerVehicle> vehicles, List<PlannerOrder> orders, List<PlannerBlockage> blockages, List<PlannerWarehouse> warehouses, List<PlannerFailure> failures, List<PlannerMaintenance> maintenances, Time currTime, int minutesToSimulate, Time initTime) {
         this.vehicles = vehicles != null ? vehicles : new ArrayList<>();
         this.orders = orders != null ? orders : new ArrayList<>();
         this.blockages = blockages != null ? blockages : new ArrayList<>();
@@ -28,6 +28,7 @@ public class SchedulerState {
         this.maintenances = maintenances != null ? maintenances : new ArrayList<>();
         this.currTime = currTime;
         this.minutesToSimulate = minutesToSimulate;
+        this.initTime = new Time(initTime);
     }
 
     private List<PlannerVehicle> vehicles = new ArrayList<>();
@@ -36,13 +37,15 @@ public class SchedulerState {
     private List<PlannerWarehouse> warehouses = new ArrayList<>();
     private List<PlannerFailure> failures = new ArrayList<>();
     private List<PlannerMaintenance> maintenances = new ArrayList<>();
-
+    
+    private Time initTime;
     private Time currTime;
     public final int minutesToSimulate;
 
     public Indicator activeIndicators = new Indicator();
 
     public Indicator getActiveIndicators() {
+        activeIndicators.totalOrders = getPastOrders().size();
         return activeIndicators;
     }
     public List<PlannerVehicle> getVehicles() {
@@ -135,7 +138,9 @@ public class SchedulerState {
     }
 
     public List<PlannerOrder> getPastOrders() {  
-        return orders.stream().filter(order -> order.arrivalTime.isBeforeOrAt(currTime)).collect(Collectors.toList());
+        return orders.stream()
+            .filter(order -> order.arrivalTime.isBeforeOrAt(currTime) && order.arrivalTime.isAfterOrAt(initTime))
+            .collect(Collectors.toList());
     }
 
     public synchronized void advance(Solution sol) {
@@ -310,7 +315,6 @@ public class SchedulerState {
                 }
                 // Has arrived at location
                 debugPrint("Vehicle " + plannerVehicle.id + " has arrived at location of node " + nextNode);
-                double deliveryTotalMinutes = 0;
                 plannerVehicle.processNode(
                     nextNode, 
                     plannerVehicle, 
@@ -362,8 +366,9 @@ public class SchedulerState {
             .map(PlannerMaintenance::clone)
             .collect(Collectors.toList());
         Time clonedTime = currTime.clone();
+        Time clonedInitTime = initTime.clone();
 
-        return new SchedulerState(clonedVehicles, clonedOrders, clonedBlockages, clonedWarehouses, clonedFailures, clonedMaintenances, clonedTime, minutesToSimulate);
+        return new SchedulerState(clonedVehicles, clonedOrders, clonedBlockages, clonedWarehouses, clonedFailures, clonedMaintenances, clonedTime, minutesToSimulate, clonedInitTime);
     }
 
     private void debugPrint(String message) {

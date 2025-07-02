@@ -309,7 +309,8 @@ public class DataChunk {
                 new java.util.AbstractMap.SimpleEntry<>("glpFilledMain", indicators.getGlpFilledMain()),
                 new java.util.AbstractMap.SimpleEntry<>("glpFilledTotal", indicators.getGlpFilledTotal()),
                 new java.util.AbstractMap.SimpleEntry<>("meanDeliveryTime", indicators.getMeanDeliveryTime()),
-                new java.util.AbstractMap.SimpleEntry<>("completedOrders", indicators.getCompletedOrders())
+                new java.util.AbstractMap.SimpleEntry<>("completedOrders", (double) indicators.getCompletedOrders()),
+                new java.util.AbstractMap.SimpleEntry<>("totalOrders", (double) indicators.getTotalOrders())
         ).collect(java.util.stream.Collectors.toMap(
                 java.util.Map.Entry::getKey,
                 java.util.Map.Entry::getValue
