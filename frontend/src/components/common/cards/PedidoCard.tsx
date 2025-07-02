@@ -1,7 +1,16 @@
 import { Box, Button, Flex, Text } from "@chakra-ui/react";
+import { keyframes } from "@emotion/react";
 import { faArrowsToDot } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useState } from "react";
 import type { PedidoSimulado } from "../../../core/types/pedido";
+
+// Animación de pulso para el botón
+const pulseAnimation = keyframes`
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+`;
 
 interface PedidoCardProps {
     pedido: PedidoSimulado,
@@ -11,6 +20,7 @@ export const PedidoCard = ({
     pedido,
     onClick,
 }:PedidoCardProps) => {
+    const [isAnimating, setIsAnimating] = useState(false);
     let cardColor;
     let isFocus = false;
     const codigoPedido = `PE${pedido.idPedido.toString().padStart(3, '0')}`;
@@ -30,6 +40,17 @@ export const PedidoCard = ({
             cardColor = 'white';
             break;
     }
+
+    const handleFocusClick = () => {
+        setIsAnimating(true);
+        onClick();
+        
+        // Detener la animación después de 600ms
+        setTimeout(() => {
+            setIsAnimating(false);
+        }, 600);
+    };
+
   return (<>
     <Flex direction='column' bg={cardColor} borderRadius='10px' py={3} px={4} mx={-1} gap={1}>
         <Flex align='end'>
@@ -43,7 +64,18 @@ export const PedidoCard = ({
             <Box>
                 {!isFocus 
                 ? 
-                <Button disabled={isFocus} size='sm' gap={1} variant='primary' onClick={onClick}>
+                <Button 
+                    disabled={isFocus} 
+                    size='sm' 
+                    gap={1} 
+                    variant='primary' 
+                    onClick={handleFocusClick}
+                    animation={isAnimating ? `${pulseAnimation} 0.6s ease-in-out` : 'none'}
+                    _hover={{
+                        transform: 'scale(1.02)',
+                        transition: 'transform 0.2s ease-in-out'
+                    }}
+                >
                 Enfocar
                 <FontAwesomeIcon icon={faArrowsToDot} />
                 </Button>

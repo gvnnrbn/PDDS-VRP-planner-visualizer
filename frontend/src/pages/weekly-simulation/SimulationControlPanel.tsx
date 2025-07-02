@@ -67,6 +67,11 @@ let panY = 0;
 let zoomScale = 1;
 export const vehicleHitboxes: { x: number; y: number; size: number; vehiculo: any }[] = [];
 
+// Variables globales para el enfoque de pedidos
+(window as any).panX = panX;
+(window as any).panY = panY;
+(window as any).highlightedPedidoId = null;
+
 
 // Dibuja el estado de la simulación en el canvas usando íconos
 export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
@@ -177,8 +182,28 @@ export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
     for (const node of data.pedidos.filter((pedido: any) => pedido.estado.toUpperCase() !== 'COMPLETADO')) {
       const x = margin + node.posX * scaleX - 12;
       const y = margin + node.posY * scaleY - 24;
-      const img = await iconToImage(FaMapMarkerAlt, '#5459EA', 24);
-      ctx.drawImage(img, x, y, 24, 24);
+      
+      // Verificar si este pedido está resaltado
+      const isHighlighted = (window as any).highlightedPedidoId === node.idPedido;
+      
+      // Color del ícono: azul normal, amarillo si está resaltado
+      const iconColor = isHighlighted ? '#FFD700' : '#5459EA';
+      const iconSize = isHighlighted ? 32 : 24; // Más grande si está resaltado
+      
+      const img = await iconToImage(FaMapMarkerAlt, iconColor, iconSize);
+      
+      // Si está resaltado, dibujar un halo alrededor
+      if (isHighlighted) {
+        ctx.save();
+        ctx.shadowColor = '#FFD700';
+        ctx.shadowBlur = 15;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.drawImage(img, x - 4, y - 4, iconSize, iconSize);
+        ctx.restore();
+      } else {
+        ctx.drawImage(img, x, y, iconSize, iconSize);
+      }
     }
   }
 
@@ -494,8 +519,22 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
     let panStartX = 0;
     let panStartY = 0;
 
+    // Verificar si hay cambios en las variables globales de pan (solo cuando se hace wheel o mouse move)
+    const checkGlobalPan = () => {
+      if ((window as any).globalPanX !== undefined && (window as any).globalPanY !== undefined) {
+        panX = (window as any).globalPanX;
+        panY = (window as any).globalPanY;
+        (window as any).panX = panX;
+        (window as any).panY = panY;
+        // Limpiar las variables globales después de usarlas
+        delete (window as any).globalPanX;
+        delete (window as any).globalPanY;
+      }
+    };
+
     const handleWheel = async (e: WheelEvent) => {
       e.preventDefault();
+      checkGlobalPan(); // Verificar cambios de pan antes del zoom
       const zoomIntensity = 0.1;
       const delta = e.deltaY < 0 ? 1 + zoomIntensity : 1 - zoomIntensity;
       zoomScale = Math.min(Math.max(0.25, zoomScale * delta), 4);
@@ -513,8 +552,12 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
 
     const handleMouseMove = async (e: MouseEvent) => {
       if (!isDragging) return;
+      checkGlobalPan(); // Verificar cambios de pan antes del movimiento
       panX = panStartX + (e.clientX - startX);
       panY = panStartY + (e.clientY - startY);
+      // Actualizar variables globales
+      (window as any).panX = panX;
+      (window as any).panY = panY;
       const result = await drawState(canvas, data);
       if (result) setScale(result);
     };
@@ -597,6 +640,9 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
       canvas.removeEventListener('click', handleClick);
     };
   }, [canvasRef, data, scale]);
+
+
+
   //Modal averia
   const { isOpen: isOpenAveria, onOpen: onOpenAveria, onClose: onCloseAveria } = useDisclosure();
   const [estadoVehiculo, setEstadoVehiculo] = useState('');
