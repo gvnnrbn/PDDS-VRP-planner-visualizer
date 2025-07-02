@@ -15,7 +15,109 @@ import { PedidoService } from '../../core/services/PedidoService'
 import { IncidenciaService } from '../../core/services/IncidenciaService'
 import { IndicadoresCard } from '../../components/common/cards/IndicadoresCard'
 import { useSimulation } from '../../components/common/SimulationContextSemanal'
+import { ModalInsertAveria } from '../../components/common/modals/ModalInsertAveria'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faFilter, faSort } from '@fortawesome/free-solid-svg-icons'
 
+const ORDER_OPTIONS = [
+  { label: 'Tiempo de llegada más cercano', value: 'fechaLimite-asc' },
+  { label: 'Tiempo de llegada más lejano', value: 'fechaLimite-desc' },
+  { label: 'Mayor cantidad de GLP', value: 'glp-desc' },
+  { label: 'Menor cantidad de GLP', value: 'glp-asc' },
+];
+
+const PedidosSection = () => {
+  const { currentMinuteData, focusOnPedido } = useSimulation();
+  const [searchValue, setSearchValue] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'todos' | 'pendiente' | 'completado'>('todos');
+  const [orderBy, setOrderBy] = useState(ORDER_OPTIONS[0].value);
+
+  // Filtrado por estado
+  let pedidosFiltrados = (currentMinuteData?.pedidos || [])
+    .filter((pedido) => {
+      if (statusFilter === 'todos') return true;
+      if (statusFilter === 'pendiente') return pedido.estado.toLowerCase() !== 'completado';
+      if (statusFilter === 'completado') return pedido.estado.toLowerCase() === 'completado';
+      return true;
+    })
+    .filter((pedido) => {
+      if (!searchValue) return true;
+      const codigo = `PE${pedido.idPedido.toString().padStart(3, '0')}`;
+      return codigo.toLowerCase().includes(searchValue.toLowerCase());
+    });
+
+  // Ordenado
+  pedidosFiltrados = [...pedidosFiltrados].sort((a, b) => {
+    switch (orderBy) {
+      case 'fechaLimite-asc':
+        return new Date(a.fechaLimite).getTime() - new Date(b.fechaLimite).getTime();
+      case 'fechaLimite-desc':
+        return new Date(b.fechaLimite).getTime() - new Date(a.fechaLimite).getTime();
+      case 'glp-asc':
+        return a.glp - b.glp;
+      case 'glp-desc':
+        return b.glp - a.glp;
+      default:
+        return 0;
+    }
+  });
+
+  return (
+    <Box>
+      <VStack spacing={2} align="stretch" bg="#e6e6ea" p={2} borderRadius="md">
+        <Input
+          placeholder="Buscar pedido..."
+          value={searchValue}
+          onChange={e => setSearchValue(e.target.value)}
+          borderRadius="md"
+          bg="white"
+          fontSize="lg"
+          height="44px"
+          mb={1}
+          maxW="100%"
+          _focus={{ borderColor: 'purple.400', boxShadow: '0 0 0 1px #805ad5' }}
+        />
+        <HStack spacing={2} mb={2}>
+          <Menu>
+            <MenuButton as={Button} leftIcon={<FontAwesomeIcon icon={faSort} />} colorScheme="purple" variant="solid" fontSize="md" height="40px" borderRadius="md">
+              Ordenar
+            </MenuButton>
+            <MenuList>
+              {ORDER_OPTIONS.map(opt => (
+                <MenuItem
+                  key={opt.value}
+                  onClick={() => setOrderBy(opt.value)}
+                  color={orderBy === opt.value ? 'purple.600' : undefined}
+                  fontWeight={orderBy === opt.value ? 'bold' : 'normal'}
+                >
+                  {opt.label}
+                </MenuItem>
+              ))}
+            </MenuList>
+          </Menu>
+          <Menu>
+            <MenuButton as={Button} leftIcon={<FontAwesomeIcon icon={faFilter} />} colorScheme="purple" variant="solid" fontSize="md" height="40px" borderRadius="md">
+              Filtrar
+            </MenuButton>
+            <MenuList>
+              <MenuItem onClick={() => setStatusFilter('todos')} fontWeight={statusFilter === 'todos' ? 'bold' : 'normal'} color={statusFilter === 'todos' ? 'purple.600' : undefined}>Todos</MenuItem>
+              <MenuItem onClick={() => setStatusFilter('pendiente')} fontWeight={statusFilter === 'pendiente' ? 'bold' : 'normal'} color={statusFilter === 'pendiente' ? 'purple.600' : undefined}>Pendiente</MenuItem>
+              <MenuItem onClick={() => setStatusFilter('completado')} fontWeight={statusFilter === 'completado' ? 'bold' : 'normal'} color={statusFilter === 'completado' ? 'purple.600' : undefined}>Completado</MenuItem>
+            </MenuList>
+          </Menu>
+        </HStack>
+        <VStack spacing={4} align="stretch">
+          {pedidosFiltrados.length === 0 && (
+            <Box color="gray.500" textAlign="center" py={6}>No hay pedidos para mostrar.</Box>
+          )}
+          {pedidosFiltrados.map((pedido) => (
+            <PedidoCard key={pedido.idPedido} pedido={pedido} onClick={() => focusOnPedido(pedido)} />
+          ))}
+        </VStack>
+      </VStack>
+    </Box>
+  );
+};
 
 export default function WeeklySimulation() {
   const bgColor = useColorModeValue('white', '#1a1a1a')
@@ -66,65 +168,6 @@ export default function WeeklySimulation() {
   /*
    * HANDLE PANEL SECTIONS
    */
-  const PedidosSection = () => {
-    const { currentMinuteData } = useSimulation();
-    const { isOpen, onOpen, onClose } = useDisclosure();
-    const toast = useToast();
-    const pedidoService = new PedidoService();
-    const inputRef = useRef<HTMLInputElement>(null);
-
-    const handleImport = async (file: File) => {
-      try {
-        await pedidoService.importarPedidos(file);
-        toast({ title: 'Importación exitosa', status: 'success', duration: 3000 });
-      } catch (error: any) {
-        toast({ title: 'Error al importar', description: error.message, status: 'error', duration: 4000 });
-      }
-    };
-    return (
-      <Box>
-        <VStack spacing={4} align="stretch">
-          {/* <PanelSearchBar onSubmit={() => console.log('searching...')} /> */}
-          {/* Modal de registro de pedidos */}
-          {/* <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
-            <ModalOverlay />
-            <ModalContent>
-              <ModalBody>
-                <PedidoForm onFinish={onClose} onCancel={onClose} />
-              </ModalBody>
-            </ModalContent>
-          </Modal> */}
-          {/* Boton con acciones desplegables */}
-          {/* <Menu>
-          <MenuButton
-            as={Button}
-            leftIcon={<FaPlus />}
-            variant="secondary"
-          >
-            Agregar
-          </MenuButton>
-          <MenuList>
-            <MenuItem onClick={onOpen} color="purple.700">Crear un pedido</MenuItem>
-            <MenuItem onClick={() => inputRef.current?.click()} color="purple.700">Importar desde archivo
-              <Input type="file" display="none" ref={inputRef} accept=".csv,.xlsx,.xls,.txt" onChange={e => {
-                if (e.target.files && e.target.files[0]) {
-                  handleImport(e.target.files[0]);
-                  e.target.value = '';
-                }
-              }} />
-            </MenuItem>
-          </MenuList>
-        </Menu> */}
-          {currentMinuteData?.pedidos
-            ?.slice()
-            .map((pedido) => (
-              <PedidoCard key={pedido.idPedido} pedido={pedido} onClick={() => console.log('enfocando...')} />
-            ))}
-        </VStack>
-      </Box>
-    );
-  };
-
   const FlotaSection = () => {
     const { currentMinuteData } = useSimulation();
 

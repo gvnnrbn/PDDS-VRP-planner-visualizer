@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import type { IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import { useNavigate } from 'react-router-dom';
 import { Box, Button, Input, VStack, HStack, useToast, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, FormControl, FormLabel, useDisclosure, Flex, Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon, Text } from '@chakra-ui/react';
 import { FaTruck, FaWarehouse, FaMapMarkerAlt, FaIndustry } from 'react-icons/fa';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -66,6 +67,11 @@ let panX = 0;
 let panY = 0;
 let zoomScale = 1;
 export const vehicleHitboxes: { x: number; y: number; size: number; vehiculo: any }[] = [];
+
+// Variables globales para el enfoque de pedidos
+(window as any).panX = panX;
+(window as any).panY = panY;
+(window as any).highlightedPedidoId = null;
 
 
 // Dibuja el estado de la simulación en el canvas usando íconos
@@ -185,11 +191,33 @@ export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
     for (const node of data.pedidos.filter((pedido: any) => pedido.estado.toUpperCase() !== 'COMPLETADO')) {
       const x = margin + node.posX * scaleX - 12;
       const y = margin + node.posY * scaleY - 24;
-      const img = await iconToImage(FaMapMarkerAlt, '#5459EA', 24);
-      ctx.drawImage(img, x, y, 24, 24);
+      const img_pedido = await iconToImage(FaMapMarkerAlt, '#5459EA', 24);
+      ctx.drawImage(img_pedido, x, y, 24, 24);
       ctx.fillStyle = '#000';
       ctx.font = '10px Arial';
       ctx.fillText(`GLP: ${node.glp || 0}`, x + 2, y + 40);
+      
+      // Verificar si este pedido está resaltado
+      const isHighlighted = (window as any).highlightedPedidoId === node.idPedido;
+      
+      // Color del ícono: azul normal, amarillo si está resaltado
+      const iconColor = isHighlighted ? '#FFD700' : '#5459EA';
+      const iconSize = isHighlighted ? 32 : 24; // Más grande si está resaltado
+      
+      const img = await iconToImage(FaMapMarkerAlt, iconColor, iconSize);
+      
+      // Si está resaltado, dibujar un halo alrededor
+      if (isHighlighted) {
+        ctx.save();
+        ctx.shadowColor = '#FFD700';
+        ctx.shadowBlur = 15;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.drawImage(img, x - 4, y - 4, iconSize, iconSize);
+        ctx.restore();
+      } else {
+        ctx.drawImage(img, x, y, iconSize, iconSize);
+      }
     }
   }
 
@@ -286,6 +314,7 @@ interface SimulationControlPanelProps {
 }
 
 const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData, data }) => {
+  const navigate = useNavigate();
   const [initialTime, setInitialTime] = useState(() => {
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -298,6 +327,9 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  
+  // Para el resumen de simulación
+  const [simulationSummary, setSimulationSummary] = useState<any>(null);
   
 
   const [scale, setScale] = useState<{ margin: number; scaleX: number; scaleY: number }>({
@@ -398,6 +430,12 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
           }
           setData(typedResponse.data);
           return;
+        case 'SIMULATION_SUMMARY':
+          console.log('SimulationControlPanel - Summary data received:', typedResponse.data);
+          setSimulationSummary(typedResponse.data);
+          setIsSimulating(false);
+          setIsSummaryOpen(true);
+          return;
         default:
       }
     } else {
@@ -465,8 +503,22 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
     let panStartX = 0;
     let panStartY = 0;
 
+    // Verificar si hay cambios en las variables globales de pan (solo cuando se hace wheel o mouse move)
+    const checkGlobalPan = () => {
+      if ((window as any).globalPanX !== undefined && (window as any).globalPanY !== undefined) {
+        panX = (window as any).globalPanX;
+        panY = (window as any).globalPanY;
+        (window as any).panX = panX;
+        (window as any).panY = panY;
+        // Limpiar las variables globales después de usarlas
+        delete (window as any).globalPanX;
+        delete (window as any).globalPanY;
+      }
+    };
+
     const handleWheel = async (e: WheelEvent) => {
       e.preventDefault();
+      checkGlobalPan(); // Verificar cambios de pan antes del zoom
       const zoomIntensity = 0.1;
       const delta = e.deltaY < 0 ? 1 + zoomIntensity : 1 - zoomIntensity;
       zoomScale = Math.min(Math.max(0.25, zoomScale * delta), 4);
@@ -484,8 +536,12 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
 
     const handleMouseMove = async (e: MouseEvent) => {
       if (!isDragging) return;
+      checkGlobalPan(); // Verificar cambios de pan antes del movimiento
       panX = panStartX + (e.clientX - startX);
       panY = panStartY + (e.clientY - startY);
+      // Actualizar variables globales
+      (window as any).panX = panX;
+      (window as any).panY = panY;
       const result = await drawState(canvas, data);
       if (result) setScale(result);
     };
@@ -568,6 +624,9 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
       canvas.removeEventListener('click', handleClick);
     };
   }, [canvasRef, data, scale]);
+
+
+
   //Modal averia
   const { isOpen: isOpenAveria, onOpen: onOpenAveria, onClose: onCloseAveria } = useDisclosure();
   const [estadoVehiculo, setEstadoVehiculo] = useState('');
@@ -641,7 +700,6 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
 
   //Falta ver como se saca la info
   // Calcula la duración entre initialTime (ISO) y data.minuto ("dd/mm/yyyy hh:mm")
-  // function calcularDuracion(initialTime: string, fin: string) {
   //   if (!initialTime || !fin) return "00:00:00";
   //   // initialTime: "2024-06-07T08:00"
   //   // fin: "07/06/2024 08:10"
@@ -670,9 +728,16 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
   //   pedidosEntregados: 124,
   //   consumoPetroleo: 763.2,
   // };
+  // Usar datos reales del resumen de simulación
+  const resumenData = simulationSummary || {
+    fechaFin: new Date().toISOString().slice(0, 16),
+    duracion: "00:10:00",
+    pedidosEntregados: 124,
+    consumoPetroleo: 763.2,
+    tiempoPlanificacion: "00:00:15",
+  };
   const handleStopAndShowSummary = () => {
     stopSimulation(); // sigue deteniendo la simulación
-    setIsSummaryOpen(true); // abre modal
   };
 
   return (
@@ -759,6 +824,12 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
         {/* <SimulationCompleteModal
           isOpen={isSummaryOpen}
           onClose={() => setIsSummaryOpen(false)}
+          onViewDetails={() => {
+            setIsSummaryOpen(false);
+            navigate('/weekly-simulation/details', { 
+              state: { simulationData: simulationSummary } 
+            });
+          }}
           {...resumenData}
         /> */}
 

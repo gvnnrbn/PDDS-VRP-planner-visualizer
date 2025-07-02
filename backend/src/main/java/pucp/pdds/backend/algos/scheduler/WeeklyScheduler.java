@@ -1,10 +1,15 @@
 package pucp.pdds.backend.algos.scheduler;
 
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.SynchronousQueue;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -13,14 +18,14 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import pucp.pdds.backend.algos.algorithm.Algorithm;
-import pucp.pdds.backend.algos.algorithm.Solution;
 import pucp.pdds.backend.algos.algorithm.Environment;
+import pucp.pdds.backend.algos.algorithm.Solution;
 import pucp.pdds.backend.algos.data.DataChunk;
 import pucp.pdds.backend.algos.entities.PlannerFailure;
 import pucp.pdds.backend.algos.utils.Time;
 import pucp.pdds.backend.dto.SimulationResponse;
+import pucp.pdds.backend.dto.SimulationSummaryDTO;
 import pucp.pdds.backend.dto.UpdateFailuresMessage;
-import java.time.format.DateTimeFormatter;
 
 @Service
 public class WeeklyScheduler implements Runnable {
@@ -29,6 +34,11 @@ public class WeeklyScheduler implements Runnable {
     private final SimpMessagingTemplate messagingTemplate;
     private volatile boolean isRunning;
     private static final DateTimeFormatter SIM_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+    
+    // Para acumular datos de la simulación
+    private List<Map<String, Object>> simulacionCompleta = new ArrayList<>();
+    private Time tiempoInicio;
+    private long tiempoPlanificacionInicio;
 
 
     private SynchronousQueue<SchedulerState> stateQueue = new SynchronousQueue<>();
@@ -79,6 +89,11 @@ public class WeeklyScheduler implements Runnable {
 
         algorithmThread.start();
 
+        // Inicializar acumulación de datos
+        simulacionCompleta.clear();
+        tiempoInicio = state.getCurrTime().clone();
+        tiempoPlanificacionInicio = System.currentTimeMillis();
+        
         Time endSimulationTime = state.getCurrTime().addTime(new Time(0,0,7,0,0));
 
         stateLock.lock();
@@ -159,6 +174,7 @@ public class WeeklyScheduler implements Runnable {
                         Thread.currentThread().interrupt();
                         algorithmThread.interrupt();
                         sendResponse("SIMULATION_STOPPED", "Simulation stopped by user");
+                        sendSimulationSummary();
                         return;
                     }
                 }
@@ -166,6 +182,7 @@ public class WeeklyScheduler implements Runnable {
                 if (!isRunning || Thread.currentThread().isInterrupted()) {
                     sendResponse("SIMULATION_STOPPED", "Simulation stopped by user");
                     algorithmThread.interrupt();
+                    sendSimulationSummary();
                     return;
                 }
             } catch (Exception e) {
@@ -173,6 +190,8 @@ public class WeeklyScheduler implements Runnable {
                 e.printStackTrace();
                 algorithmThread.interrupt();
                 isRunning = false;
+                sendResponse("SIMULATION_STOPPED", "Simulation stopped by user");
+                sendSimulationSummary();
                 return;
             }
         }
@@ -180,6 +199,10 @@ public class WeeklyScheduler implements Runnable {
         if (!isRunning) {
             sendResponse("SIMULATION_STOPPED", "Simulation stopped by user");
             algorithmThread.interrupt();
+            sendSimulationSummary();
+        } else {
+            // Simulación completada normalmente
+            sendSimulationSummary();
         }
     }
 
@@ -206,6 +229,10 @@ public class WeeklyScheduler implements Runnable {
 
     private void onAfterExecution(int iteration, Solution sol) {
         java.util.Map<String, Object> response = buildSimulationUpdateResponse(state, sol);
+        
+        // Acumular datos para el resumen
+        simulacionCompleta.add(new HashMap<>(response));
+        
         sendResponse("SIMULATION_UPDATE", response);
             // SimulationVisualizer.draw(state.getActiveVehicles(), state.getActiveBlockages(), state.getCurrTime(), state.minutesToSimulate, state.getWarehouses(), sol);
     }
@@ -343,5 +370,127 @@ public class WeeklyScheduler implements Runnable {
 
     private void sendError(String message) {
         sendResponse("ERROR", message);
+    }
+
+    private void sendSimulationSummary() {
+        long tiempoPlanificacionFin = System.currentTimeMillis();
+        long tiempoPlanificacionMs = tiempoPlanificacionFin - tiempoPlanificacionInicio;
+        
+        // Calcular estadísticas
+        Map<String, Object> estadisticas = calculateStatistics();
+        
+        // Calcular duración de la simulación
+        String duracion = calculateDuration(tiempoInicio, state.getCurrTime());
+        
+        // Calcular tiempo de planificación
+        String tiempoPlanificacion = String.format("%02d:%02d:%02d", 
+            tiempoPlanificacionMs / 3600000, 
+            (tiempoPlanificacionMs % 3600000) / 60000, 
+            (tiempoPlanificacionMs % 60000) / 1000);
+        
+        // Debug: imprimir información
+        System.out.println("=== SIMULATION SUMMARY DEBUG ===");
+        System.out.println("Fecha inicio: " + formatSimTime(tiempoInicio));
+        System.out.println("Fecha fin: " + formatSimTime(state.getCurrTime()));
+        System.out.println("Duración: " + duracion);
+        System.out.println("Pedidos entregados: " + estadisticas.get("pedidosEntregados"));
+        System.out.println("Consumo petróleo: " + estadisticas.get("consumoPetroleo"));
+        System.out.println("Tiempo planificación: " + tiempoPlanificacion);
+        System.out.println("Minutos simulados: " + simulacionCompleta.size());
+        System.out.println("Estadísticas: " + estadisticas);
+        System.out.println("================================");
+        
+        SimulationSummaryDTO summary = new SimulationSummaryDTO(
+            formatSimTime(tiempoInicio),
+            formatSimTime(state.getCurrTime()),
+            duracion,
+            (int) estadisticas.get("pedidosEntregados"),
+            (double) estadisticas.get("consumoPetroleo"),
+            tiempoPlanificacion,
+            simulacionCompleta,
+            estadisticas
+        );
+        
+        sendResponse("SIMULATION_SUMMARY", summary);
+    }
+
+    private Map<String, Object> calculateStatistics() {
+        Map<String, Object> stats = new HashMap<>();
+        
+        int pedidosEntregados = 0;
+        double consumoPetroleo = 0.0;
+        int totalVehiculos = 0;
+        int maxVehiculosActivosEnUnMinuto = 0;
+        Set<String> placasActivasUnicas = new HashSet<>();
+        
+        // Calcular estadísticas de los datos acumulados
+        for (Map<String, Object> minuto : simulacionCompleta) {
+            @SuppressWarnings("unchecked")
+            List<Object> vehiculos = (List<Object>) minuto.get("vehiculos");
+            @SuppressWarnings("unchecked")
+            List<Object> pedidos = (List<Object>) minuto.get("pedidos");
+            
+            int vehiculosActivosEsteMinuto = 0;
+            if (vehiculos != null) {
+                totalVehiculos = Math.max(totalVehiculos, vehiculos.size());
+                for (Object v : vehiculos) {
+                    try {
+                        var estadoField = v.getClass().getField("estado");
+                        String estado = (String) estadoField.get(v);
+                        if ("ONTHEWAY".equals(estado) || "DELIVERING".equals(estado)) {
+                            vehiculosActivosEsteMinuto++;
+                            // Contar placa única
+                            var placaField = v.getClass().getField("placa");
+                            String placa = (String) placaField.get(v);
+                            if (placa != null) {
+                                placasActivasUnicas.add(placa);
+                            }
+                        }
+                        var combustibleField = v.getClass().getField("combustible");
+                        var maxCombustibleField = v.getClass().getField("maxCombustible");
+                        int combustible = (int) combustibleField.get(v);
+                        int maxCombustible = (int) maxCombustibleField.get(v);
+                        consumoPetroleo += (maxCombustible - combustible) * 0.1; // Factor de conversión
+                    } catch (Exception ignored) {}
+                }
+            }
+            maxVehiculosActivosEnUnMinuto = Math.max(maxVehiculosActivosEnUnMinuto, vehiculosActivosEsteMinuto);
+            
+            if (pedidos != null) {
+                for (Object p : pedidos) {
+                    try {
+                        var estadoField = p.getClass().getField("estado");
+                        String estado = (String) estadoField.get(p);
+                        if ("DELIVERED".equals(estado)) {
+                            pedidosEntregados++;
+                        }
+                    } catch (Exception ignored) {}
+                }
+            }
+        }
+        
+        stats.put("pedidosEntregados", pedidosEntregados);
+        stats.put("consumoPetroleo", Math.round(consumoPetroleo * 100.0) / 100.0);
+        stats.put("totalVehiculos", totalVehiculos);
+        stats.put("maxVehiculosActivosEnUnMinuto", maxVehiculosActivosEnUnMinuto);
+        stats.put("vehiculosActivosUnicos", placasActivasUnicas.size());
+        stats.put("minutosSimulados", simulacionCompleta.size());
+        
+        return stats;
+    }
+
+    private String calculateDuration(Time inicio, Time fin) {
+        int minutos = 0;
+        Time temp = inicio.clone();
+        
+        while (temp.isBefore(fin)) {
+            minutos++;
+            temp = temp.addMinutes(1);
+        }
+        
+        int horas = minutos / 60;
+        int mins = minutos % 60;
+        
+        return String.format("%02d:%02d:00", horas, mins);
     }
 }
