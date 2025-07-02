@@ -163,8 +163,6 @@ public class WeeklyScheduler implements Runnable {
                     }
                 }
 
-                System.out.println("REAL STATE AT " + state.getCurrTime() + " IS: " + state);
-
                 if (!isRunning || Thread.currentThread().isInterrupted()) {
                     sendResponse("SIMULATION_STOPPED", "Simulation stopped by user");
                     algorithmThread.interrupt();

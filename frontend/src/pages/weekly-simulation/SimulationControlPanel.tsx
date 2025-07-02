@@ -293,7 +293,6 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
   });
   const [connected, setConnected] = useState(false);
   const [status, setStatus] = useState<'connected' | 'disconnected' | 'error'>('disconnected');
-  const [log, setLog] = useState<LogEntry[]>([]);
   const [isSimulating, setIsSimulating] = useState(false);
   const stompClient = useRef<Client | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -313,13 +312,6 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
     }
   }, []);
 
-  const logMessage = (message: string) => {
-    setLog((prev) => [
-      ...prev,
-      { timestamp: new Date().toLocaleTimeString(), message },
-    ]);
-  };
-
   const updateStatus = (s: typeof status) => {
     setStatus(s);
   };
@@ -328,7 +320,6 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
     if (connected) {
       disconnect();
     }
-    logMessage(`🔌 Connecting to ${backend_url}...`);
     const client = new Client({
       brokerURL: undefined,
       webSocketFactory: () => new SockJS(`${backend_url}/ws`),
@@ -337,28 +328,20 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
       onConnect: () => {
         setConnected(true);
         updateStatus('connected');
-        logMessage('✅ Connected to simulation server');
         client.subscribe('/topic/simulation', (message: IMessage) => {
           try {
             handleMessage(JSON.parse(message.body));
           } catch (error: unknown) {
-            if (error instanceof Error) {
-              logMessage('❌ Error parsing message: ' + error.message);
-            } else {
-              logMessage('❌ Error parsing message');
-            }
           }
         });
       },
       onStompError: (frame) => {
         setConnected(false);
         updateStatus('error');
-        logMessage('❌ Connection error: ' + frame.headers['message']);
       },
       onWebSocketClose: () => {
         setConnected(false);
         updateStatus('disconnected');
-        logMessage('🔌 Disconnected');
       },
     });
     stompClient.current = client;
@@ -372,12 +355,10 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
     }
     setConnected(false);
     updateStatus('disconnected');
-    logMessage('🔌 Disconnected');
   };
 
   const handleMessage = async (response: unknown) => {
     if (isSimulationStopped(response)) {
-      logMessage('⏹️ ' + response.data);
       setIsSimulating(false);
       const ctx = canvasRef.current?.getContext('2d');
       if (ctx && canvasRef.current) {
@@ -392,18 +373,14 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
       
       switch (typedResponse.type) {
         case 'SIMULATION_LOADING':
-          logMessage('🔄 ' + typedResponse.data);
           return;
         case 'SIMULATION_STARTED':
-          logMessage('✅ ' + typedResponse.data);
           setIsSimulating(true);
           return;
         case 'SIMULATION_ERROR':
-          logMessage('❌ ' + typedResponse.data);
           setIsSimulating(false);
           return;
         case 'STATE_UPDATED':
-          logMessage('🔄 ' + typedResponse.data);
           return;
         case 'SIMULATION_UPDATE':
           // Handle simulation update data
@@ -420,13 +397,10 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
             }
           }
           setData(typedResponse.data);
-          logMessage('📝 ' + JSON.stringify(response));
           return;
         default:
-          logMessage('📝 ' + JSON.stringify(response));
       }
     } else {
-      logMessage('📝 ' + JSON.stringify(response));
     }
     
     // Visualización: dibujar en canvas
@@ -460,7 +434,6 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
       destination: '/app/init',
       body: JSON.stringify({ initialTime: timeObj }),
     });
-    logMessage(`🚀 Starting simulation with initial time: ${initialTime}`);
     setIsSimulating(true);
     onClose();
   };
@@ -471,11 +444,8 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
       return;
     }
     stompClient.current.publish({ destination: '/app/stop', body: '{}' });
-    logMessage('⏹️ Sending stop simulation request...');
     setIsSimulating(false);
   };
-
-  const clearLog = () => setLog([]);
 
   const onIniciarSimulacion = () => {
     if (!connected) {
@@ -483,11 +453,6 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
     }
     onOpen();
   };
-  useEffect(() => {
-    if (connected && data !== undefined) {
-      console.log('Data updated:', data);
-    }
-  }, [data]);
 
   //ZOOM Y PAN
   useEffect(() => {

@@ -114,6 +114,14 @@ public class Solution implements Cloneable {
             if (!(lastNode instanceof FinalNode)) {
                 throw new RuntimeException("Last node of route " + entry.getKey() + " is not an empty node. This should not happen.");
             }
+
+            List<Node> route = entry.getValue();
+            long emptyNodes = route.stream().filter(n -> n instanceof EmptyNode).count();
+            long finalNodes = route.stream().filter(n -> n instanceof FinalNode).count();
+
+            if (emptyNodes != 1 || finalNodes != 1) {
+                throw new RuntimeException("Solution has a route with more than one empty node or more than one final node. This should not happen.");
+            }
         }
     }
 

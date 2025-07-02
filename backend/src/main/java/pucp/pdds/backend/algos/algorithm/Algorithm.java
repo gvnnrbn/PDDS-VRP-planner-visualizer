@@ -49,10 +49,11 @@ public class Algorithm {
 
             // Perturb the current best solution to escape local optima. Prefer perturbing the best feasible solution.
             Solution solutionToPerturb = bestFeasibleSolution != null ? bestFeasibleSolution : bestSolution;
-            Solution perturbedSolution = perturb(solutionToPerturb, environment);
+            // Solution perturbedSolution = perturb(solutionToPerturb, environment);
 
             // Run local search from the perturbed solution
-            Solution newSolution = _run(environment, minutes, perturbedSolution);
+            // Solution newSolution = _run(environment, minutes, perturbedSolution);
+            Solution newSolution = _run(environment, minutes, solutionToPerturb);
             double newFitness = newSolution.fitness(environment);
 
             boolean newIsFeasible = newSolution.isFeasible(environment);
@@ -162,57 +163,6 @@ public class Algorithm {
         return bestSolution;
     }
 
-    private Solution perturb(Solution solution, Environment environment) {
-        Solution perturbedSolution = solution.clone();
-        // Apply a number of random, strong moves to escape local optima
-        int perturbations = 5 + random.nextInt(6); // 5 to 10 perturbations
-
-        for (int i = 0; i < perturbations; i++) {
-            // Store first and last nodes for each route before perturbation
-            Map<Integer, Node> firstNodes = new HashMap<>();
-            Map<Integer, Node> lastNodes = new HashMap<>();
-            
-            for (Map.Entry<Integer, List<Node>> entry : perturbedSolution.routes.entrySet()) {
-                int vehicleId = entry.getKey();
-                List<Node> route = entry.getValue();
-                if (route.size() >= 2) {
-                    firstNodes.put(vehicleId, route.get(0));
-                    lastNodes.put(vehicleId, route.get(route.size() - 1));
-                }
-            }
-
-            Neighbor neighbor;
-            double moveType = random.nextDouble();
-
-            if (moveType < 0.5) { // 50% chance for inter-route move
-                neighbor = NeighborhoodGenerator.interRouteMove(perturbedSolution);
-            } else { // 50% chance for inter-route cross-exchange
-                neighbor = NeighborhoodGenerator.interRouteCrossExchange(perturbedSolution);
-            }
-            
-            if (neighbor != null) {
-                perturbedSolution = neighbor.solution;
-                
-                // Restore first and last nodes for each route after perturbation
-                for (Map.Entry<Integer, List<Node>> entry : perturbedSolution.routes.entrySet()) {
-                    int vehicleId = entry.getKey();
-                    List<Node> route = entry.getValue();
-                    
-                    if (firstNodes.containsKey(vehicleId) && lastNodes.containsKey(vehicleId)) {
-                        // Ensure first node is EmptyNode and last node is FinalNode
-                        if (route.size() > 0 && !(route.get(0) instanceof EmptyNode)) {
-                            route.add(0, firstNodes.get(vehicleId));
-                        }
-                        if (route.size() > 0 && !(route.get(route.size() - 1) instanceof FinalNode)) {
-                            route.add(lastNodes.get(vehicleId));
-                        }
-                    }
-                }
-            }
-        }
-        return perturbedSolution;
-    }
-
     public static class Movement {
         public enum MovementType {
             INTRA_ROUTE_MOVE,    // Essential - relocate within route
@@ -298,16 +248,10 @@ public class Algorithm {
             Map<Integer, Node> startNodes = new HashMap<>();
             Map<Integer, Node> finalNodes = new HashMap<>();
             for (Map.Entry<Integer, List<Node>> entry : trimmedSolution.routes.entrySet()) {
-                if (entry.getValue().size() >= 2) {
-                    startNodes.put(entry.getKey(), entry.getValue().get(0).clone());
-                    finalNodes.put(entry.getKey(), entry.getValue().get(entry.getValue().size() - 1).clone());
-                    entry.getValue().remove(0);
-                    entry.getValue().remove(entry.getValue().size() - 1);
-                } else {
-                    // For routes with less than 2 nodes, we can't trim them.
-                    // We'll clear them in the trimmed solution to avoid issues in operators.
-                    entry.getValue().clear();
-                }
+                startNodes.put(entry.getKey(), entry.getValue().getFirst());
+                entry.getValue().removeFirst();
+                finalNodes.put(entry.getKey(), entry.getValue().getLast());
+                entry.getValue().removeLast();
             }
 
             for (Movement.MovementType operator : Movement.MovementType.values()) {
@@ -318,6 +262,7 @@ public class Algorithm {
                         switch (operator) {
                             case INTRA_ROUTE_MOVE:
                                 neighbor = intraRouteMove(trimmedSolution);
+                                neighbor = null;
                                 break;
                             case INTRA_ROUTE_SWAP:
                                 neighbor = intraRouteSwap(trimmedSolution);
@@ -341,13 +286,11 @@ public class Algorithm {
                     if (neighbor != null) {
                         // Re-add start/end nodes
                         for (Map.Entry<Integer, Node> entry : startNodes.entrySet()) {
-                            neighbor.solution.routes.get(entry.getKey()).add(0, entry.getValue());
+                            neighbor.solution.routes.get(entry.getKey()).addFirst(entry.getValue());
                         }
                         for (Map.Entry<Integer, Node> entry : finalNodes.entrySet()) {
-                            neighbor.solution.routes.get(entry.getKey()).add(entry.getValue());
+                            neighbor.solution.routes.get(entry.getKey()).addLast(entry.getValue());
                         }
-                        // Enforce invariant
-                        neighbor.solution.enforceRouteInvariant(environment);
                         neighbors.add(neighbor);
                     }
                 }

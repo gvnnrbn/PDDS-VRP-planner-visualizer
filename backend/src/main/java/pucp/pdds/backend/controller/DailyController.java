@@ -6,7 +6,7 @@ import org.springframework.stereotype.Controller;
 
 import pucp.pdds.backend.service.DailyService;
 
-// @Controller
+@Controller
 public class DailyController {
     
     @Autowired
