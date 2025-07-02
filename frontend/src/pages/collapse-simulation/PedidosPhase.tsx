@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Box, VStack, HStack, Text, Button, Modal, ModalOverlay, ModalContent, ModalBody } from '@chakra-ui/react'
+import { Box, VStack, HStack, Text, Button, Modal, ModalOverlay, ModalContent, ModalBody, useDisclosure, ModalHeader, ModalFooter } from '@chakra-ui/react'
 import { PedidoForm } from '../../components/PedidoForm'
 import { PedidoTable } from '../../components/PedidoTable'
 import { PedidoService } from '../../core/services/PedidoService'
@@ -13,6 +13,8 @@ export default function PedidosPhase() {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [errorImport, setErrorImport] = useState<string | null>(null);
+  const { isOpen: isErrorOpen, onOpen: onErrorOpen, onClose: onErrorClose } = useDisclosure();
 
   const handleFormFinish = () => {
     setShowForm(false)
@@ -31,16 +33,28 @@ export default function PedidosPhase() {
 
   const pedidoService = new PedidoService()
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-    try {
-      await pedidoService.importarPedidos(file)
-      queryClient.invalidateQueries({ queryKey: ['pedidos'] })
-    } catch (error: any) {
-      // Manejo de error opcional
-    }
-  }
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    console.log('📁 handleFileUpload activado');
+    if (!file) return;
+
+    pedidoService.importarPedidos(file)
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ['pedidos'] });
+      })
+      .catch((error: any) => {
+        console.error('❌ Error importación (catch directo):', error);
+        setErrorImport(error.message);
+        onErrorOpen();
+      })
+      .finally(() => {
+        // ✅ Resetear el input para permitir reimportar el mismo archivo
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      });
+  };
+
 
   return (
     <Box p={4}>
@@ -60,12 +74,20 @@ export default function PedidosPhase() {
             setSelectedPedido(null)
             setShowForm(true)
           }}
-          onImportarArchivo={() => fileInputRef.current?.click()}
+          onImportarArchivo={() => {
+            if (fileInputRef.current) {
+              fileInputRef.current.value = ''; // 👈 esto permite subir el mismo archivo otra vez
+              fileInputRef.current.click();
+            }
+          }}
         />
         <input
           type="file"
           accept=".txt"
-          ref={fileInputRef}
+          ref={(ref) => {
+            console.log('📌 input file renderizado', ref);
+            fileInputRef.current = ref;
+          }}
           onChange={handleFileUpload}
           hidden
         />
@@ -81,6 +103,20 @@ export default function PedidosPhase() {
             </ModalBody>
           </ModalContent>
         </Modal>
+        <Modal isOpen={isErrorOpen} onClose={onErrorClose} isCentered size="md">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader color="red.500">❌ Error al importar pedidos</ModalHeader>
+          <ModalBody>
+            <Text>{errorImport}</Text>
+          </ModalBody>
+          <ModalFooter>
+            <Button colorScheme="red" onClick={onErrorClose}>
+              Cerrar
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
       </VStack>
     </Box>
   )

@@ -21,21 +21,24 @@ export class PedidoService extends BaseService {
   async deletePedido(id: number): Promise<void> {
     return this.delete(`/api/pedidos/${id}`)
   }
+
+
   async importarPedidos(file: File): Promise<string> {
-    const formData = new FormData()
-    formData.append('file', file)
+    const formData = new FormData();
+    formData.append('file', file);
 
     const response = await fetch('/api/pedidos/importar', {
       method: 'POST',
-      body: formData
-    })
+      body: formData,
+    });
 
     if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`Error al importar: ${errorText}`)
+      const errorText = await response.text();
+      console.error('🔥 Error backend:', errorText);
+      throw new Error(errorText); // <-- esto lanza correctamente
     }
 
-    return response.text()
+    return response.text();
   }
 
 
