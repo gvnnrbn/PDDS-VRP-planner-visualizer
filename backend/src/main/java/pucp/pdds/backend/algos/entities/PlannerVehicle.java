@@ -151,6 +151,9 @@ public class PlannerVehicle implements Cloneable {
             boolean shouldLog,
             Indicator indicators
     ) {
+        if (shouldLog && (node instanceof ProductRefillNode || node instanceof OrderDeliverNode)) {
+            System.out.println("Processing node " + node.toString() + " for vehicle " + vehicle.id);
+        }
         if (node instanceof ProductRefillNode) {
             ProductRefillNode refillNode = (ProductRefillNode) node;
             PlannerWarehouse warehouse = warehouses.stream()
@@ -188,12 +191,6 @@ public class PlannerVehicle implements Cloneable {
                 System.out.println("Order " + order.id + " currently has " + order.amountGLP + " GLP left to deliver");
             }
 
-            if (shouldLog) {
-                System.out.println("[REAL] UPDATING ORDER WITH HASH: " + order.hashCode());
-            } else {
-                System.out.println("[FAST] UPDATING ORDER WITH HASH: " + order.hashCode());
-            }
-
             order.amountGLP -= deliverNode.amountGLP;
             vehicle.currentGLP -= deliverNode.amountGLP;
 
@@ -205,7 +202,6 @@ public class PlannerVehicle implements Cloneable {
             }
 
             if (order.amountGLP < 0) {
-                System.out.println("ERROR WHILE UPDATING ORDER WITH HASH: " + order.hashCode());
                 throw new RuntimeException("Order " + order.id + " has " + order.amountGLP + " GLP left to deliver");
             }
 

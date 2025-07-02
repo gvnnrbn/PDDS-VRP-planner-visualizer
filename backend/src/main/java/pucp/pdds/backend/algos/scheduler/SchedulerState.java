@@ -396,4 +396,38 @@ public class SchedulerState {
     private void debugPrint(String message) {
         System.out.println(currTime + " | " + message);
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("SchedulerState{");
+        sb.append("\n  vehicles=[");
+        for (PlannerVehicle vehicle : getActiveVehicles()) {
+            sb.append("\n    ").append(vehicle);
+        }
+        sb.append("\n  ], orders=[");
+        for (PlannerOrder order : getActiveOrders()) {
+            sb.append("\n    ").append(order);
+        }
+        sb.append("\n  ], blockages=[");
+        for (PlannerBlockage blockage : getActiveBlockages()) {
+            sb.append("\n    ").append(blockage);
+        }
+        sb.append("\n  ], warehouses=[");
+        for (PlannerWarehouse warehouse : getWarehouses()) {
+            sb.append("\n    ").append(warehouse);
+        }
+        sb.append("\n  ], failures=[");
+        for (PlannerFailure failure : getFailures()) {
+            sb.append("\n    ").append(failure);
+        }
+        sb.append("\n  ], maintenances=[");
+        for (PlannerMaintenance maintenance : getActiveMaintenances()) {
+            sb.append("\n    ").append(maintenance);
+        }
+        sb.append("\n  ], currTime=").append(getCurrTime());
+        sb.append(", minutesToSimulate=").append(minutesToSimulate);
+        sb.append("\n}");
+        return sb.toString();
+    }
 }

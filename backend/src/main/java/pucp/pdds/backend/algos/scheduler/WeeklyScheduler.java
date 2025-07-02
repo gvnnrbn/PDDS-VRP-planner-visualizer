@@ -126,9 +126,15 @@ public class WeeklyScheduler implements Runnable {
                 SchedulerState clonedState = state.clone();
                 stateLock.unlock();
 
+                System.out.println("CLONED STATE CURRENTLY AT: " + clonedState.getCurrTime());
+                System.out.println("CLONED STATE: " + clonedState);
+                System.out.println("SOLUTION FOR CLONED STATE: " + sol);
+                clonedState.initializeVehicles();
                 for (int i = 0; i < clonedState.minutesToSimulate; i++) {
                     clonedState.advance(sol, false);
                 }
+                System.out.println("CLONED STATE AFTER ADVANCING: " + clonedState);
+                System.out.println("CLONED STATE SHOULD BE MATCHED AT: " + clonedState.getCurrTime());
 
                 try {
                     stateQueue.put(clonedState);
@@ -153,7 +159,7 @@ public class WeeklyScheduler implements Runnable {
                     stateLock.unlock();
 
                     try {
-                        Thread.sleep(300);
+                        Thread.sleep(500);
                     } catch (InterruptedException e) {
                         isRunning = false;
                         Thread.currentThread().interrupt();
@@ -162,6 +168,8 @@ public class WeeklyScheduler implements Runnable {
                         return;
                     }
                 }
+
+                System.out.println("REAL STATE AT " + state.getCurrTime() + " IS: " + state);
 
                 if (!isRunning || Thread.currentThread().isInterrupted()) {
                     sendResponse("SIMULATION_STOPPED", "Simulation stopped by user");
