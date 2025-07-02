@@ -22,6 +22,10 @@ export const FlotaCard = ({
     let isBroken = false;
     let estadoText = '';
 
+    if(vehiculo.tipo == 'TA'){
+        //console.log('➡️ Estado recibido:', JSON.stringify(vehiculo.eta), ` desde ${vehiculo.placa}`);
+    }
+
     switch(estado.toUpperCase()){
         case 'STUCK': 
             cardColor = '#FFCFCF';
