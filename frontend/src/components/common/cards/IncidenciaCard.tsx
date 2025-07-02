@@ -16,6 +16,7 @@ export const IncidenciaCard = ({
     let isEstimada = false;
     let estadoText = '';
     const primaryTextSize = 18;
+    //console.log('➡️ Estado recibido:', JSON.stringify(incidencia.estado), ` desde ${incidencia.fechaInicio}`);
     switch(incidencia.estado.toUpperCase()){
         case 'ACTIVE': 
             estadoText = 'En curso';
