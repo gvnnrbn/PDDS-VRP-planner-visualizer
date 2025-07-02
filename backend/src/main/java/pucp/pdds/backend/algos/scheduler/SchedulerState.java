@@ -12,6 +12,7 @@ import pucp.pdds.backend.algos.entities.PlannerFailure;
 import pucp.pdds.backend.algos.entities.PlannerMaintenance;
 import pucp.pdds.backend.algos.algorithm.Node;
 import pucp.pdds.backend.algos.algorithm.Solution;
+import pucp.pdds.backend.algos.data.Indicator;
 import pucp.pdds.backend.algos.utils.Time;
 import pucp.pdds.backend.algos.utils.Position;
 import pucp.pdds.backend.algos.utils.PathBuilder;
@@ -39,6 +40,11 @@ public class SchedulerState {
     private Time currTime;
     public final int minutesToSimulate;
 
+    public Indicator activeIndicators = new Indicator();
+
+    public Indicator getActiveIndicators() {
+        return activeIndicators;
+    }
     public List<PlannerVehicle> getVehicles() {
         return vehicles;
     }
@@ -304,7 +310,16 @@ public class SchedulerState {
                 }
                 // Has arrived at location
                 debugPrint("Vehicle " + plannerVehicle.id + " has arrived at location of node " + nextNode);
-                plannerVehicle.processNode(nextNode, plannerVehicle, orders, warehouses, currTime);
+                double deliveryTotalMinutes = 0;
+                plannerVehicle.processNode(
+                    nextNode, 
+                    plannerVehicle, 
+                    orders, 
+                    warehouses, 
+                    currTime,
+                    activeIndicators
+                );
+                activeIndicators.calculateMeanDeliveryTime();
 
                 if (plannerVehicle.nextNodeIndex == route.size() - 1) {
                     // Just processed the FinalNode
@@ -316,7 +331,10 @@ public class SchedulerState {
                 plannerVehicle.nextNodeIndex++;
                 // No need to build path here; will do so on next iteration if needed
             } else {
-                plannerVehicle.advancePath(SimulationProperties.speed / 60.0);
+                plannerVehicle.advancePath(
+                    SimulationProperties.speed / 60.0,
+                    activeIndicators
+                );
                 plannerVehicle.state = PlannerVehicle.VehicleState.ONTHEWAY;
             }
         }

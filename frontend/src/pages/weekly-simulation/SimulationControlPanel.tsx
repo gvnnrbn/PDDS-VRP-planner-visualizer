@@ -17,6 +17,7 @@ import type { IncidenciaSimulada } from '../../core/types/incidencia';
 import type { MantenimientoSimulado } from '../../core/types/manetenimiento';
 import type { PedidoSimulado } from '../../core/types/pedido';
 import type { VehiculoSimulado, VehiculoSimuladoV2 } from '../../core/types/vehiculo';
+import type { IndicadoresSimulado } from '../../core/types/indicadores';
 
 interface LogEntry {
   timestamp: string;
@@ -265,6 +266,7 @@ export interface SimulacionMinuto {
   mantenimientos: MantenimientoSimulado[]; 
   pedidos: PedidoSimulado[];
   vehiculos: VehiculoSimulado[];
+  indicadores: IndicadoresSimulado;
 }
 
 interface SimulationControlPanelProps {
@@ -470,6 +472,11 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
     }
     onOpen();
   };
+  useEffect(() => {
+    if (connected && data !== undefined) {
+      console.log('Data updated:', data);
+    }
+  }, [data]);
 
   //ZOOM Y PAN
   useEffect(() => {
@@ -657,14 +664,36 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
 
   //Falta ver como se saca la info
-  const resumenData = {
-    fechaInicio: initialTime,
-    fechaFin: new Date().toISOString().slice(0, 16),
-    duracion: "00:10:00",
-    pedidosEntregados: 124,
-    consumoPetroleo: 763.2,
-    tiempoPlanificacion: "00:00:15",
-  };
+  // Calcula la duración entre initialTime (ISO) y data.minuto ("dd/mm/yyyy hh:mm")
+  // function calcularDuracion(initialTime: string, fin: string) {
+  //   if (!initialTime || !fin) return "00:00:00";
+  //   // initialTime: "2024-06-07T08:00"
+  //   // fin: "07/06/2024 08:10"
+  //   try {
+  //     const [fecha, hora] = fin.split(" ");
+  //     const [day, month, year] = fecha.split("/").map(Number);
+  //     const [h, m] = hora.split(":").map(Number);
+  //     const fechaFin = new Date(year, month - 1, day, h, m);
+  //     const fechaInicio = new Date(initialTime);
+
+  //     let diff = Math.max(0, fechaFin.getTime() - fechaInicio.getTime());
+  //     const dias = Math.floor(diff / (1000 * 60 * 60 * 24));
+  //     diff -= dias * (1000 * 60 * 60 * 24);
+  //     const horas = Math.floor(diff / (1000 * 60 * 60));
+  //     diff -= horas * (1000 * 60 * 60);
+  //     const minutos = Math.floor(diff / (1000 * 60));
+  //     return `${dias > 0 ? dias + "d " : ""}${String(horas).padStart(2, "0")}:${String(minutos).padStart(2, "0")}`;
+  //   } catch {
+  //     return "00:00:00";
+  //   }
+  // }
+  // const resumenData = {
+  //   fechaInicio: initialTime,
+  //   fechaFin: data.minuto,
+  //   duracion: calcularDuracion(initialTime, data.minuto),
+  //   pedidosEntregados: 124,
+  //   consumoPetroleo: 763.2,
+  // };
   const handleStopAndShowSummary = () => {
     stopSimulation(); // sigue deteniendo la simulación
     setIsSummaryOpen(true); // abre modal
@@ -686,27 +715,6 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
             background: '#fff',
             zIndex: 1,}} />
         </Box>
-        {/* Botón central antes de simular */}
-        {/* {!isSimulating && (
-          <Flex
-            position="absolute"
-            top="50%"
-            left="50%"
-            transform="translate(-50%, -50%)"
-            zIndex={2}
-            justify="center"
-            align="center"
-          >
-            <Button
-              colorScheme="green"
-              size="lg"
-              onClick={onIniciarSimulacion}
-              isDisabled={isSimulating}
-            >
-              Iniciar Simulación
-            </Button>
-          </Flex>
-        )}    */}
         {selectedVehicle && vehiclePanelPos && (
           <Box
             position="absolute"
@@ -772,11 +780,11 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
           </ModalContent>
         </Modal>
 
-        <SimulationCompleteModal
+        {/* <SimulationCompleteModal
           isOpen={isSummaryOpen}
           onClose={() => setIsSummaryOpen(false)}
           {...resumenData}
-        />
+        /> */}
 
         {/* <Accordion allowToggle w="100%" defaultIndex={[]}> 
           <AccordionItem borderWidth={0}>

@@ -296,6 +296,28 @@ public class DataChunk {
         this.simulacion = simulacion;
     }
 
+    public static java.util.Map<String, Double> convertIndicatorsToDataChunk(Indicator indicators) {
+
+        java.util.Map<String, Double> activeIndicators = java.util.stream.Stream.of(
+                new java.util.AbstractMap.SimpleEntry<>("fuelCounterTA", indicators.getFuelCounterTA()),
+                new java.util.AbstractMap.SimpleEntry<>("fuelCounterTB", indicators.getFuelCounterTB()),
+                new java.util.AbstractMap.SimpleEntry<>("fuelCounterTC", indicators.getFuelCounterTC()),
+                new java.util.AbstractMap.SimpleEntry<>("fuelCounterTD", indicators.getFuelCounterTD()),
+                new java.util.AbstractMap.SimpleEntry<>("fuelCounterTotal", indicators.getFuelCounterTotal()),
+                new java.util.AbstractMap.SimpleEntry<>("glpFilledNorth", indicators.getGlpFilledNorth()),
+                new java.util.AbstractMap.SimpleEntry<>("glpFilledEast", indicators.getGlpFilledEast()),
+                new java.util.AbstractMap.SimpleEntry<>("glpFilledMain", indicators.getGlpFilledMain()),
+                new java.util.AbstractMap.SimpleEntry<>("glpFilledTotal", indicators.getGlpFilledTotal()),
+                new java.util.AbstractMap.SimpleEntry<>("meanDeliveryTime", indicators.getMeanDeliveryTime()),
+                new java.util.AbstractMap.SimpleEntry<>("completedOrders", indicators.getCompletedOrders())
+        ).collect(java.util.stream.Collectors.toMap(
+                java.util.Map.Entry::getKey,
+                java.util.Map.Entry::getValue
+        ));
+
+        return activeIndicators;
+    }
+
     public static List<Bloqueo> convertBlockagesToDataChunk(List<pucp.pdds.backend.algos.entities.PlannerBlockage> activeBlockages) {
         return activeBlockages.stream()
             .map(blockage -> {

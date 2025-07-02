@@ -136,6 +136,7 @@ public class WeeklyScheduler implements Runnable {
         var incidencias = DataChunk.convertIncidentsToDataChunk(state.getFailures());
         var mantenimientos = DataChunk.convertMaintenancesToDataChunk(state.getActiveMaintenances());
         var bloqueos = DataChunk.convertBlockagesToDataChunk(state.getActiveBlockages());
+        var indicadores = DataChunk.convertIndicatorsToDataChunk(state.getActiveIndicators());
 
         formatAlmacenes(almacenes);
         formatVehiculos(vehiculos);
@@ -150,6 +151,7 @@ public class WeeklyScheduler implements Runnable {
         response.put("incidencias", incidencias);
         response.put("mantenimientos", mantenimientos);
         response.put("bloqueos", bloqueos);
+        response.put("indicadores", indicadores);
         return response;
     }
 

@@ -6,6 +6,7 @@ import java.util.List;
 import pucp.pdds.backend.algos.algorithm.Node;
 import pucp.pdds.backend.algos.algorithm.OrderDeliverNode;
 import pucp.pdds.backend.algos.algorithm.ProductRefillNode;
+import pucp.pdds.backend.algos.data.Indicator;
 import pucp.pdds.backend.algos.utils.Position;
 import pucp.pdds.backend.algos.utils.SimulationProperties;
 import pucp.pdds.backend.algos.utils.Time;
@@ -74,7 +75,7 @@ public class PlannerVehicle implements Cloneable {
     }
 
     // Path advancement method
-    public void advancePath(double units) {
+    public void advancePath(double units, Indicator indicators) {
         if (currentPath == null || currentPath.isEmpty() || currentPath.size() < 2) {
             currentPath = null;
             return;
@@ -101,7 +102,25 @@ public class PlannerVehicle implements Cloneable {
             double maxDistWithFuel = (fuelPerUnit > 0) ? this.currentFuel / fuelPerUnit : Double.POSITIVE_INFINITY;
             double distanceToMove = Math.min(units, Math.min(segmentDistance, maxDistWithFuel));
 
-            this.currentFuel -= distanceToMove * fuelPerUnit;
+            double fuelUsed = distanceToMove * fuelPerUnit;
+            this.currentFuel -= fuelUsed;
+            switch (this.type) {
+                case "TA":
+                    indicators.fuelCounterTA += fuelUsed;
+                    break;
+                case "TB":
+                    indicators.fuelCounterTB += fuelUsed;
+                    break;
+                case "TC":
+                    indicators.fuelCounterTC += fuelUsed;
+                    break;
+                case "TD":
+                    indicators.fuelCounterTD += fuelUsed;
+                    break;
+                default:
+                    break;
+            }
+            indicators.fuelCounterTotal += fuelUsed;
             units -= distanceToMove;
 
             if (distanceToMove >= segmentDistance) {
@@ -123,7 +142,14 @@ public class PlannerVehicle implements Cloneable {
         }
     }
 
-    public void processNode(Node node, PlannerVehicle vehicle, List<PlannerOrder> orders, List<PlannerWarehouse> warehouses, Time currentTime) {
+    public void processNode(
+            Node node, 
+            PlannerVehicle vehicle, 
+            List<PlannerOrder> orders, 
+            List<PlannerWarehouse> warehouses, 
+            Time currentTime,
+            Indicator indicators
+    ) {
         if (node instanceof ProductRefillNode) {
             ProductRefillNode refillNode = (ProductRefillNode) node;
             PlannerWarehouse warehouse = warehouses.stream()
@@ -135,6 +161,14 @@ public class PlannerVehicle implements Cloneable {
             }
 
             warehouse.currentGLP -= refillNode.amountGLP;
+            if (warehouse.position.x == 12 && warehouse.position.y == 8) {
+                indicators.glpFilledMain += refillNode.amountGLP;
+            } else if (warehouse.position.x == 42 && warehouse.position.y == 42) {
+                indicators.glpFilledNorth += refillNode.amountGLP;
+            } else if (warehouse.position.x == 63 && warehouse.position.y == 3) {
+                indicators.glpFilledEast += refillNode.amountGLP;
+            }
+            indicators.glpFilledTotal += refillNode.amountGLP;
             vehicle.currentGLP += refillNode.amountGLP;
             vehicle.currentFuel = vehicle.maxFuel;
             this.waitTransition = SimulationProperties.timeAfterRefill;
@@ -156,6 +190,9 @@ public class PlannerVehicle implements Cloneable {
 
             if (order.amountGLP == 0) {
                 order.deliverTime = currentTime;
+                indicators.completedOrders ++;
+                double deliveryTotalMinutes = (double) order.releaseTime.minutesUntil(currentTime);
+                indicators.deliveryTimes.add(deliveryTotalMinutes);
             }
 
             if (order.amountGLP < 0) {

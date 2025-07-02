@@ -191,6 +191,10 @@ public class Solution implements Cloneable {
 
                     vehicle.currentGLP -= GLPToDeliver;
 
+                    // GLPcounterTA +=
+                    // GLPcounterTB +=
+                    // GLPcounterTC +=
+
                     order.amountGLP -= GLPToDeliver;
 
                     if (currentTime.isAfter(order.deadline)) {
