@@ -81,6 +81,34 @@ public class WeeklyScheduler implements Runnable {
 
         Time endSimulationTime = state.getCurrTime().addTime(new Time(0,0,7,0,0));
 
+        stateLock.lock();
+        SchedulerState initialState = state.clone();
+        stateLock.unlock();
+
+        Environment initialEnvironment = new Environment(
+            initialState.getActiveVehicles(), 
+            initialState.getActiveOrders(), 
+            initialState.getWarehouses(), 
+            initialState.getActiveBlockages(), 
+            initialState.getFailures(), 
+            initialState.getActiveMaintenances(), 
+            initialState.getCurrTime(), 
+            initialState.minutesToSimulate
+        );
+
+        Solution initialSolution = initialEnvironment.getRandomSolution();
+        Thread initialSolutionThread = new Thread(() -> {
+            try {
+                solutionQueue.put(initialSolution);
+            } catch (InterruptedException e) {
+                isRunning = false;
+                Thread.currentThread().interrupt();
+                algorithmThread.interrupt();
+                sendResponse("SIMULATION_STOPPED", "Simulation stopped by user");
+            }
+        });
+        initialSolutionThread.start();
+
         while(state.getCurrTime().isBefore(endSimulationTime) && isRunning && !Thread.currentThread().isInterrupted()) {
             try {
                 Solution sol;
