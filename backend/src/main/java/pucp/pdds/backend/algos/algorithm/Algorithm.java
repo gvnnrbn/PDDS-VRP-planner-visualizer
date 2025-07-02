@@ -86,6 +86,10 @@ public class Algorithm {
                     }
                 }
             }
+
+            if (iterations % 1000 == 0) {
+                Thread.yield();
+            }
         }
 
         if (isDebug) {

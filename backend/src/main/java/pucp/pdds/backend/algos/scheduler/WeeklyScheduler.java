@@ -2,6 +2,9 @@ package pucp.pdds.backend.algos.scheduler;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -27,6 +30,12 @@ public class WeeklyScheduler implements Runnable {
     private volatile boolean isRunning;
     private static final DateTimeFormatter SIM_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
+
+    private SynchronousQueue<SchedulerState> stateQueue = new SynchronousQueue<>();
+    private SynchronousQueue<Solution> solutionQueue = new SynchronousQueue<>();
+
+    private Thread algorithmThread;
+
     public void setState(SchedulerState state) {
         this.state = state;
     }
@@ -39,31 +48,82 @@ public class WeeklyScheduler implements Runnable {
 
     @Override
     public void run() {
+        algorithmThread = new Thread(() -> {
+            while(!Thread.currentThread().isInterrupted()) {
+                try {
+                    while (true) {
+                        SchedulerState state = stateQueue.take();
+                        Environment environment = new Environment(
+                            state.getActiveVehicles(), 
+                            state.getActiveOrders(), 
+                            state.getWarehouses(), 
+                            state.getActiveBlockages(), 
+                            state.getFailures(), 
+                            state.getActiveMaintenances(), 
+                            state.getCurrTime(), 
+                            state.minutesToSimulate
+                        );
+                        Algorithm algorithm = new Algorithm(true);
+                        Solution sol = algorithm.run(environment, state.minutesToSimulate);
+                        solutionQueue.put(sol);
+                    }
+                } catch (InterruptedException e) {
+                    isRunning = false;
+                    Thread.currentThread().interrupt();
+                    algorithmThread.interrupt();
+                    sendResponse("SIMULATION_STOPPED", "Simulation stopped by user");
+                    return;
+                }
+            }
+        });
+
+        algorithmThread.start();
+
         Time endSimulationTime = state.getCurrTime().addTime(new Time(0,0,7,0,0));
+
+        stateLock.lock();
+        SchedulerState initialState = state.clone();
+        stateLock.unlock();
+
+        try {
+            stateQueue.put(initialState);
+        } catch (InterruptedException e) {
+            isRunning = false;
+            Thread.currentThread().interrupt();
+            algorithmThread.interrupt();
+            sendResponse("SIMULATION_STOPPED", "Simulation stopped by user");
+            return;
+        }
 
         while(state.getCurrTime().isBefore(endSimulationTime) && isRunning && !Thread.currentThread().isInterrupted()) {
             try {
+                Solution sol;
+                try {
+                    sol = solutionQueue.take();
+                } catch (InterruptedException e) {
+                    isRunning = false;
+                    Thread.currentThread().interrupt();
+                    algorithmThread.interrupt();
+                    sendResponse("SIMULATION_STOPPED", "Simulation stopped by user");
+                    return;
+                }
+
                 stateLock.lock();
                 SchedulerState clonedState = state.clone();
                 stateLock.unlock();
 
-                Environment environment = new Environment(
-                    clonedState.getActiveVehicles(), 
-                    clonedState.getActiveOrders(), 
-                    clonedState.getWarehouses(), 
-                    clonedState.getActiveBlockages(), 
-                    clonedState.getFailures(), 
-                    clonedState.getActiveMaintenances(), 
-                    clonedState.getCurrTime(), 
-                    clonedState.minutesToSimulate
-                );
+                for (int i = 0; i < clonedState.minutesToSimulate; i++) {
+                    clonedState.advance(sol);
+                }
 
-                Algorithm algorithm = new Algorithm(true);
-                Solution sol = algorithm.run(environment, state.minutesToSimulate);
-
-                if (!sol.isFeasible(environment)) {
-                    sendError("Can't continue delivering, couldn't find a feasible plan for next " + state.minutesToSimulate + " minutes");
-                    break;
+                try {
+                    stateQueue.put(clonedState);
+                } catch (InterruptedException e) {
+                    isRunning = false;
+                    Thread.currentThread().interrupt();
+                    algorithmThread.interrupt();
+                    sendResponse("SIMULATION_STOPPED", "Simulation stopped by user");
+                    return;
                 }
 
                 state.initializeVehicles();
@@ -75,10 +135,11 @@ public class WeeklyScheduler implements Runnable {
                     stateLock.unlock();
 
                     try {
-                        Thread.sleep(240);
+                        Thread.sleep(60);
                     } catch (InterruptedException e) {
                         isRunning = false;
                         Thread.currentThread().interrupt();
+                        algorithmThread.interrupt();
                         sendResponse("SIMULATION_STOPPED", "Simulation stopped by user");
                         return;
                     }
@@ -86,10 +147,13 @@ public class WeeklyScheduler implements Runnable {
 
                 if (!isRunning || Thread.currentThread().isInterrupted()) {
                     sendResponse("SIMULATION_STOPPED", "Simulation stopped by user");
+                    algorithmThread.interrupt();
                     return;
                 }
             } catch (Exception e) {
                 sendError("Unexpected error during simulation: " + e.getMessage());
+                e.printStackTrace();
+                algorithmThread.interrupt();
                 isRunning = false;
                 return;
             }
@@ -97,6 +161,7 @@ public class WeeklyScheduler implements Runnable {
 
         if (!isRunning) {
             sendResponse("SIMULATION_STOPPED", "Simulation stopped by user");
+            algorithmThread.interrupt();
         }
     }
 

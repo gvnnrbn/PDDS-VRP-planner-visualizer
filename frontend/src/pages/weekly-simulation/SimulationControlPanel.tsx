@@ -365,6 +365,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
   };
 
   const handleMessage = async (response: unknown) => {
+    console.log('response', response);
     if (isSimulationStopped(response)) {
       logMessage('⏹️ ' + response.data);
       setIsSimulating(false);
