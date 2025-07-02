@@ -2,3 +2,4 @@ bin/
 out/
 simulation_data/
 .venv/
+node_modules/

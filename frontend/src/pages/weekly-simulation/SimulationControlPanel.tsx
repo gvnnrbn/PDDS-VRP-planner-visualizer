@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import type { IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import { useNavigate } from 'react-router-dom';
 import { Box, Button, Input, VStack, HStack, useToast, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, FormControl, FormLabel, useDisclosure, Flex, Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon, Text } from '@chakra-ui/react';
 import { FaTruck, FaWarehouse, FaMapMarkerAlt, FaIndustry } from 'react-icons/fa';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -273,6 +274,7 @@ interface SimulationControlPanelProps {
 }
 
 const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData, data }) => {
+  const navigate = useNavigate();
   const [initialTime, setInitialTime] = useState(() => {
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -286,6 +288,9 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  
+  // Para el resumen de simulación
+  const [simulationSummary, setSimulationSummary] = useState<any>(null);
   
 
   const [scale, setScale] = useState<{ margin: number; scaleX: number; scaleY: number }>({
@@ -408,6 +413,13 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
           }
           setData(typedResponse.data);
           logMessage('📝 ' + JSON.stringify(response));
+          return;
+        case 'SIMULATION_SUMMARY':
+          logMessage('📊 Simulation summary received');
+          console.log('SimulationControlPanel - Summary data received:', typedResponse.data);
+          setSimulationSummary(typedResponse.data);
+          setIsSimulating(false);
+          setIsSummaryOpen(true);
           return;
         default:
           logMessage('📝 ' + JSON.stringify(response));
@@ -656,8 +668,8 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
   //Modal final
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
 
-  //Falta ver como se saca la info
-  const resumenData = {
+  // Usar datos reales del resumen de simulación
+  const resumenData = simulationSummary || {
     fechaInicio: initialTime,
     fechaFin: new Date().toISOString().slice(0, 16),
     duracion: "00:10:00",
@@ -775,6 +787,12 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
         <SimulationCompleteModal
           isOpen={isSummaryOpen}
           onClose={() => setIsSummaryOpen(false)}
+          onViewDetails={() => {
+            setIsSummaryOpen(false);
+            navigate('/weekly-simulation/details', { 
+              state: { simulationData: simulationSummary } 
+            });
+          }}
           {...resumenData}
         />
 

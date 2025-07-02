@@ -13,6 +13,7 @@ import {
 interface SimulationCompleteModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onViewDetails?: () => void;
   fechaInicio: string;
   fechaFin: string;
   duracion: string;
@@ -24,6 +25,7 @@ interface SimulationCompleteModalProps {
 const SimulationCompleteModal: React.FC<SimulationCompleteModalProps> = ({
   isOpen,
   onClose,
+  onViewDetails,
   fechaInicio,
   fechaFin,
   duracion,
@@ -63,7 +65,12 @@ const SimulationCompleteModal: React.FC<SimulationCompleteModalProps> = ({
             </Text>
           </VStack>
 
-          <Flex justify="flex-end" mt={6}>
+          <Flex justify="space-between" mt={6}>
+            {onViewDetails && (
+              <Button colorScheme="blue" onClick={onViewDetails}>
+                Ver Detalles Completos
+              </Button>
+            )}
             <Button colorScheme="purple" onClick={onClose}>
               Aceptar
             </Button>
