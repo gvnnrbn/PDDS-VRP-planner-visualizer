@@ -14,6 +14,8 @@ public class Solution implements Cloneable {
     // Solution model
     public Map<Integer, List<Node>> routes; // routes[vehicleId] -> nodes
 
+    private Time startingTime;
+
     private boolean hasRunSimulation = false;
     private boolean isFeasible = true;
     private double fitness = 0;
@@ -113,6 +115,7 @@ public class Solution implements Cloneable {
         clone.hasRunSimulation = false;
         clone.isFeasible = true;
         clone.fitness = 0;
+        clone.startingTime = this.startingTime;
         return clone;
     }
 
@@ -412,5 +415,13 @@ public class Solution implements Cloneable {
         }
 
         return report.toString();
+    }
+
+    public Time getStartingTime() {
+        return startingTime;
+    }
+
+    public void setStartingTime(Time startingTime) {
+        this.startingTime = startingTime;
     }
 }

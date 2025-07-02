@@ -185,6 +185,8 @@ public class Environment {
         Solution solution = new Solution();
         solution.routes = new HashMap<>();
 
+        solution.setStartingTime(this.currentTime);
+
         // Get all nodes from the environment
         List<Node> nodesPool = this.getNodes().stream()
             .filter(node -> !(node instanceof EmptyNode) && !(node instanceof FinalNode))
