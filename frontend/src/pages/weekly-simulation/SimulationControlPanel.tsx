@@ -821,7 +821,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
           </ModalContent>
         </Modal>
 
-        {/* <SimulationCompleteModal
+        <SimulationCompleteModal
           isOpen={isSummaryOpen}
           onClose={() => setIsSummaryOpen(false)}
           onViewDetails={() => {
@@ -831,7 +831,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
             });
           }}
           {...resumenData}
-        /> */}
+        />
 
         {/* <Accordion allowToggle w="100%" defaultIndex={[]}> 
           <AccordionItem borderWidth={0}>
