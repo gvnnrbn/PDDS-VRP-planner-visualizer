@@ -152,6 +152,7 @@ public class SchedulerState {
 
         if (currTime.getHour() == 0 && currTime.getMinute() == 0) {
             for(PlannerWarehouse warehouse : warehouses) {
+                debugPrint("Refill: Warehouse " + warehouse.id + " has " + warehouse.currentGLP + " GLP");
                 warehouse.currentGLP = warehouse.maxGLP;
             }
         }
@@ -181,10 +182,12 @@ public class SchedulerState {
                 failure -> 
                     failure.vehiclePlaque.equals(plannerVehicle.plaque) &&
                     !failure.hasBeenAssigned() &&
-                    (failure.shiftOccurredOn == PlannerFailure.Shift.T1 && currTimeCopy.getHour() >= 0 && currTimeCopy.getHour() < 8) ||
-                    (failure.shiftOccurredOn == PlannerFailure.Shift.T2 && currTimeCopy.getHour() >= 8 && currTimeCopy.getHour() < 16) ||
-                    (failure.shiftOccurredOn == PlannerFailure.Shift.T3 && currTimeCopy.getHour() >= 16 && currTimeCopy.getHour() < 24)
-                    ).findFirst().orElse(null);
+                    (
+                        (failure.shiftOccurredOn == PlannerFailure.Shift.T1 && currTimeCopy.getHour() >= 0 && currTimeCopy.getHour() < 8) ||
+                        (failure.shiftOccurredOn == PlannerFailure.Shift.T2 && currTimeCopy.getHour() >= 8 && currTimeCopy.getHour() < 16) ||
+                        (failure.shiftOccurredOn == PlannerFailure.Shift.T3 && currTimeCopy.getHour() >= 16 && currTimeCopy.getHour() < 24)
+                    )
+            ).findFirst().orElse(null);
             if (plannerVehicle.state != PlannerVehicle.VehicleState.STUCK &&
             plannerVehicle.state != PlannerVehicle.VehicleState.MAINTENANCE &&
                 plannerVehicle.currentFailure == null &&
