@@ -157,7 +157,7 @@ public class SchedulerState {
             }
         }
 
-        for (PlannerVehicle plannerVehicle : getActiveVehicles()) {
+        for (PlannerVehicle plannerVehicle : getVehicles()) {
             // If vehicle should pass to maintenance
             if (plannerVehicle.state != PlannerVehicle.VehicleState.MAINTENANCE && getActiveMaintenances().stream().anyMatch(maintenance -> maintenance.vehiclePlaque.equals(plannerVehicle.plaque))) {
                 plannerVehicle.state = PlannerVehicle.VehicleState.MAINTENANCE;

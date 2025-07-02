@@ -43,9 +43,9 @@ export const ModalInsertAveria = ({
                                 value={averiaData.tipo}
                                 onChange={(e) => setAveriaData({ ...averiaData, tipo: e.target.value as 'Ti1' | 'Ti2' | 'Ti3' })}
                             >
-                                <option value="T1">Tipo 1</option>
-                                <option value="T2">Tipo 2</option>
-                                <option value="T3">Tipo 3</option>
+                                <option value="Ti1">Tipo 1</option>
+                                <option value="Ti2">Tipo 2</option>
+                                <option value="Ti3">Tipo 3</option>
                             </Select>
                         </FormControl>
                         <HStack spacing={4}>
