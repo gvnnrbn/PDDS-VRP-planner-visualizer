@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Box,
   VStack,
@@ -53,21 +53,32 @@ const SimulationDetails: React.FC<SimulationDetailsProps> = ({ simulationData })
   console.log("SimulationDetails - Data recibida:", data);
   console.log("SimulationDetails - Location state:", location.state);
 
-  // Calcular pedidos entregados (COMPLETADO) del resumen de pedidos
-  let pedidosEntregados = 0;
-  if (data?.simulacionCompleta) {
+  // Resumen de pedidos procesado una sola vez
+  const pedidosResumen = useMemo(() => {
+    if (!data?.simulacionCompleta) return [];
+    const minutos = data.simulacionCompleta;
     const resumen: Record<string, any> = {};
-    data.simulacionCompleta.forEach((minutoSnap: any) => {
+    minutos.forEach((minutoSnap: any) => {
       minutoSnap.pedidos.forEach((pedido: any) => {
         if (!resumen[pedido.idPedido]) {
-          resumen[pedido.idPedido] = pedido.estado;
-        } else {
-          resumen[pedido.idPedido] = pedido.estado;
+          resumen[pedido.idPedido] = {
+            id: pedido.idPedido,
+            glp: pedido.glp,
+            fechaLimite: pedido.fechaLimite,
+            creadoEn: minutos[0].minuto,
+            estadoFinal: pedido.estado,
+            pos: `(${pedido.posX}, ${pedido.posY})`,
+            destino: pedido.destino || '-',
+          };
         }
+        resumen[pedido.idPedido].estadoFinal = pedido.estado;
       });
     });
-    pedidosEntregados = Object.values(resumen).filter((estado: any) => estado === 'COMPLETADO').length;
-  }
+    return Object.values(resumen);
+  }, [data]);
+
+  // Pedidos entregados = COMPLETADO
+  const pedidosEntregados = pedidosResumen.filter((pedido: any) => pedido.estadoFinal === 'COMPLETADO').length;
 
   if (!data) {
     return (
@@ -251,45 +262,6 @@ const SimulationDetails: React.FC<SimulationDetailsProps> = ({ simulationData })
             </CardHeader>
             <CardBody>
               {(() => {
-                // Procesar pedidos minuto a minuto
-                const minutos = data.simulacionCompleta;
-                const resumen: Record<string, any> = {};
-                minutos.forEach((minutoSnap: any) => {
-                  minutoSnap.pedidos.forEach((pedido: any) => {
-                    if (!resumen[pedido.idPedido]) {
-                      resumen[pedido.idPedido] = {
-                        id: pedido.idPedido,
-                        glp: pedido.glp,
-                        fechaLimite: pedido.fechaLimite,
-                        creadoEn: minutos[0].minuto, // O buscar el primer minuto donde aparece
-                        estadoFinal: pedido.estado,
-                        entregadoEn: null,
-                        vehiculoEntrego: null,
-                        pos: `(${pedido.posX}, ${pedido.posY})`,
-                        destino: pedido.destino || '-',
-                        vehiculosAtendiendo: pedido.vehiculosAtendiendo || [],
-                      };
-                    }
-                    // Si se entregó en este minuto y no se había registrado antes
-                    if (
-                      pedido.estado === "COMPLETADO" &&
-                      !resumen[pedido.idPedido].entregadoEn
-                    ) {
-                      resumen[pedido.idPedido].entregadoEn = minutoSnap.minuto;
-                      // Buscar el vehículo que entregó (primer placa en vehiculosAtendiendo si existe)
-                      if (pedido.vehiculosAtendiendo && pedido.vehiculosAtendiendo.length > 0) {
-                        resumen[pedido.idPedido].vehiculoEntrego = pedido.vehiculosAtendiendo[0].placa;
-                      } else {
-                        resumen[pedido.idPedido].vehiculoEntrego = '-';
-                      }
-                    }
-                    // Actualiza el estado final y los vehículos atendiendo
-                    resumen[pedido.idPedido].estadoFinal = pedido.estado;
-                    resumen[pedido.idPedido].vehiculosAtendiendo = pedido.vehiculosAtendiendo || [];
-                  });
-                });
-                let pedidosResumen = Object.values(resumen);
-
                 // Filtro por estado
                 const [estadoFiltro, setEstadoFiltro] = React.useState<string>('');
                 if (estadoFiltro) {
@@ -303,7 +275,7 @@ const SimulationDetails: React.FC<SimulationDetailsProps> = ({ simulationData })
                 const pedidosPagina = pedidosResumen.slice((pagina - 1) * porPagina, pagina * porPagina);
 
                 // Estados únicos para el filtro
-                const estadosUnicos = Array.from(new Set(Object.values(resumen).map((p: any) => p.estadoFinal)));
+                const estadosUnicos = Array.from(new Set(pedidosResumen.map((p: any) => p.estadoFinal)));
 
                 return (
                   <Box>
