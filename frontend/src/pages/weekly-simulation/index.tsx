@@ -14,6 +14,7 @@ import SimulationControlPanel from './SimulationControlPanel'
 import { PedidoService } from '../../core/services/PedidoService'
 import { IncidenciaService } from '../../core/services/IncidenciaService'
 import { IndicadoresCard } from '../../components/common/cards/IndicadoresCard'
+import { useSimulation } from '../../components/common/SimulationContextSemanal'
 
 
 export default function WeeklySimulation() {
