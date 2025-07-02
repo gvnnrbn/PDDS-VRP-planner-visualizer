@@ -93,8 +93,8 @@ export const PedidoCard = ({
             pedido.vehiculosAtendiendo.map((vehiculo) => (
             <Flex key={`vehiculo-${pedido.idPedido}x${vehiculo.placa}`} gap={1} color='grey' fontSize={14}>
                 <Text>{vehiculo.placa}</Text>
-                |
-                <Text>ETA: {vehiculo.eta}</Text>
+                {/* |
+                <Text>ETA: {vehiculo.eta}</Text> */}
             </Flex>
             ))}
         </Flex>

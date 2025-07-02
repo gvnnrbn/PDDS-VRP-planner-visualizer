@@ -95,8 +95,8 @@ export const FlotaCard = ({
                 ? <></>
                 :
                     <>
-                    <Text id='eta'>ETA: {vehiculo.eta}</Text>
-                    |
+                    {/* <Text id='eta'>ETA: {vehiculo.eta}</Text>
+                    | */}
                     </>
                 }
                 <Text id='glp'>GLP: {vehiculo.currGLP}m³</Text>

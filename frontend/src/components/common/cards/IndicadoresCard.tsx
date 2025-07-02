@@ -75,7 +75,8 @@ const glpData = [
     <Text fontSize="sm" fontWeight="bold" textAlign="center" mb={2}>
         PEDIDOS COMPLETADOS
     </Text>
-
+    <br />
+    <br />
     <Center position="relative" w="100%" h="130px">
         <PieChart width={150} height={150} key={1}>
         <Pie
