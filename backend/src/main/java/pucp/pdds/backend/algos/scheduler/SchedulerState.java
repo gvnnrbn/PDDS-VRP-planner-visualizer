@@ -11,6 +11,7 @@ import pucp.pdds.backend.algos.entities.PlannerWarehouse;
 import pucp.pdds.backend.algos.entities.PlannerFailure;
 import pucp.pdds.backend.algos.entities.PlannerMaintenance;
 import pucp.pdds.backend.algos.algorithm.Node;
+import pucp.pdds.backend.algos.algorithm.OrderDeliverNode;
 import pucp.pdds.backend.algos.algorithm.Solution;
 import pucp.pdds.backend.algos.data.Indicator;
 import pucp.pdds.backend.algos.utils.Time;
@@ -338,6 +339,9 @@ public class SchedulerState {
                 // Has arrived at location
                 if (shouldLog) {
                     debugPrint("Vehicle " + plannerVehicle.id + " has arrived at location of node " + nextNode);
+                    if (nextNode instanceof OrderDeliverNode) {
+                        OrderDeliverNode orderDeliverNode = (OrderDeliverNode) nextNode;
+                    }
                 }
                 plannerVehicle.processNode(
                     nextNode, 

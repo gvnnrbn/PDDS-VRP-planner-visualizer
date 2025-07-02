@@ -16,7 +16,7 @@ import pucp.pdds.backend.algos.scheduler.SchedulerState;
 import pucp.pdds.backend.algos.utils.Time;
 import pucp.pdds.backend.dto.SimulationResponse;
 
-@Service
+// @Service
 public class DailyService {
     private static final Logger logger = LoggerFactory.getLogger(DailyService.class);
 

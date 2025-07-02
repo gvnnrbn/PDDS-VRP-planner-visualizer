@@ -226,6 +226,8 @@ public class Environment {
             solution.routes.get(this.vehicles.get(i).id).add(finalNodes.get(i));
         }
 
+        solution.validate();
+
         return solution;
     }
 }

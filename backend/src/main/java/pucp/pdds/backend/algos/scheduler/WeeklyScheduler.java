@@ -114,6 +114,7 @@ public class WeeklyScheduler implements Runnable {
                 Solution sol;
                 try {
                     sol = solutionQueue.take();
+                    debugPrint("SOLUTION TAKEN: " + sol);
                 } catch (InterruptedException e) {
                     isRunning = false;
                     Thread.currentThread().interrupt();
@@ -126,15 +127,10 @@ public class WeeklyScheduler implements Runnable {
                 SchedulerState clonedState = state.clone();
                 stateLock.unlock();
 
-                System.out.println("CLONED STATE CURRENTLY AT: " + clonedState.getCurrTime());
-                System.out.println("CLONED STATE: " + clonedState);
-                System.out.println("SOLUTION FOR CLONED STATE: " + sol);
                 clonedState.initializeVehicles();
                 for (int i = 0; i < clonedState.minutesToSimulate; i++) {
                     clonedState.advance(sol, false);
                 }
-                System.out.println("CLONED STATE AFTER ADVANCING: " + clonedState);
-                System.out.println("CLONED STATE SHOULD BE MATCHED AT: " + clonedState.getCurrTime());
 
                 try {
                     stateQueue.put(clonedState);
@@ -149,8 +145,6 @@ public class WeeklyScheduler implements Runnable {
                 stateLock.lock();
                 state.initializeVehicles();
                 stateLock.unlock();
-
-                debugPrint("Executing solution meant for " + sol.getStartingTime());
 
                 for (int iteration = 0; iteration < state.minutesToSimulate && isRunning && !Thread.currentThread().isInterrupted(); iteration++) {
                     stateLock.lock();

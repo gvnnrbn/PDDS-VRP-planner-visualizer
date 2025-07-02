@@ -100,6 +100,23 @@ public class Solution implements Cloneable {
         routes = new HashMap<>();
     }
 
+    public void validate() {
+        for (Map.Entry<Integer, List<Node>> entry : routes.entrySet()) {
+            if (entry.getValue().size() < 2) {
+                throw new RuntimeException("Solution has a route with less than 2 nodes. This should not happen.");
+            }
+            Node firstNode = entry.getValue().get(0);
+            Node lastNode = entry.getValue().get(entry.getValue().size() - 1);
+
+            if (!(firstNode instanceof EmptyNode)) {
+                throw new RuntimeException("First node of route " + entry.getKey() + " is not an empty node. This should not happen.");
+            }
+            if (!(lastNode instanceof FinalNode)) {
+                throw new RuntimeException("Last node of route " + entry.getKey() + " is not an empty node. This should not happen.");
+            }
+        }
+    }
+
     @Override
     public Solution clone() {
         Solution clone = new Solution();
@@ -356,6 +373,29 @@ public class Solution implements Cloneable {
                     }
                 }
             }
+        }
+        // Enforce invariant after compress
+        // NOTE: This requires an Environment parameter, so compress should accept it
+    }
+
+    public void enforceRouteInvariant(Environment environment) {
+        if (routes == null) return;
+        for (Map.Entry<Integer, List<Node>> entry : routes.entrySet()) {
+            int vehicleId = entry.getKey();
+            List<Node> route = entry.getValue();
+            if (route == null || route.isEmpty()) continue;
+            // Remove all EmptyNode and FinalNode except at ends
+            route.removeIf(n -> (n instanceof EmptyNode || n instanceof FinalNode));
+            // Add correct EmptyNode at start
+            Node emptyNode = environment.getNodes().stream()
+                .filter(n -> n instanceof EmptyNode && n.getPosition().equals(environment.vehicles.stream().filter(v -> v.id == vehicleId).findFirst().get().initialPosition))
+                .findFirst().orElse(null);
+            if (emptyNode != null) route.add(0, emptyNode);
+            // Add correct FinalNode at end
+            Node finalNode = environment.getNodes().stream()
+                .filter(n -> n instanceof FinalNode)
+                .findFirst().orElse(null);
+            if (finalNode != null) route.add(finalNode);
         }
     }
 

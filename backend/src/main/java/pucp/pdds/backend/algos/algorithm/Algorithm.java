@@ -44,18 +44,8 @@ public class Algorithm {
         }
 
         int iterations = 0;
-        long fastFeasibleTimeMs = 500; // 0.5 seconds
         while (System.currentTimeMillis() - startTime < maxTimeMs) {
             iterations++;
-            
-            // If 2 seconds have passed and we have a feasible solution, return it.
-            long elapsedTime = System.currentTimeMillis() - startTime;
-            if (bestFeasibleSolution != null && elapsedTime >= fastFeasibleTimeMs) {
-                if (isDebug) {
-                    System.out.println("\nFeasible solution found, returning after " + elapsedTime + "ms.");
-                }
-                return bestFeasibleSolution;
-            }
 
             // Perturb the current best solution to escape local optima. Prefer perturbing the best feasible solution.
             Solution solutionToPerturb = bestFeasibleSolution != null ? bestFeasibleSolution : bestSolution;
@@ -102,7 +92,11 @@ public class Algorithm {
         }
         
         // Always return a solution, preferring feasible ones
-        return bestFeasibleSolution != null ? bestFeasibleSolution : bestSolution;
+        Solution solutionToReturn = bestFeasibleSolution != null ? bestFeasibleSolution : bestSolution;
+
+        solutionToReturn.validate();
+
+        return solutionToReturn;
     }
 
     private Solution _run(Environment environment, int minutes, Solution initialSolution) {
@@ -174,6 +168,19 @@ public class Algorithm {
         int perturbations = 5 + random.nextInt(6); // 5 to 10 perturbations
 
         for (int i = 0; i < perturbations; i++) {
+            // Store first and last nodes for each route before perturbation
+            Map<Integer, Node> firstNodes = new HashMap<>();
+            Map<Integer, Node> lastNodes = new HashMap<>();
+            
+            for (Map.Entry<Integer, List<Node>> entry : perturbedSolution.routes.entrySet()) {
+                int vehicleId = entry.getKey();
+                List<Node> route = entry.getValue();
+                if (route.size() >= 2) {
+                    firstNodes.put(vehicleId, route.get(0));
+                    lastNodes.put(vehicleId, route.get(route.size() - 1));
+                }
+            }
+
             Neighbor neighbor;
             double moveType = random.nextDouble();
 
@@ -185,6 +192,22 @@ public class Algorithm {
             
             if (neighbor != null) {
                 perturbedSolution = neighbor.solution;
+                
+                // Restore first and last nodes for each route after perturbation
+                for (Map.Entry<Integer, List<Node>> entry : perturbedSolution.routes.entrySet()) {
+                    int vehicleId = entry.getKey();
+                    List<Node> route = entry.getValue();
+                    
+                    if (firstNodes.containsKey(vehicleId) && lastNodes.containsKey(vehicleId)) {
+                        // Ensure first node is EmptyNode and last node is FinalNode
+                        if (route.size() > 0 && !(route.get(0) instanceof EmptyNode)) {
+                            route.add(0, firstNodes.get(vehicleId));
+                        }
+                        if (route.size() > 0 && !(route.get(route.size() - 1) instanceof FinalNode)) {
+                            route.add(lastNodes.get(vehicleId));
+                        }
+                    }
+                }
             }
         }
         return perturbedSolution;
@@ -316,12 +339,15 @@ public class Algorithm {
                     }
 
                     if (neighbor != null) {
+                        // Re-add start/end nodes
                         for (Map.Entry<Integer, Node> entry : startNodes.entrySet()) {
                             neighbor.solution.routes.get(entry.getKey()).add(0, entry.getValue());
                         }
                         for (Map.Entry<Integer, Node> entry : finalNodes.entrySet()) {
                             neighbor.solution.routes.get(entry.getKey()).add(entry.getValue());
                         }
+                        // Enforce invariant
+                        neighbor.solution.enforceRouteInvariant(environment);
                         neighbors.add(neighbor);
                     }
                 }
