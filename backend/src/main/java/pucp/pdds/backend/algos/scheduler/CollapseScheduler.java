@@ -71,7 +71,7 @@ public class CollapseScheduler implements Runnable {
 
                 for (int i = 0; i < state.minutesToSimulate && running && !Thread.currentThread().isInterrupted(); i++) {
                     stateLock.lock();
-                    state.advance(sol);
+                    state.advance(sol, true);
                     sendSimulationUpdate(sol);
                     stateLock.unlock();
 

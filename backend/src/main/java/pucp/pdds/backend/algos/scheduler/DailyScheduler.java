@@ -64,7 +64,7 @@ public class DailyScheduler implements Runnable {
 
                 for (int iteration = 0; iteration < state.minutesToSimulate && isRunning && !Thread.currentThread().isInterrupted(); iteration++) {
                     stateLock.lock();
-                    state.advance(sol);
+                    state.advance(sol, true);
                     onAfterExecution(iteration, sol);
                     stateLock.unlock();
 

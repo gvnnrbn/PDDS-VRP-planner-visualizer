@@ -81,20 +81,6 @@ public class WeeklyScheduler implements Runnable {
 
         Time endSimulationTime = state.getCurrTime().addTime(new Time(0,0,7,0,0));
 
-        stateLock.lock();
-        SchedulerState initialState = state.clone();
-        stateLock.unlock();
-
-        try {
-            stateQueue.put(initialState);
-        } catch (InterruptedException e) {
-            isRunning = false;
-            Thread.currentThread().interrupt();
-            algorithmThread.interrupt();
-            sendResponse("SIMULATION_STOPPED", "Simulation stopped by user");
-            return;
-        }
-
         while(state.getCurrTime().isBefore(endSimulationTime) && isRunning && !Thread.currentThread().isInterrupted()) {
             try {
                 Solution sol;
@@ -113,7 +99,7 @@ public class WeeklyScheduler implements Runnable {
                 stateLock.unlock();
 
                 for (int i = 0; i < clonedState.minutesToSimulate; i++) {
-                    clonedState.advance(sol);
+                    clonedState.advance(sol, false);
                 }
 
                 try {
@@ -134,12 +120,12 @@ public class WeeklyScheduler implements Runnable {
 
                 for (int iteration = 0; iteration < state.minutesToSimulate && isRunning && !Thread.currentThread().isInterrupted(); iteration++) {
                     stateLock.lock();
-                    state.advance(sol);
+                    state.advance(sol, true);
                     onAfterExecution(iteration, sol);
                     stateLock.unlock();
 
                     try {
-                        Thread.sleep(60);
+                        Thread.sleep(300);
                     } catch (InterruptedException e) {
                         isRunning = false;
                         Thread.currentThread().interrupt();

@@ -87,7 +87,7 @@ public class Algorithm {
                 }
             }
 
-            if (iterations % 1000 == 0) {
+            if (iterations % 50 == 0) {
                 Thread.yield();
             }
         }

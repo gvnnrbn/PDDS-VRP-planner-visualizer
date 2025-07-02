@@ -219,18 +219,18 @@ export default function DailyOperation() {
 
   return (
     <OperacionProvider>
-      <Flex height="full" overflowY="auto" position="relative">
-        <Box flex={1} p={4} bg={bgColor} h="full">
+    <Flex height="full" overflowY="auto" position="relative">
+      <Box flex={1} p={4} bg={bgColor} h="full">
           <DailyOperationControlPanel data={operationData} setData={setOperationData} />
-        </Box>
-        <SectionBar
-          sections={sections}
-          onSectionChange={setCurrentSection}
-          currentSection={currentSection}
-          isCollapsed={isCollapsed}
-          onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
-        />
-      </Flex>
+      </Box>
+      <SectionBar
+        sections={sections}
+        onSectionChange={setCurrentSection}
+        currentSection={currentSection}
+        isCollapsed={isCollapsed}
+        onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+      />
+    </Flex>
     </OperacionProvider>
   )
 }

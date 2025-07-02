@@ -179,6 +179,9 @@ export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
       const y = margin + node.posY * scaleY - 24;
       const img = await iconToImage(FaMapMarkerAlt, '#5459EA', 24);
       ctx.drawImage(img, x, y, 24, 24);
+      ctx.fillStyle = '#000';
+      ctx.font = '10px Arial';
+      ctx.fillText(`GLP: ${node.glp || 0}`, x + 2, y + 40);
     }
   }
 

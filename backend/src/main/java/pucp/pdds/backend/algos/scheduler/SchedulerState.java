@@ -138,8 +138,10 @@ public class SchedulerState {
         return orders.stream().filter(order -> order.arrivalTime.isBeforeOrAt(currTime)).collect(Collectors.toList());
     }
 
-    public synchronized void advance(Solution sol) {
-        debugPrint("--- Time: " + currTime + " ---");
+    public synchronized void advance(Solution sol, boolean shouldLog) {
+        if (shouldLog) {
+            debugPrint("--- Time: " + currTime + " ---");
+        }
 
         if (currTime.getHour() == 0 && currTime.getMinute() == 0) {
             for(PlannerWarehouse warehouse : warehouses) {
@@ -152,14 +154,18 @@ public class SchedulerState {
             if (plannerVehicle.state != PlannerVehicle.VehicleState.MAINTENANCE && getActiveMaintenances().stream().anyMatch(maintenance -> maintenance.vehiclePlaque.equals(plannerVehicle.plaque))) {
                 plannerVehicle.state = PlannerVehicle.VehicleState.MAINTENANCE;
                 plannerVehicle.currentMaintenance = getActiveMaintenances().stream().filter(maintenance -> maintenance.vehiclePlaque.equals(plannerVehicle.plaque)).findFirst().get();
-                debugPrint("Vehicle " + plannerVehicle.id + " is going into maintenance: " + plannerVehicle.currentMaintenance);
+                if (shouldLog) {
+                    debugPrint("Vehicle " + plannerVehicle.id + " is going into maintenance: " + plannerVehicle.currentMaintenance);
+                }
             } 
             
             // If vehicle should leave maintenance
             if (plannerVehicle.state == PlannerVehicle.VehicleState.MAINTENANCE && plannerVehicle.currentMaintenance.endDate.isBefore(currTime)) {
                 plannerVehicle.state = PlannerVehicle.VehicleState.IDLE;
                 plannerVehicle.currentMaintenance = null;
-                debugPrint("Vehicle " + plannerVehicle.id + " is leaving maintenance");
+                if (shouldLog) {
+                    debugPrint("Vehicle " + plannerVehicle.id + " is leaving maintenance");
+                }
             }
 
             // If vehicle should schedule a failure
@@ -183,7 +189,9 @@ public class SchedulerState {
                     if (distance > 0) {
                         plannerVehicle.minutesUntilFailure = distance;
                         plannerVehicle.currentFailure = matchingFailure;
-                        debugPrint("Assigned failure to happen to vehicle " + plannerVehicle.id + " in " + plannerVehicle.minutesUntilFailure + " minutes");
+                        if (shouldLog) {
+                            debugPrint("Assigned failure to happen to vehicle " + plannerVehicle.id + " in " + plannerVehicle.minutesUntilFailure + " minutes");
+                        }
                     }
                 }
             }
@@ -194,7 +202,9 @@ public class SchedulerState {
                 plannerVehicle.state = PlannerVehicle.VehicleState.STUCK;
                 plannerVehicle.currentFailure.timeOccuredOn = currTime;
                 plannerVehicle.currentPath = null;
-                debugPrint("Vehicle " + plannerVehicle.id + " has failed");
+                if (shouldLog) {
+                    debugPrint("Vehicle " + plannerVehicle.id + " has failed");
+                }
             } 
             // If vehicle stuck time has ended
             else if (plannerVehicle.state == PlannerVehicle.VehicleState.STUCK &&
@@ -210,7 +220,9 @@ public class SchedulerState {
                     case Ti1:
                         plannerVehicle.state = PlannerVehicle.VehicleState.IDLE;
                         plannerVehicle.currentFailure = null;
-                        debugPrint("Vehicle " + plannerVehicle.id + " has recovered from failure of type Ti1");
+                        if (shouldLog) {
+                            debugPrint("Vehicle " + plannerVehicle.id + " has recovered from failure of type Ti1");
+                        }
                         break;
                     case Ti2:
                         plannerVehicle.state = PlannerVehicle.VehicleState.RETURNING_TO_BASE;
@@ -255,7 +267,9 @@ public class SchedulerState {
                         
                         plannerVehicle.reincorporationTime = reincorporationTime;
                         plannerVehicle.currentFailure = null;
-                        debugPrint("Vehicle " + plannerVehicle.id + " has recovered from failure of type Ti2, will be available at " + reincorporationTime);
+                        if (shouldLog) {
+                            debugPrint("Vehicle " + plannerVehicle.id + " has recovered from failure of type Ti2, will be available at " + reincorporationTime);
+                        }
                         break;
                     case Ti3:
                         plannerVehicle.state = PlannerVehicle.VehicleState.RETURNING_TO_BASE;
@@ -267,7 +281,9 @@ public class SchedulerState {
                             0
                         );
                         plannerVehicle.currentFailure = null;
-                        debugPrint("Vehicle " + plannerVehicle.id + " has recovered from failure of type Ti3");
+                        if (shouldLog) {
+                            debugPrint("Vehicle " + plannerVehicle.id + " has recovered from failure of type Ti3");
+                        }
                         break;
                 }
                 plannerVehicle.currentPath = path;
@@ -277,12 +293,16 @@ public class SchedulerState {
             plannerVehicle.reincorporationTime.isSameDate(currTime)) {
                 plannerVehicle.state = PlannerVehicle.VehicleState.IDLE;
                 plannerVehicle.currentFailure = null;
-                debugPrint("Vehicle " + plannerVehicle.id + " has finished repairing");
+                if (shouldLog) {
+                    debugPrint("Vehicle " + plannerVehicle.id + " has finished repairing");
+                }
             }
             
             if (plannerVehicle.minutesUntilFailure > 0) {
                 plannerVehicle.minutesUntilFailure--;
-                debugPrint("Vehicle " + plannerVehicle.id + " has " + plannerVehicle.minutesUntilFailure + " minutes until failure");
+                if (shouldLog) {
+                    debugPrint("Vehicle " + plannerVehicle.id + " has " + plannerVehicle.minutesUntilFailure + " minutes until failure");
+                }
             }
 
             if (!getActiveVehicles().contains(plannerVehicle)) {
@@ -290,7 +310,9 @@ public class SchedulerState {
             }
 
             if (plannerVehicle.waitTransition > 0) {
-                debugPrint("Vehicle " + plannerVehicle.id + " is waiting for " + plannerVehicle.waitTransition + " minutes");
+                if (shouldLog) {
+                    debugPrint("Vehicle " + plannerVehicle.id + " is waiting for " + plannerVehicle.waitTransition + " minutes");
+                }
                 plannerVehicle.waitTransition--;
                 continue;
             } 
@@ -309,7 +331,9 @@ public class SchedulerState {
                     continue;
                 }
                 // Has arrived at location
-                debugPrint("Vehicle " + plannerVehicle.id + " has arrived at location of node " + nextNode);
+                if (shouldLog) {
+                    debugPrint("Vehicle " + plannerVehicle.id + " has arrived at location of node " + nextNode);
+                }
                 double deliveryTotalMinutes = 0;
                 plannerVehicle.processNode(
                     nextNode, 
@@ -317,13 +341,16 @@ public class SchedulerState {
                     orders, 
                     warehouses, 
                     currTime,
+                    shouldLog,
                     activeIndicators
                 );
                 activeIndicators.calculateMeanDeliveryTime();
 
                 if (plannerVehicle.nextNodeIndex == route.size() - 1) {
                     // Just processed the FinalNode
-                    debugPrint("Vehicle " + plannerVehicle.id + " has reached final node");
+                    if (shouldLog) {
+                        debugPrint("Vehicle " + plannerVehicle.id + " has reached final node");
+                    }
                     plannerVehicle.state = PlannerVehicle.VehicleState.FINISHED;
                     plannerVehicle.nextNodeIndex++; // Optional: move index past end
                     continue;
