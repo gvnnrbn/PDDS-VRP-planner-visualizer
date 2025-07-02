@@ -188,12 +188,6 @@ const SimulationDetails: React.FC<SimulationDetailsProps> = ({ simulationData })
               <Grid templateColumns="repeat(auto-fit, minmax(180px, 1fr))" gap={3} justifyContent="center">
                 <GridItem>
                   <Stat>
-                    <StatLabel>Pedidos Entregados</StatLabel>
-                    <StatNumber color="green.500">{data.pedidosEntregados}</StatNumber>
-                  </Stat>
-                </GridItem>
-                <GridItem>
-                  <Stat>
                     <StatLabel>Consumo de Petróleo</StatLabel>
                     <StatNumber color="orange.500">{data.consumoPetroleo} L</StatNumber>
                   </Stat>
