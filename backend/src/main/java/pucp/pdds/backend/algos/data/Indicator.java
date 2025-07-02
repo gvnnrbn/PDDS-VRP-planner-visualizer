@@ -17,11 +17,16 @@ public class Indicator {
     public double glpFilledTotal = 0;
 
     public int completedOrders = 0;
+    public int totalOrders = 0;
 
     public List<Double> deliveryTimes = new ArrayList<>();
     public double meanDeliveryTime = 0; //minutos
 
     public Indicator() {
+    }
+
+    public int getTotalOrders() {
+        return totalOrders;
     }
 
     public double getFuelCounterTA() {
@@ -60,8 +65,8 @@ public class Indicator {
         return glpFilledTotal;
     }
 
-    public double getCompletedOrders() {
-        return (double) completedOrders;
+    public int getCompletedOrders() {
+        return completedOrders;
     }
 
     public List<Double> getDeliveryTimes() {

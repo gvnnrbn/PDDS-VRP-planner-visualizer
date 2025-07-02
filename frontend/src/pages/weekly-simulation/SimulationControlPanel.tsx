@@ -149,19 +149,27 @@ export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
     for (const wh of data.almacenes) {
       const x = margin + wh.posicion.posX * scaleX - 16;
       const y = margin + wh.posicion.posY * scaleY - 16;
+
       const icon = wh.isMain ? FaWarehouse : FaIndustry;
+
       let color = '#444';
       if (wh.isMain) {
-        color = (wh.currentGLP || 0) === 0 ? '#ff0000' : '#00c800';
+        color = '#000'; // color negro fijo
         mainWHx = wh.posicion.posX;
         mainWHy = wh.posicion.posY;
+      } else {
+        color = (wh.currentGLP || 0) === 0 ? '#ff0000' : '#00c800'; // rojo si no hay GLP
       }
+
       const img = await iconToImage(icon, color, 32);
       ctx.drawImage(img, x, y, 32, 32);
+
       ctx.fillStyle = '#000';
       ctx.font = '12px Arial';
       ctx.fillText('W' + (wh.idAlmacen || ''), x + 4, y + 50);
-      if (wh.maxGLP) {
+
+      // Solo dibujar barra si NO es main
+      if (!wh.isMain && wh.maxGLP) {
         const perc = wh.currentGLP / wh.maxGLP;
         ctx.fillStyle = '#c8c8c8';
         ctx.fillRect(x + 2, y + 34, 28, 4);
