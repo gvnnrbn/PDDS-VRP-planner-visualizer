@@ -322,8 +322,15 @@ export default function WeeklySimulation() {
   }, [isCollapsed]);
 
   return (
-    <Flex height="full" overflowY="auto" position="relative">
-      <Box flex={1} p={4} bg={bgColor} h="full">
+    <Flex height="100%" width="100%" overflowY="hidden" position="relative">
+      <Box
+        position="absolute"
+        top="0"
+        left="0"
+        right="0"
+        bottom="0"
+        zIndex={0}
+      >
         <Routes>
           <Route
             path="simulacion"

@@ -25,10 +25,17 @@ export const SectionBar = ({
   
   return (
     <Flex
+      position="absolute"
+      right="0"
+      top="0"
+      height="100%"
+      maxWidth="30%"
+      zIndex={2}
       width={isCollapsed ? '40px' : '30%'}
       transition="width 0.3s ease"
       direction="column"
       h="full"
+      overflow="hidden"
     >
       <Tabs 
         variant='enclosed' 

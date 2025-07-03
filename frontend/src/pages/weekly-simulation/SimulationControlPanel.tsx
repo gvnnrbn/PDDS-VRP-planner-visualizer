@@ -842,10 +842,10 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
   //No
 
   return (
-    <Box borderWidth="1px" borderRadius="md" p={4} mb={4}>
+    <Box borderWidth="1px" borderRadius="md" p={0} mb={0} height="100vh">
       <VStack align="start" spacing={3}>
         
-        <Box position="relative" width="100%" height="calc(100vh - 64px)">
+        <Box position="relative" width="100%" height="100vh">
           <canvas ref={canvasRef} width={1720} height={1080} 
             style={{
             position: 'absolute',
