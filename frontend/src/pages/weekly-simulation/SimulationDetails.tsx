@@ -114,6 +114,7 @@ const SimulationDetails: React.FC<SimulationDetailsProps> = ({ simulationData })
     }
   };
 // aquí se muestra el resumen de la simulación
+//sdsds
   return (
     <Box p={6} bg={bgColor} minH="100vh">
       <VStack spacing={6} align="center" maxW="1100px" mx="auto">
@@ -123,7 +124,7 @@ const SimulationDetails: React.FC<SimulationDetailsProps> = ({ simulationData })
             <Button
               leftIcon={<FaArrowLeft />}
               variant="ghost"
-              onClick={() => navigate('/weekly-simulation')}
+              onClick={() => navigate('/semanal/simulacion')}
             >
               Volver
             </Button>
