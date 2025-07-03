@@ -6,12 +6,9 @@ import { useNavigate } from 'react-router-dom';
 import { Box, Button, Input, VStack, HStack, useToast, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, FormControl, FormLabel, useDisclosure, Flex, Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon, Text } from '@chakra-ui/react';
 import { FaTruck, FaWarehouse, FaMapMarkerAlt, FaIndustry } from 'react-icons/fa';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { set } from 'date-fns';
 import BottomLeftControls from '../../components/common/MapActions';
 import SimulationCompleteModal from '../../components/common/SimulationCompletionModal';
 import { ModalInsertAveria } from '../../components/common/modals/ModalInsertAveria';
-import { register } from 'module';
-import { on } from 'process';
 import type { AlmacenSimulado } from '../../core/types/almacen';
 import type { BloqueoSimulado } from '../../core/types/bloqueos';
 import type { IncidenciaSimulada } from '../../core/types/incidencia';
@@ -23,6 +20,22 @@ import type { IndicadoresSimulado } from '../../core/types/indicadores';
 interface LogEntry {
   timestamp: string;
   message: string;
+}
+
+function panelStyles({ left, top }: { left: number; top: number }) {
+  return {
+    position: 'absolute',
+    left,
+    top,
+    transform: 'translate(-50%, -120%)',
+    background: 'white',
+    padding: '12px',
+    border: '1px solid #ccc',
+    borderRadius: '6px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+    zIndex: 1000,
+    minWidth: '200px',
+  };
 }
 
 const backend_url = import.meta.env.VITE_ENV_BACKEND_URL;
@@ -94,6 +107,8 @@ export let panX = 0;
 export let panY = 0;
 export let zoomScale = 1;
 export const vehicleHitboxes: { x: number; y: number; size: number; vehiculo: any }[] = [];
+export const warehouseHitboxes: { x: number; y: number; size: number; almacen: any }[] = [];
+export const pedidoHitboxes: { x: number; y: number; size: number; pedido: any }[] = [];
 
 // Funciones para actualizar pan y zoom desde fuera
 export function setPan(x: number, y: number) {
@@ -152,6 +167,11 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
     ctx.stroke();
   }
 
+  //Limpieza de hitboxes
+  vehicleHitboxes.length = 0;
+  warehouseHitboxes.length = 0;
+  pedidoHitboxes.length = 0;
+
   // --- Dibujar Bloqueos ---
   if (data.bloqueos) {
     ctx.strokeStyle = '#F80707';
@@ -185,6 +205,12 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
     for (const wh of data.almacenes) {
       const x = margin + wh.posicion.posX * scaleX - 16;
       const y = margin + wh.posicion.posY * scaleY - 16;
+       warehouseHitboxes.push({
+        x,
+        y,
+        size: 32,
+        almacen: wh,
+      });
 
       const icon = wh.isMain ? FaWarehouse : FaIndustry;
       let color = '#444';
@@ -222,11 +248,16 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
   }
 
   // --- Dibujar Nodos de Pedido ---
-  vehicleHitboxes.length = 0; // Limpiar hitboxes antes de rellenarlas
   if (data.pedidos) {
     for (const node of data.pedidos.filter((pedido: any) => pedido.estado.toUpperCase() !== 'COMPLETADO')) {
       const x = margin + node.posX * scaleX - 12;
       const y = margin + node.posY * scaleY - 24;
+      pedidoHitboxes.push({
+        x,
+        y,
+        size: 24,
+        pedido: node,
+      });
 
       const isHighlighted = (window as any).highlightedPedidoId === node.idPedido;
       const iconColor = isHighlighted ? '#FFD700' : '#5459EA';
@@ -256,7 +287,6 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
   }
 
   // --- Dibujar Vehículos ---
-  vehicleHitboxes.length = 0; // Limpiar hitboxes antes de rellenarlas
   if (data.vehiculos) {
     for (const v of data.vehiculos) {
       if (v.posicionX === mainWHx && v.posicionY === mainWHy) {
@@ -684,6 +714,20 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
   //CLICK VEHICULO
   const [selectedVehicle, setSelectedVehicle] = useState<any | null>(null);
   const [vehiclePanelPos, setVehiclePanelPos] = useState<{ left: number; top: number } | null>(null);
+  const [selectedWarehouse, setSelectedWarehouse] = useState<any | null>(null);
+  const [warehousePanelPos, setWarehousePanelPos] = useState<{ left: number; top: number } | null>(null);
+
+  const [selectedPedido, setSelectedPedido] = useState<any | null>(null);
+  const [pedidoPanelPos, setPedidoPanelPos] = useState<{ left: number; top: number } | null>(null);
+
+  const clearAllSelections = () => {
+    setSelectedVehicle(null);
+    setVehiclePanelPos(null);
+    setSelectedWarehouse(null);
+    setWarehousePanelPos(null);
+    setSelectedPedido(null);
+    setPedidoPanelPos(null);
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -697,33 +741,61 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
       const canvasX = (clickX - panX) / zoomScale;
       const canvasY = (clickY - panY) / zoomScale;
 
+      const screenPos = (box: { x: number; y: number; size: number }) => ({
+        left: (box.x * zoomScale) + panX + rect.left + (box.size / 2) * zoomScale,
+        top: (box.y * zoomScale) + panY + rect.top + (box.size / 2) * zoomScale,
+      });
+
+      // Vehículos
       for (const box of vehicleHitboxes) {
         if (
-          canvasX >= box.x &&
-          canvasX <= box.x + box.size &&
-          canvasY >= box.y &&
-          canvasY <= box.y + box.size
+          canvasX >= box.x && canvasX <= box.x + box.size &&
+          canvasY >= box.y && canvasY <= box.y + box.size
         ) {
-          setSelectedVehicle(box.vehiculo as VehiculoSimulado); // Asegurarse de que el tipo sea BackendVehicle
-
-          // Calcular posición del panel flotante en coordenadas de pantalla
-          const screenX = (box.x * zoomScale) + panX + rect.left + (box.size / 2) * zoomScale;
-          const screenY = (box.y * zoomScale) + panY + rect.top + (box.size / 2) * zoomScale;
-
-          setVehiclePanelPos({ left: screenX, top: screenY });
+          setSelectedVehicle(box.vehiculo);
+          setVehiclePanelPos(screenPos(box));
+          setSelectedWarehouse(null);
+          setSelectedPedido(null);
           return;
         }
       }
-      setSelectedVehicle(null);
-      setVehiclePanelPos(null);
+
+      // Almacenes
+      for (const box of warehouseHitboxes) {
+        if (
+          canvasX >= box.x && canvasX <= box.x + box.size &&
+          canvasY >= box.y && canvasY <= box.y + box.size
+        ) {
+          setSelectedWarehouse(box.almacen);
+          setWarehousePanelPos(screenPos(box));
+          setSelectedVehicle(null);
+          setSelectedPedido(null);
+          return;
+        }
+      }
+
+      // Pedidos
+      for (const box of pedidoHitboxes) {
+        if (
+          canvasX >= box.x && canvasX <= box.x + box.size &&
+          canvasY >= box.y && canvasY <= box.y + box.size
+        ) {
+          setSelectedPedido(box.pedido);
+          setPedidoPanelPos(screenPos(box));
+          setSelectedVehicle(null);
+          setSelectedWarehouse(null);
+          return;
+        }
+      }
+
+      clearAllSelections(); // Clic fuera
     };
 
     canvas.addEventListener('click', handleClick);
     return () => {
       canvas.removeEventListener('click', handleClick);
     };
-  }, [canvasRef, data, panX, panY, zoomScale, scale]);
-
+  }, [canvasRef, data, panX, panY, zoomScale]);
 
 
   //Modal averia
@@ -886,6 +958,33 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
             </Button>
           </Box>
         )}
+        {selectedWarehouse && warehousePanelPos && (
+          <Box style={panelStyles(warehousePanelPos)} /* iguales a vehículo */>
+            <Flex justify="space-between" align="center" mb={2}>
+              <Text fontWeight="bold">Almacén</Text>
+              <Button size="xs" onClick={() => setSelectedWarehouse(null)} variant="ghost" colorScheme="red">
+                ✕
+              </Button>
+            </Flex>
+            <Text>ID: {selectedWarehouse.idAlmacen}</Text>
+            <Text>GLP Actual: {selectedWarehouse.currentGLP}</Text>
+            <Text>Capacidad Máx: {selectedWarehouse.maxGLP}</Text>
+          </Box>
+        )}
+
+        {selectedPedido && pedidoPanelPos && (
+          <Box style={panelStyles(pedidoPanelPos)}>
+            <Flex justify="space-between" align="center" mb={2}>
+              <Text fontWeight="bold">Pedido</Text>
+              <Button size="xs" onClick={() => setSelectedPedido(null)} variant="ghost" colorScheme="red">
+                ✕
+              </Button>
+            </Flex>
+            <Text>ID Pedido: {selectedPedido.idPedido}</Text>
+            <Text>Estado: {selectedPedido.estado}</Text>
+            <Text>GLP: {selectedPedido.glp}</Text>
+          </Box>
+)}
         <ModalInsertAveria
           isOpen={isOpenAveria}
           onClose={onCloseAveria}
