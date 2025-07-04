@@ -16,6 +16,7 @@ import type { MantenimientoSimulado } from '../../core/types/manetenimiento';
 import type { PedidoSimulado } from '../../core/types/pedido';
 import type { VehiculoSimulado, VehiculoSimuladoV2 } from '../../core/types/vehiculo';
 import type { IndicadoresSimulado } from '../../core/types/indicadores';
+import AlmacenModal from '../../components/common/modals/ModalAlmacen';
 
 interface LogEntry {
   timestamp: string;
@@ -593,7 +594,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
     if (canvas && data) {
       // Pasamos los datos originales Y el estado de animación al `drawState`
       // `drawState` usará `vehiclesAnimState.current` para las posiciones
-      const result = drawState(canvas, data, vehiclesAnimState.current);
+      const result = drawState(canvas, data);
       if (result) setScale(result);
     }
   }, [data]); 
@@ -867,6 +868,11 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
     });
     onCloseAveria();
   }
+
+  //Modal almacén
+  const { isOpen: isOpenAlmacenRutas, onOpen: onOpenAlmacenRutas, onClose: onCloseAlmacenRutas} = useDisclosure();
+
+
   //Modal final
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
 
@@ -960,6 +966,8 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
             <Text>ID: {selectedVehicle.idVehiculo}</Text>
             <Text>Placa: {selectedVehicle.placa}</Text>
             <Text>Estado: {estadoVehiculo}</Text>
+            <Text>Combustible: {selectedVehicle.combustible} L</Text>
+            <Text>GLP: {selectedVehicle.currGLP} m3</Text>
             {/* <Text>Posición: ({selectedVehicle.posicionX}, {selectedVehicle.posicionY})</Text> */}
             <Button variant={'primary'} size={'sm'} onClick={onOpenAveria} mt={2}>
               Registrar Avería
@@ -967,18 +975,44 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
           </Box>
         )}
         {selectedWarehouse && warehousePanelPos && (
-          <Box style={panelStyles(warehousePanelPos)} /* iguales a vehículo */>
+          <Box style={panelStyles(warehousePanelPos)}>
             <Flex justify="space-between" align="center" mb={2}>
               <Text fontWeight="bold">Almacén</Text>
-              <Button size="xs" onClick={() => setSelectedWarehouse(null)} variant="ghost" colorScheme="red">
+              <Button
+                size="xs"
+                onClick={() => setSelectedWarehouse(null)}
+                variant="ghost"
+                colorScheme="red"
+              >
                 ✕
               </Button>
             </Flex>
+
             <Text>ID: {selectedWarehouse.idAlmacen}</Text>
-            <Text>GLP Actual: {selectedWarehouse.currentGLP}</Text>
-            <Text>Capacidad Máx: {selectedWarehouse.maxGLP}</Text>
+
+            {selectedWarehouse.isMain ? (
+              <>
+                <Text fontStyle="italic">Almacén Principal</Text>
+                <Text>Capacidad: Infinita</Text>
+              </>
+            ) : (
+              <>
+                <Text>GLP Actual: {selectedWarehouse.currentGLP}</Text>
+                <Text>Capacidad Máx: {selectedWarehouse.maxGLP}</Text>
+              </>
+            )}
+
+            <Button variant="primary" size="sm" onClick={onOpenAlmacenRutas} mt={2}>
+              Rutas de Almacén
+            </Button>
           </Box>
         )}
+        <AlmacenModal
+          isOpen={isOpenAlmacenRutas} // ✅ Usar el valor correcto de useDisclosure
+          onClose={onCloseAlmacenRutas}
+          almacen={selectedWarehouse}
+          onOpenRutas={onOpenAlmacenRutas}
+        />
 
         {selectedPedido && pedidoPanelPos && (
           <Box style={panelStyles(pedidoPanelPos)}>
@@ -992,7 +1026,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
             <Text>Estado: {selectedPedido.estado}</Text>
             <Text>GLP: {selectedPedido.glp}</Text>
           </Box>
-)}
+        )}
         <ModalInsertAveria
           isOpen={isOpenAveria}
           onClose={onCloseAveria}
