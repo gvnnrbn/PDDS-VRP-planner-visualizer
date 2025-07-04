@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import type { IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
@@ -6,12 +6,9 @@ import { useNavigate } from 'react-router-dom';
 import { Box, Button, Input, VStack, HStack, useToast, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, FormControl, FormLabel, useDisclosure, Flex, Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon, Text } from '@chakra-ui/react';
 import { FaTruck, FaWarehouse, FaMapMarkerAlt, FaIndustry } from 'react-icons/fa';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { set } from 'date-fns';
 import BottomLeftControls from '../../components/common/MapActions';
 import SimulationCompleteModal from '../../components/common/SimulationCompletionModal';
 import { ModalInsertAveria } from '../../components/common/modals/ModalInsertAveria';
-import { register } from 'module';
-import { on } from 'process';
 import type { AlmacenSimulado } from '../../core/types/almacen';
 import type { BloqueoSimulado } from '../../core/types/bloqueos';
 import type { IncidenciaSimulada } from '../../core/types/incidencia';
@@ -23,6 +20,22 @@ import type { IndicadoresSimulado } from '../../core/types/indicadores';
 interface LogEntry {
   timestamp: string;
   message: string;
+}
+
+function panelStyles({ left, top }: { left: number; top: number }) {
+  return {
+    position: 'absolute',
+    left,
+    top,
+    transform: 'translate(-50%, -120%)',
+    background: 'white',
+    padding: '12px',
+    border: '1px solid #ccc',
+    borderRadius: '6px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+    zIndex: 1000,
+    minWidth: '200px',
+  };
 }
 
 const backend_url = import.meta.env.VITE_ENV_BACKEND_URL;
@@ -46,8 +59,35 @@ function iconToImage(IconComponent: React.ElementType, color: string, size = 32)
       iconImageCache[cacheKey] = img;
       resolve(img);
     };
+    img.onerror = (error) => { // Añadir manejo de error
+      console.error("Error cargando SVG para el ícono:", cacheKey, error);
+      // Opcional: Resolver con una imagen de marcador de posición si falla la carga
+      resolve(new Image()); // Resuelve con una imagen vacía para no bloquear
+    };
   });
 }
+
+// --- NUEVA FUNCIÓN: precargar todos los íconos posibles ---
+export async function preloadIcons(): Promise<void> {
+  const iconSets = [
+    { icon: FaWarehouse, colors: ['#444', '#000'], sizes: [32] },
+    { icon: FaIndustry, colors: ['#444', '#ff0000', '#00c800'], sizes: [32] },
+    { icon: FaMapMarkerAlt, colors: ['#5459EA', '#FFD700'], sizes: [24, 32] }, // Añade los tamaños usados
+    { icon: FaTruck, colors: ['#ffc800', '#ff0000', '#ffa500', '#444'], sizes: [32] }, // Añade los colores usados
+  ];
+
+  const promises: Promise<HTMLImageElement>[] = [];
+  for (const set of iconSets) {
+    for (const color of set.colors) {
+      for (const size of set.sizes) {
+        promises.push(iconToImage(set.icon, color, size));
+      }
+    }
+  }
+  await Promise.all(promises);
+  console.log("Todos los íconos precargados y cacheados.");
+}
+
 
 // Type guard para SIMULATION_STOPPED
 function isSimulationStopped(response: unknown): response is { type: string; data: string } {
@@ -63,10 +103,22 @@ function isSimulationStopped(response: unknown): response is { type: string; dat
 
 
 //VARIBLES PARA ZOOM Y PAN
-let panX = 0;
-let panY = 0;
-let zoomScale = 1;
+export let panX = 0;
+export let panY = 0;
+export let zoomScale = 1;
 export const vehicleHitboxes: { x: number; y: number; size: number; vehiculo: any }[] = [];
+export const warehouseHitboxes: { x: number; y: number; size: number; almacen: any }[] = [];
+export const pedidoHitboxes: { x: number; y: number; size: number; pedido: any }[] = [];
+
+// Funciones para actualizar pan y zoom desde fuera
+export function setPan(x: number, y: number) {
+    panX = x;
+    panY = y;
+}
+
+export function setZoom(scale: number) {
+    zoomScale = scale;
+}
 
 // Variables globales para el enfoque de pedidos
 (window as any).panX = panX;
@@ -75,15 +127,20 @@ export const vehicleHitboxes: { x: number; y: number; size: number; vehiculo: an
 
 
 // Dibuja el estado de la simulación en el canvas usando íconos
-export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
+export function drawState(canvas: HTMLCanvasElement, data: any): {
   margin: number;
   scaleX: number;
   scaleY: number;
-}> {
+} {
   const ctx = canvas.getContext('2d');
   if (!ctx) return { margin: 0, scaleX: 1, scaleY: 1 };
 
+  // --- Optimización: Limpieza y Transformación al inicio ---
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  ctx.translate(panX, panY);
+  ctx.scale(zoomScale, zoomScale);
+
   const margin = 40;
   const width = canvas.width;
   const height = canvas.height;
@@ -92,21 +149,9 @@ export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
   const scaleX = (width - 2 * margin) / gridLength;
   const scaleY = (height - 2 * margin) / gridWidth;
 
-  //pan y zoom
-  ctx.clearRect(0, 0, width, height);
-  ctx.save();
-  ctx.translate(panX, panY);
-  ctx.scale(zoomScale, zoomScale);
-
-  // Draw current time
-  /*
-  ctx.fillStyle = '#000';
-  ctx.font = '18px Arial';
-  ctx.fillText('Time: ' + (data.minuto || ''), 20, 30);
-  */
-
-  //Lineas GRID
+  // --- Dibujar la Cuadrícula ---
   ctx.strokeStyle = 'rgba(220, 220, 220, 0.55)';
+  ctx.lineWidth = 1; // Restaurar lineWidth a 1 antes de dibujar la cuadrícula
   for (let x = 0; x <= gridLength; x++) {
     const sx = margin + x * scaleX;
     ctx.beginPath();
@@ -114,8 +159,6 @@ export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
     ctx.lineTo(sx, height - margin);
     ctx.stroke();
   }
-
-  // Draw horizontal grid lines (50 rows => 51 lines including borders)
   for (let y = 0; y <= gridWidth; y++) {
     const sy = margin + y * scaleY;
     ctx.beginPath();
@@ -124,10 +167,16 @@ export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
     ctx.stroke();
   }
 
-  // Draw blockages (as connected black lines)
+  //Limpieza de hitboxes
+  vehicleHitboxes.length = 0;
+  warehouseHitboxes.length = 0;
+  pedidoHitboxes.length = 0;
+
+  // --- Dibujar Bloqueos ---
   if (data.bloqueos) {
     ctx.strokeStyle = '#F80707';
     ctx.lineWidth = 3;
+    ctx.fillStyle = '#F80707'; // Para los círculos de los bloqueos
     data.bloqueos.forEach((blockage: any) => {
       if (blockage.segmentos?.length > 1) {
         ctx.beginPath();
@@ -146,35 +195,48 @@ export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
         });
       }
     });
-    ctx.lineWidth = 1;
   }
+
   let mainWHx = 0;
   let mainWHy = 0;
-  // Draw warehouses (as icons)
+
+  // --- Dibujar Almacenes ---
   if (data.almacenes) {
     for (const wh of data.almacenes) {
       const x = margin + wh.posicion.posX * scaleX - 16;
       const y = margin + wh.posicion.posY * scaleY - 16;
+       warehouseHitboxes.push({
+        x,
+        y,
+        size: 32,
+        almacen: wh,
+      });
 
       const icon = wh.isMain ? FaWarehouse : FaIndustry;
-
       let color = '#444';
       if (wh.isMain) {
-        color = '#000'; // color negro fijo
+        color = '#000';
         mainWHx = wh.posicion.posX;
         mainWHy = wh.posicion.posY;
       } else {
-        color = (wh.currentGLP || 0) === 0 ? '#ff0000' : '#00c800'; // rojo si no hay GLP
+        color = (wh.currentGLP || 0) === 0 ? '#ff0000' : '#00c800';
       }
 
-      const img = await iconToImage(icon, color, 32);
-      ctx.drawImage(img, x, y, 32, 32);
+      // Obtener imagen del caché (ya precargada)
+      const cacheKey = `${icon.displayName || icon.name || ''}_${color}_${32}`;
+      const img = iconImageCache[cacheKey]; // Ahora no hay `await` aquí
+
+      if (img) { // Solo dibujar si la imagen está disponible
+        ctx.drawImage(img, x, y, 32, 32);
+      } else {
+        console.warn(`Icono no encontrado en caché para ${cacheKey}`);
+        // Considerar dibujar un placeholder o un círculo si la imagen no está lista
+      }
 
       ctx.fillStyle = '#000';
       ctx.font = '12px Arial';
       ctx.fillText('W' + (wh.idAlmacen || ''), x + 4, y + 50);
 
-      // Solo dibujar barra si NO es main
       if (!wh.isMain && wh.maxGLP) {
         const perc = wh.currentGLP / wh.maxGLP;
         ctx.fillStyle = '#c8c8c8';
@@ -185,54 +247,57 @@ export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
     }
   }
 
-
-  // Draw delivery nodes (as icons)
+  // --- Dibujar Nodos de Pedido ---
   if (data.pedidos) {
     for (const node of data.pedidos.filter((pedido: any) => pedido.estado.toUpperCase() !== 'COMPLETADO')) {
       const x = margin + node.posX * scaleX - 12;
       const y = margin + node.posY * scaleY - 24;
-      const img_pedido = await iconToImage(FaMapMarkerAlt, '#5459EA', 24);
-      ctx.drawImage(img_pedido, x, y, 24, 24);
+      pedidoHitboxes.push({
+        x,
+        y,
+        size: 24,
+        pedido: node,
+      });
+
+      const isHighlighted = (window as any).highlightedPedidoId === node.idPedido;
+      const iconColor = isHighlighted ? '#FFD700' : '#5459EA';
+      const iconSize = isHighlighted ? 32 : 24;
+
+      const cacheKey = `${FaMapMarkerAlt.displayName || FaMapMarkerAlt.name || ''}_${iconColor}_${iconSize}`;
+      const img = iconImageCache[cacheKey]; // No await
+
+      if (img) {
+        if (isHighlighted) {
+          ctx.save();
+          ctx.shadowColor = '#FFD700';
+          ctx.shadowBlur = 15;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 0;
+          ctx.drawImage(img, x - 4, y - 4, iconSize, iconSize);
+          ctx.restore();
+        } else {
+          ctx.drawImage(img, x, y, iconSize, iconSize);
+        }
+      }
+
       ctx.fillStyle = '#000';
       ctx.font = '10px Arial';
       ctx.fillText(`GLP: ${node.glp || 0}`, x + 2, y + 40);
-      
-      // Verificar si este pedido está resaltado
-      const isHighlighted = (window as any).highlightedPedidoId === node.idPedido;
-      
-      // Color del ícono: azul normal, amarillo si está resaltado
-      const iconColor = isHighlighted ? '#FFD700' : '#5459EA';
-      const iconSize = isHighlighted ? 32 : 24; // Más grande si está resaltado
-      
-      const img = await iconToImage(FaMapMarkerAlt, iconColor, iconSize);
-      
-      // Si está resaltado, dibujar un halo alrededor
-      if (isHighlighted) {
-        ctx.save();
-        ctx.shadowColor = '#FFD700';
-        ctx.shadowBlur = 15;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 0;
-        ctx.drawImage(img, x - 4, y - 4, iconSize, iconSize);
-        ctx.restore();
-      } else {
-        ctx.drawImage(img, x, y, iconSize, iconSize);
-      }
     }
   }
 
-
-  vehicleHitboxes.length = 0;
-  // Draw vehicles (as icons)
+  // --- Dibujar Vehículos ---
   if (data.vehiculos) {
     for (const v of data.vehiculos) {
-      if (v.posicionX === mainWHx && v.posicionY === mainWHy){
+      if (v.posicionX === mainWHx && v.posicionY === mainWHy) {
         continue;
       }
-      let color = '#ffc800';
+      let color = '#444'; // Color por defecto
       if (v.estado === 'STUCK') color = '#ff0000';
       else if (v.estado === 'MAINTENANCE') color = '#ffa500';
-      else color = '#444';
+      else if (v.estado === 'En Ruta' || v.estado === 'MOVIENDOSE' || v.estado === 'RETURNING_TO_BASE') color = '#00c800'; // Color para vehículos en movimiento
+      else if (v.estado === 'IDLE') color = '#ffc800'; // Color si está inactivo
+
 
       const vx = margin + v.posicionX * scaleX;
       const vy = margin + v.posicionY * scaleY;
@@ -244,58 +309,68 @@ export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
         vehiculo: v,
       });
 
-      const img = await iconToImage(FaTruck, color, 32);
+      const cacheKey = `${FaTruck.displayName || FaTruck.name || ''}_${color}_${32}`;
+      const img = iconImageCache[cacheKey];
 
-      ctx.save();
-      ctx.translate(vx, vy); // centro
+      if (img) {
+        ctx.save();
+        ctx.translate(vx, vy); // centro
 
-      if (v.rutaActual?.length > 1) {
-        const next = v.rutaActual[1];
-        const dx = next.posX - v.posicionX;
-        const dy = next.posY - v.posicionY;
+        // Lógica de rotación: usa v.rutaActual[0] para el punto actual
+        // y v.rutaActual[1] para el siguiente punto en la ruta.
+        if (v.rutaActual?.length > 1) {
+          const next = v.rutaActual[1]; // El siguiente punto en la ruta
+          const dx = next.posX - v.posicionX; // Diferencia con el punto actual del vehículo
+          const dy = next.posY - v.posicionY;
 
-        if (Math.abs(dx) > Math.abs(dy)) {
-          // Movimiento horizontal
-          if (dx < 0) {
-            ctx.scale(-1, 1); // flip horizontal para izquierda
-          }
-          // si va a la derecha, no hacemos nada (rotación base)
-        } else {
-          if (dy < 0) {
-            ctx.rotate(-Math.PI / 2); // solo hacia arriba
-          }
-          // si va hacia abajo, no rotamos (queda en horizontal base)
-          else{
-            ctx.rotate(Math.PI /2);
+          if (Math.abs(dx) > Math.abs(dy)) {
+            // Movimiento horizontal
+            if (dx < 0) {
+              ctx.scale(-1, 1); // Flip horizontal para izquierda
+            }
+            // Si va a la derecha, no hacemos nada (rotación base)
+          } else {
+            // Movimiento vertical
+            if (dy < 0) {
+              ctx.rotate(-Math.PI / 2); // Rotar 90 grados a la izquierda para arriba
+            } else if (dy > 0) {
+              ctx.rotate(Math.PI / 2); // Rotar 90 grados a la derecha para abajo
+            }
           }
         }
-      }
 
-      ctx.drawImage(img, -16, -16, 32, 32);
-      ctx.restore();
+        ctx.drawImage(img, -16, -16, 32, 32);
+        ctx.restore();
+      } else {
+        console.warn(`Icono de camión no encontrado en caché para ${cacheKey}`);
+      }
 
       ctx.fillStyle = '#444';
       ctx.font = '12px Arial';
       ctx.fillText(v.placa || v.idVehiculo || '', vx - 16, vy - 21);
 
+      // --- CORRECCIÓN AQUÍ: Dibujar la ruta del vehículo ---
+      // Si la ruta tiene más de un punto (es decir, hay un segmento que dibujar)
       if (v.rutaActual?.length > 1 && v.estado !== 'STUCK') {
         ctx.strokeStyle = '#444';
         ctx.lineWidth = 2;
         ctx.beginPath();
+        // Iterar directamente sobre v.rutaActual
         v.rutaActual.forEach((p: any, i: number) => {
           const px = margin + p.posX * scaleX;
           const py = margin + p.posY * scaleY;
+          // Mover al primer punto, luego dibujar líneas a los siguientes
           i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
         });
         ctx.stroke();
-        ctx.lineWidth = 1;
       }
+      ctx.lineWidth = 1; // Restaurar el grosor de línea para otros dibujos
     }
   }
-
-  ctx.restore();
+  ctx.restore(); // Restaurar el contexto global al final
   return { margin, scaleX, scaleY };
 }
+
 
 export interface SimulacionMinuto {
   minuto: string;
@@ -308,9 +383,20 @@ export interface SimulacionMinuto {
   indicadores: IndicadoresSimulado;
 }
 
+// Interfaz para el estado de animación de cada vehículo
+interface VehicleAnimationState {
+  prevPosX: number;
+  prevPosY: number;
+  targetPosX: number;
+  targetPosY: number;
+  transitionStartTime: number;
+  transitionDuration: number;
+}
+
 interface SimulationControlPanelProps {
   setData: (data: SimulacionMinuto) => void;
   data: SimulacionMinuto;
+  startDate: string; // <-- nuevo
 }
 
 const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData, data }) => {
@@ -337,6 +423,11 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
     scaleX: 1,
     scaleY: 1,
   });
+
+  //Carga de iconos
+  useEffect(() => {
+    preloadIcons().catch(console.error); // Llama a la función de precarga
+  }, []); // Se ejecuta solo una vez al montar
 
   useEffect(() => {
     if (!connected) {
@@ -492,58 +583,104 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
     onOpen();
   };
 
+  // NUEVO: Ref para almacenar el estado de animación de los vehículos
+  const vehiclesAnimState = useRef<Record<string, VehicleAnimationState>>({});
+  const animationFrameId = useRef<number | null>(null);
+
+   // Función para dibujar el estado actual del canvas
+  const redrawCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (canvas && data) {
+      // Pasamos los datos originales Y el estado de animación al `drawState`
+      // `drawState` usará `vehiclesAnimState.current` para las posiciones
+      const result = drawState(canvas, data, vehiclesAnimState.current);
+      if (result) setScale(result);
+    }
+  }, [data]); 
+
+  // Se dispara cada vez que `data` (los datos de simulación) cambian
+  useEffect(() => {
+    redrawCanvas();
+  }, [data, scale.margin, scale.scaleX, scale.scaleY]); // Añadir dependencias de `scale` para re-render si cambian
+
+  // Efecto para iniciar y detener el bucle de animación
+  useEffect(() => {
+    const animateLoop = () => {
+      // Solo dibuja si hay datos Y si la simulación está activa O si algún vehículo está en transición
+      if (canvasRef.current && data && (isSimulating || Object.values(vehiclesAnimState.current).some(vAnim => {
+        const elapsed = performance.now() - vAnim.transitionStartTime;
+        return elapsed < vAnim.transitionDuration;
+      }))) {
+        redrawCanvas();
+      }
+      animationFrameId.current = requestAnimationFrame(animateLoop);
+    };
+
+    animationFrameId.current = requestAnimationFrame(animateLoop);
+
+    return () => {
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+      }
+    };
+  }, [isSimulating, data, redrawCanvas]); // Depende de `isSimulating`, `data` (para vehículos) y `redrawCanvas`
+
+
   //ZOOM Y PAN
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    let isDragging = false;
-    let startX = 0;
-    let startY = 0;
-    let panStartX = 0;
-    let panStartY = 0;
-
-    // Verificar si hay cambios en las variables globales de pan (solo cuando se hace wheel o mouse move)
-    const checkGlobalPan = () => {
-      if ((window as any).globalPanX !== undefined && (window as any).globalPanY !== undefined) {
-        panX = (window as any).globalPanX;
-        panY = (window as any).globalPanY;
-        (window as any).panX = panX;
-        (window as any).panY = panY;
-        // Limpiar las variables globales después de usarlas
-        delete (window as any).globalPanX;
-        delete (window as any).globalPanY;
+    const resizeCanvas = () => {
+      const parent = canvas.parentElement;
+      if (parent) {
+        canvas.width = parent.offsetWidth;
+        canvas.height = parent.offsetHeight;
+        redrawCanvas();
       }
     };
 
-    const handleWheel = async (e: WheelEvent) => {
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    let isDragging = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      checkGlobalPan(); // Verificar cambios de pan antes del zoom
-      const zoomIntensity = 0.1;
-      const delta = e.deltaY < 0 ? 1 + zoomIntensity : 1 - zoomIntensity;
-      zoomScale = Math.min(Math.max(0.25, zoomScale * delta), 4);
-      const result = await drawState(canvas, data);
-      if (result) setScale(result);
+      const scaleAmount = 1.1;
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      const worldX = (mouseX - panX) / zoomScale;
+      const worldY = (mouseY - panY) / zoomScale;
+
+      const newZoomScale = e.deltaY < 0 ? zoomScale * scaleAmount : zoomScale / scaleAmount;
+      setZoom(Math.min(Math.max(0.25, newZoomScale), 4));
+
+      const newPanX = mouseX - worldX * zoomScale;
+      const newPanY = mouseY - worldY * zoomScale;
+      setPan(newPanX, newPanY);
+
+      redrawCanvas();
     };
 
     const handleMouseDown = (e: MouseEvent) => {
       isDragging = true;
-      startX = e.clientX;
-      startY = e.clientY;
-      panStartX = panX;
-      panStartY = panY;
+      lastX = e.clientX;
+      lastY = e.clientY;
     };
 
-    const handleMouseMove = async (e: MouseEvent) => {
+    const handleMouseMove = (e: MouseEvent) => {
       if (!isDragging) return;
-      checkGlobalPan(); // Verificar cambios de pan antes del movimiento
-      panX = panStartX + (e.clientX - startX);
-      panY = panStartY + (e.clientY - startY);
-      // Actualizar variables globales
-      (window as any).panX = panX;
-      (window as any).panY = panY;
-      const result = await drawState(canvas, data);
-      if (result) setScale(result);
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      setPan(panX + dx, panY + dy);
+      lastX = e.clientX;
+      lastY = e.clientY;
+      redrawCanvas();
     };
 
     const handleMouseUp = () => {
@@ -560,10 +697,9 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
       canvas.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('resize', resizeCanvas);
     };
-  }, [canvasRef, data]);
-
-  const [selectedVehicle, setSelectedVehicle] = useState<any | null>(null);
+  }, [redrawCanvas]); // Ahora depende de redrawCanvas
 
   //AUXILIAR
   useEffect(() => {
@@ -577,7 +713,22 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
 
 
   //CLICK VEHICULO
+  const [selectedVehicle, setSelectedVehicle] = useState<any | null>(null);
   const [vehiclePanelPos, setVehiclePanelPos] = useState<{ left: number; top: number } | null>(null);
+  const [selectedWarehouse, setSelectedWarehouse] = useState<any | null>(null);
+  const [warehousePanelPos, setWarehousePanelPos] = useState<{ left: number; top: number } | null>(null);
+
+  const [selectedPedido, setSelectedPedido] = useState<any | null>(null);
+  const [pedidoPanelPos, setPedidoPanelPos] = useState<{ left: number; top: number } | null>(null);
+
+  const clearAllSelections = () => {
+    setSelectedVehicle(null);
+    setVehiclePanelPos(null);
+    setSelectedWarehouse(null);
+    setWarehousePanelPos(null);
+    setSelectedPedido(null);
+    setPedidoPanelPos(null);
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -585,46 +736,67 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
 
     const handleClick = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
-      const scaleXcss = canvas.width / rect.width;
-      const scaleYcss = canvas.height / rect.height;
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
 
-      const rawX = (e.clientX - rect.left) * scaleXcss;
-      const rawY = (e.clientY - rect.top) * scaleYcss;
+      const canvasX = (clickX - panX) / zoomScale;
+      const canvasY = (clickY - panY) / zoomScale;
 
-      const canvasX = (rawX - panX) / zoomScale;
-      const canvasY = (rawY - panY) / zoomScale;
+      const screenPos = (box: { x: number; y: number; size: number }) => ({
+        left: (box.x * zoomScale) + panX + rect.left + (box.size / 2) * zoomScale,
+        top: (box.y * zoomScale) + panY + rect.top + (box.size / 2) * zoomScale,
+      });
 
+      // Vehículos
       for (const box of vehicleHitboxes) {
         if (
-          canvasX >= box.x &&
-          canvasX <= box.x + box.size &&
-          canvasY >= box.y &&
-          canvasY <= box.y + box.size
+          canvasX >= box.x && canvasX <= box.x + box.size &&
+          canvasY >= box.y && canvasY <= box.y + box.size
         ) {
           setSelectedVehicle(box.vehiculo);
-
-          // Calcular posición del panel flotante
-          const { margin, scaleX, scaleY } = scale;
-          const vx = margin + box.vehiculo.posicionX * scaleX;
-          const vy = margin + box.vehiculo.posicionY * scaleY;
-          const screenX = (vx + panX) * zoomScale + rect.left;
-          const screenY = (vy + panY) * zoomScale + rect.top;
-
-          setVehiclePanelPos({ left: screenX, top: screenY });
+          setVehiclePanelPos(screenPos(box));
+          setSelectedWarehouse(null);
+          setSelectedPedido(null);
           return;
         }
       }
 
-      setSelectedVehicle(null);
-      setVehiclePanelPos(null);
+      // Almacenes
+      for (const box of warehouseHitboxes) {
+        if (
+          canvasX >= box.x && canvasX <= box.x + box.size &&
+          canvasY >= box.y && canvasY <= box.y + box.size
+        ) {
+          setSelectedWarehouse(box.almacen);
+          setWarehousePanelPos(screenPos(box));
+          setSelectedVehicle(null);
+          setSelectedPedido(null);
+          return;
+        }
+      }
+
+      // Pedidos
+      for (const box of pedidoHitboxes) {
+        if (
+          canvasX >= box.x && canvasX <= box.x + box.size &&
+          canvasY >= box.y && canvasY <= box.y + box.size
+        ) {
+          setSelectedPedido(box.pedido);
+          setPedidoPanelPos(screenPos(box));
+          setSelectedVehicle(null);
+          setSelectedWarehouse(null);
+          return;
+        }
+      }
+
+      clearAllSelections(); // Clic fuera
     };
 
     canvas.addEventListener('click', handleClick);
     return () => {
       canvas.removeEventListener('click', handleClick);
     };
-  }, [canvasRef, data, scale]);
-
+  }, [canvasRef, data, panX, panY, zoomScale]);
 
 
   //Modal averia
@@ -740,11 +912,20 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
     stopSimulation(); // sigue deteniendo la simulación
   };
 
+  //Conteo de dias
+  const [simulatedMinutes, setSimulatedMinutes] = useState(0);
+  useEffect(() => {
+    if (data?.minuto) {
+      setSimulatedMinutes(prev => prev + 1);
+    }
+  }, [data?.minuto]);
+  const diaSimulado = Math.floor(simulatedMinutes / 1440) + 1;
+
   return (
-    <Box borderWidth="1px" borderRadius="md" p={4} mb={4}>
+    <Box borderWidth="1px" borderRadius="md" p={0} mb={0} height="100vh">
       <VStack align="start" spacing={3}>
         
-        <Box position="relative" width="100%" height="calc(100vh - 64px)">
+        <Box position="relative" width="100%" height="100vh">
           <canvas ref={canvasRef} width={1720} height={1080} 
             style={{
             position: 'absolute',
@@ -785,6 +966,33 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
             </Button>
           </Box>
         )}
+        {selectedWarehouse && warehousePanelPos && (
+          <Box style={panelStyles(warehousePanelPos)} /* iguales a vehículo */>
+            <Flex justify="space-between" align="center" mb={2}>
+              <Text fontWeight="bold">Almacén</Text>
+              <Button size="xs" onClick={() => setSelectedWarehouse(null)} variant="ghost" colorScheme="red">
+                ✕
+              </Button>
+            </Flex>
+            <Text>ID: {selectedWarehouse.idAlmacen}</Text>
+            <Text>GLP Actual: {selectedWarehouse.currentGLP}</Text>
+            <Text>Capacidad Máx: {selectedWarehouse.maxGLP}</Text>
+          </Box>
+        )}
+
+        {selectedPedido && pedidoPanelPos && (
+          <Box style={panelStyles(pedidoPanelPos)}>
+            <Flex justify="space-between" align="center" mb={2}>
+              <Text fontWeight="bold">Pedido</Text>
+              <Button size="xs" onClick={() => setSelectedPedido(null)} variant="ghost" colorScheme="red">
+                ✕
+              </Button>
+            </Flex>
+            <Text>ID Pedido: {selectedPedido.idPedido}</Text>
+            <Text>Estado: {selectedPedido.estado}</Text>
+            <Text>GLP: {selectedPedido.glp}</Text>
+          </Box>
+)}
         <ModalInsertAveria
           isOpen={isOpenAveria}
           onClose={onCloseAveria}
@@ -794,13 +1002,28 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
         />
         {/* Controles inferiores (Detener + Fecha) */}
         {(
-          <BottomLeftControls
-            variant="date-pause"
-            date={`Tiempo: ${data?.minuto || "dd/mm/yyyy"}`}
-            onStop={handleStopAndShowSummary}
-            onIniciarSimulacion={onIniciarSimulacion}
-            isSimulating={isSimulating}
-          />
+          <><Box
+            position="absolute"
+            bottom="80px"
+            left="20px"
+            bg="white"
+            px={4}
+            py={2}
+            borderRadius="md"
+            boxShadow="md"
+            border="1px solid"
+            borderColor="blue.600"
+            zIndex={1000}
+          >
+            <Text fontWeight="bold" color="purple.800">
+              Día simulado: {diaSimulado}
+            </Text>
+          </Box><BottomLeftControls
+              variant="date-pause"
+              date={`Fecha: ${data?.minuto || "dd/mm/yyyy"}`}
+              onStop={handleStopAndShowSummary}
+              onIniciarSimulacion={onIniciarSimulacion}
+              isSimulating={isSimulating} /></>
         )}
         <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
           <ModalOverlay />

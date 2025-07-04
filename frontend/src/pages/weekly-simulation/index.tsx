@@ -126,6 +126,7 @@ export default function WeeklySimulation() {
   const [ isSimulationCompleted, setIsSImulationCompleted ] = useState(false);
 
   const [selectedDate, setSelectedDate] = useState('');
+  const [selectedDateCount, setSelectedDateCount]= useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [ isPaused, setIsPaused ] = useState(false)
   const [ speedMs, setSpeedMs ] = useState(1000);
@@ -159,6 +160,9 @@ export default function WeeklySimulation() {
 
   const handleSubmit = () => {
     formatDateTime();
+    const formattedStartDate = `${dateValue}T${String(hourValue).padStart(2, '0')}:${String(minuteValue).padStart(2, '0')}:00`;
+    setSelectedDateCount(formattedStartDate); 
+
     setIsModalOpen(false);
     setIsSimulationLoading(true);
     setPendingStart(true); // ⏳ esperar conexión
@@ -322,8 +326,15 @@ export default function WeeklySimulation() {
   }, [isCollapsed]);
 
   return (
-    <Flex height="full" overflowY="auto" position="relative">
-      <Box flex={1} p={4} bg={bgColor} h="full">
+    <Flex height="100%" width="100%" overflowY="hidden" position="relative">
+      <Box
+        position="absolute"
+        top="0"
+        left="0"
+        right="0"
+        bottom="0"
+        zIndex={0}
+      >
         <Routes>
           <Route
             path="simulacion"
@@ -331,7 +342,11 @@ export default function WeeklySimulation() {
               isSimulationLoading 
                 ? <></> 
                 : (
-                    <SimulationControlPanel setData={setCurrentMinuteData} data={currentMinuteData}/>
+                    <SimulationControlPanel 
+                      setData={setCurrentMinuteData} 
+                      data={currentMinuteData}
+                      startDate={selectedDateCount}
+                    />
                 )
             }
           />
