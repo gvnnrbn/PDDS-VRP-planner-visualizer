@@ -396,6 +396,7 @@ interface VehicleAnimationState {
 interface SimulationControlPanelProps {
   setData: (data: SimulacionMinuto) => void;
   data: SimulacionMinuto;
+  startDate: string; // <-- nuevo
 }
 
 const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData, data }) => {
@@ -911,7 +912,14 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
     stopSimulation(); // sigue deteniendo la simulación
   };
 
-  //No
+  //Conteo de dias
+  const [simulatedMinutes, setSimulatedMinutes] = useState(0);
+  useEffect(() => {
+    if (data?.minuto) {
+      setSimulatedMinutes(prev => prev + 1);
+    }
+  }, [data?.minuto]);
+  const diaSimulado = Math.floor(simulatedMinutes / 1440) + 1;
 
   return (
     <Box borderWidth="1px" borderRadius="md" p={0} mb={0} height="100vh">
@@ -994,13 +1002,28 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
         />
         {/* Controles inferiores (Detener + Fecha) */}
         {(
-          <BottomLeftControls
-            variant="date-pause"
-            date={`Tiempo: ${data?.minuto || "dd/mm/yyyy"}`}
-            onStop={handleStopAndShowSummary}
-            onIniciarSimulacion={onIniciarSimulacion}
-            isSimulating={isSimulating}
-          />
+          <><Box
+            position="absolute"
+            bottom="80px"
+            left="20px"
+            bg="white"
+            px={4}
+            py={2}
+            borderRadius="md"
+            boxShadow="md"
+            border="1px solid"
+            borderColor="blue.600"
+            zIndex={1000}
+          >
+            <Text fontWeight="bold" color="purple.800">
+              Día simulado: {diaSimulado}
+            </Text>
+          </Box><BottomLeftControls
+              variant="date-pause"
+              date={`Fecha: ${data?.minuto || "dd/mm/yyyy"}`}
+              onStop={handleStopAndShowSummary}
+              onIniciarSimulacion={onIniciarSimulacion}
+              isSimulating={isSimulating} /></>
         )}
         <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
           <ModalOverlay />
