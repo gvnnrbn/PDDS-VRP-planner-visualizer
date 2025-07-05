@@ -17,6 +17,7 @@ import type { PedidoSimulado } from '../../core/types/pedido';
 import type { VehiculoSimulado, VehiculoSimuladoV2 } from '../../core/types/vehiculo';
 import type { IndicadoresSimulado } from '../../core/types/indicadores';
 import AlmacenModal from '../../components/common/modals/ModalAlmacen';
+import { format, parseISO } from 'date-fns';
 
 interface LogEntry {
   timestamp: string;
@@ -400,7 +401,7 @@ interface SimulationControlPanelProps {
   startDate: string; // <-- nuevo
 }
 
-const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData, data }) => {
+const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData, data, startDate }) => {
   const navigate = useNavigate();
   const [initialTime, setInitialTime] = useState(() => {
     const now = new Date();
@@ -424,6 +425,28 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
     scaleX: 1,
     scaleY: 1,
   });
+
+  // Estado para guardar el primer valor de fecha/hora de la simulación
+  const [simStartDate, setSimStartDate] = useState('');
+
+  // Sincroniza isSimulating y simStartDate con el primer data?.minuto recibido
+  useEffect(() => {
+    if (data?.minuto) {
+      if (!simStartDate) {
+        setSimStartDate(data.minuto);
+      }
+      if (!isSimulating) {
+        setIsSimulating(true);
+      }
+    }
+  }, [data?.minuto, simStartDate, isSimulating]);
+
+  // Cuando se detiene la simulación, limpia el valor
+  useEffect(() => {
+    if (!isSimulating) {
+      setSimStartDate('');
+    }
+  }, [isSimulating]);
 
   //Carga de iconos
   useEffect(() => {
@@ -574,7 +597,6 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
       return;
     }
     stompClient.current.publish({ destination: '/app/stop', body: '{}' });
-    setIsSimulating(false);
   };
 
   const onIniciarSimulacion = () => {
@@ -927,6 +949,29 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
   }, [data?.minuto]);
   const diaSimulado = Math.floor(simulatedMinutes / 1440) + 1;
 
+  // Utilidad para parsear fecha de forma robusta
+  function safeParse(dateStr: string) {
+    let parsed;
+    try {
+      parsed = parseISO(dateStr);
+      if (isNaN(parsed.getTime())) throw new Error('Invalid');
+    } catch {
+      parsed = new Date(dateStr);
+    }
+    return parsed;
+  }
+
+  // Función para limpiar el estado y el canvas
+  function resetSimulationState() {
+    setIsSimulating(false);
+    setSimStartDate('');
+    setData(undefined as any); // o el valor inicial vacío según tu tipo
+    if (canvasRef.current) {
+      const ctx = canvasRef.current.getContext('2d');
+      if (ctx) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    }
+  }
+
   return (
     <Box borderWidth="1px" borderRadius="md" p={0} mb={0} height="100vh">
       <VStack align="start" spacing={3}>
@@ -1036,28 +1081,14 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
         />
         {/* Controles inferiores (Detener + Fecha) */}
         {(
-          <><Box
-            position="absolute"
-            bottom="80px"
-            left="20px"
-            bg="white"
-            px={4}
-            py={2}
-            borderRadius="md"
-            boxShadow="md"
-            border="1px solid"
-            borderColor="blue.600"
-            zIndex={1000}
-          >
-            <Text fontWeight="bold" color="purple.800">
-              Día simulado: {diaSimulado}
-            </Text>
-          </Box><BottomLeftControls
-              variant="date-pause"
-              date={`Fecha: ${data?.minuto || "dd/mm/yyyy"}`}
-              onStop={handleStopAndShowSummary}
-              onIniciarSimulacion={onIniciarSimulacion}
-              isSimulating={isSimulating} /></>
+          <BottomLeftControls
+            variant="date-pause"
+            date={`Inicio: ${simStartDate ? format(safeParse(simStartDate), 'dd/MM/yyyy HH:mm') : 'dd/mm/yyyy HH:mm'}\nFecha actual: ${data?.minuto ? format(safeParse(data.minuto), 'dd/MM/yyyy HH:mm') : 'dd/mm/yyyy'}`}
+            onStop={handleStopAndShowSummary}
+            onIniciarSimulacion={onIniciarSimulacion}
+            isSimulating={isSimulating}
+            extraBoxStyle={{ fontSize: '1.2rem', minWidth: '320px', minHeight: '80px', padding: '18px 24px' }}
+          />
         )}
         <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
           <ModalOverlay />
@@ -1080,9 +1111,13 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
 
         <SimulationCompleteModal
           isOpen={isSummaryOpen}
-          onClose={() => setIsSummaryOpen(false)}
+          onClose={() => {
+            setIsSummaryOpen(false);
+            resetSimulationState();
+          }}
           onViewDetails={() => {
             setIsSummaryOpen(false);
+            resetSimulationState();
             navigate('/weekly-simulation/details', { 
               state: { simulationData: simulationSummary } 
             });

@@ -9,6 +9,7 @@ import {
   Flex,
   Button
 } from '@chakra-ui/react';
+import { format, parseISO } from 'date-fns';
 
 interface SimulationCompleteModalProps {
   isOpen: boolean;
@@ -33,6 +34,14 @@ const SimulationCompleteModal: React.FC<SimulationCompleteModalProps> = ({
   consumoPetroleo = 0,
   tiempoPlanificacion = "00:00:00"
 }) => {
+  // Formatea fechas a dd/MM/yyyy HH:mm
+  function formatFecha(fecha: string) {
+    try {
+      return format(parseISO(fecha), 'dd/MM/yyyy HH:mm');
+    } catch {
+      return fecha || '';
+    }
+  }
   return (
     <Modal isOpen={isOpen} onClose={onClose} isCentered size="xl">
       <ModalOverlay bg="blackAlpha.700" />
@@ -46,10 +55,10 @@ const SimulationCompleteModal: React.FC<SimulationCompleteModalProps> = ({
         <ModalBody>
           <VStack align="start" spacing={3} fontSize="md">
             <Text>
-              <strong>Fecha y Hora de inicio:</strong> {fechaInicio}
+              <strong>Fecha y Hora de inicio:</strong> {formatFecha(fechaInicio)}
             </Text>
             <Text>
-              <strong>Fecha y Hora de fin:</strong> {fechaFin}
+              <strong>Fecha y Hora de fin:</strong> {formatFecha(fechaFin)}
             </Text>
             <Text>
               <strong>Duración:</strong> {duracion}

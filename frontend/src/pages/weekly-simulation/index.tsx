@@ -1,4 +1,4 @@
-import { Box, Button, FormControl, FormLabel, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Stack, useColorModeValue, VStack, HStack, useDisclosure, useToast, Menu, MenuList, MenuItem, MenuButton } from '@chakra-ui/react'
+import { Box, Button, FormControl, FormLabel, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Stack, VStack, HStack, useDisclosure, useToast, Menu, MenuList, MenuItem, MenuButton } from '@chakra-ui/react'
 import { Route, Routes } from 'react-router-dom'
 import { SectionBar } from '../../components/common/SectionBar'
 import { useEffect, useRef, useState } from 'react'
@@ -11,11 +11,9 @@ import { FlotaCard } from '../../components/common/cards/FlotaCard'
 import { IncidenciaCard } from '../../components/common/cards/IncidenciaCard'
 import { MantenimientoCard } from '../../components/common/cards/MantenimientoCard'
 import SimulationControlPanel from './SimulationControlPanel'
-import { PedidoService } from '../../core/services/PedidoService'
 import { IncidenciaService } from '../../core/services/IncidenciaService'
 import { IndicadoresCard } from '../../components/common/cards/IndicadoresCard'
 import { useSimulation } from '../../components/common/SimulationContextSemanal'
-import { ModalInsertAveria } from '../../components/common/modals/ModalInsertAveria'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faFilter, faSort } from '@fortawesome/free-solid-svg-icons'
 
@@ -120,16 +118,13 @@ const PedidosSection = () => {
 };
 
 export default function WeeklySimulation() {
-  const bgColor = useColorModeValue('white', '#1a1a1a')
   const [isCollapsed, setIsCollapsed] = useState(true)
   const [isSimulationLoading, setIsSimulationLoading] = useState(false);
-  const [ isSimulationCompleted, setIsSImulationCompleted ] = useState(false);
-
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedDateCount, setSelectedDateCount]= useState('');
+  const [selectedDateCount, setSelectedDateCount] = useState(() => {
+    return localStorage.getItem('vrp_sim_start_date') || '';
+  });
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [ isPaused, setIsPaused ] = useState(false)
-  const [ speedMs, setSpeedMs ] = useState(1000);
+  // const [ speedMs, setSpeedMs ] = useState(1000); // unused
   
 
   const [dateValue, setDateValue] = useState<string>(() => {
@@ -145,7 +140,7 @@ export default function WeeklySimulation() {
   const formatDateTime = () => {
     const [year, month, day] = dateValue.split('-');
     const formattedDate = `${year}-${month}-${day}T${String(hourValue).padStart(2, '0')}:${String(minuteValue).padStart(2, '0')}`;
-    setSelectedDate(formattedDate);
+    setSelectedDateCount(formattedDate);
   };
 
   useEffect(() => {
@@ -156,16 +151,18 @@ export default function WeeklySimulation() {
    * START SIMULATION
   */
 
-  const [pendingStart, setPendingStart] = useState(false);
+  // const [pendingStart, setPendingStart] = useState(false); // unused
 
   const handleSubmit = () => {
-    formatDateTime();
+    // Usa el valor ISO del input tipo date o datetime-local
+    // dateValue es yyyy-MM-dd, hourValue y minuteValue son números
     const formattedStartDate = `${dateValue}T${String(hourValue).padStart(2, '0')}:${String(minuteValue).padStart(2, '0')}:00`;
-    setSelectedDateCount(formattedStartDate); 
+    localStorage.setItem('vrp_sim_start_date', formattedStartDate);
+    setSelectedDateCount(formattedStartDate);
 
     setIsModalOpen(false);
     setIsSimulationLoading(true);
-    setPendingStart(true); // ⏳ esperar conexión
+    // ⏳ esperar conexión
   };
  
 
@@ -189,22 +186,10 @@ export default function WeeklySimulation() {
 
   const AveriaSection = () => {
     const { currentMinuteData } = useSimulation();
-    const { isOpen, onOpen, onClose } = useDisclosure();
+    const { onClose } = useDisclosure();
     const incidenciaService = new IncidenciaService();
     const toast = useToast();
-      const inputRef = useRef<HTMLInputElement>(null);
-
-      // Solo registrar avería, no importar
-      const handleRegister = async (data: Record<string, unknown>) => {
-        try {
-          await incidenciaService.createIncidencia(data);
-          toast({ title: 'Avería registrada', status: 'success', duration: 3000 });
-          onClose();
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-          toast({ title: 'Error al registrar', description: errorMessage, status: 'error', duration: 4000 });
-        }
-      };
+    // const inputRef = useRef<HTMLInputElement>(null); // unused
 
     return (
       <Box>

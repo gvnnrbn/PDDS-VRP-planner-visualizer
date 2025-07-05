@@ -13,6 +13,7 @@ interface BottomLeftControlsProps {
   onSpeedChange?: (value: string) => void;
   onIniciarSimulacion: () => void;
   isSimulating?: boolean;
+  extraBoxStyle?: React.CSSProperties;
 }
 
 const BottomLeftControls: React.FC<BottomLeftControlsProps> = ({
@@ -22,12 +23,12 @@ const BottomLeftControls: React.FC<BottomLeftControlsProps> = ({
     onSpeedChange,
     onIniciarSimulacion,
     isSimulating,
+    extraBoxStyle = {},
     }) => {
     const panelBg = useColorModeValue("white", "gray.800");
 
     const showSpeed = variant === "full";
     const showDate = variant === "full" || variant === "date-pause";
-    const showPause = variant === "full" || variant === "date-pause";
     const boxShadow = useColorModeValue("md", "dark-lg");
     const [isOpen, setIsOpen] = useState(false);
     const [speed, setSpeed] = useState("Velocidad x1");
@@ -61,28 +62,15 @@ const BottomLeftControls: React.FC<BottomLeftControlsProps> = ({
                     minW="170px"
                     border="1px solid"
                     borderColor="blue.600"
+                    style={extraBoxStyle}
                 >
-                <Text fontWeight="bold" color="purple.800">{date}</Text>
+                {date.split('\n').map((line, idx) => (
+                  <Text key={idx} fontWeight="bold" color="purple.800">{line}</Text>
+                ))}
                 </Box>
             )}
 
             {isSimulating && (
-                // <Box
-                //     bg={panelBg}
-                //     borderRadius="md"
-                //     px={4}
-                //     py={2}
-                //     boxShadow={boxShadow}
-                //     display="flex"
-                //     alignItems="center"
-                //     justifyContent="center"
-                //     border="1px solid"
-                //     borderColor="blue.600"
-                //     _hover={{ bg: "gray.100" }} // Cambia el color al pasar el mouse
-                // >
-                //     <Button size="xs" colorScheme="red" onClick={onStop}/>
-                
-                // </Box>
                 <Button
                     colorScheme="red"
                     size="s"
@@ -94,26 +82,14 @@ const BottomLeftControls: React.FC<BottomLeftControlsProps> = ({
             )}
             {!isSimulating &&
                 (
-                // <Box
-                //     bg={panelBg}
-                //     borderRadius="md"
-                //     boxShadow={boxShadow}
-                //     display="flex"
-                //     alignItems="center"
-                //     justifyContent="center"
-                //     border="1px solid"
-                //     borderColor="blue.600"
-                //     _hover={{ bg: "gray.100" }} // Cambia el color al pasar el mouse
-                // >
-                    <Button
-                        colorScheme="green"
-                        size="s"
-                        p={3}
-                        onClick={onIniciarSimulacion}
-                    >
-                        Iniciar Simulación
-                    </Button>
-                // </Box>
+                <Button
+                    colorScheme="green"
+                    size="s"
+                    p={3}
+                    onClick={onIniciarSimulacion}
+                >
+                    Iniciar Simulación
+                </Button>
                 )
             }
 
@@ -121,7 +97,7 @@ const BottomLeftControls: React.FC<BottomLeftControlsProps> = ({
                 <Box
                     bg={panelBg}
                     borderRadius="md"
-                    p={0} // Sin relleno para evitar espacio alrededor del botón
+                    p={0}
                     boxShadow="md"
                     position="relative"
                     border="1px solid"
@@ -133,15 +109,15 @@ const BottomLeftControls: React.FC<BottomLeftControlsProps> = ({
                     fontWeight="bold"
                     color="purple.800"
                     w="100%"
-                    border="none" // Eliminamos el borde blanco
-                    _focus={{ outline: 'none' }} // Sin borde al hacer clic
-                    display="flex" // Usar flex para alinear el ícono
+                    border="none"
+                    _focus={{ outline: 'none' }}
+                    display="flex"
                     justifyContent="space-between"
                     alignItems="center"
-                    px={4} // Para añadir algún espacio lateral
+                    px={4}
                 >
                     <Text>{speed}</Text>
-                    {isOpen ? <ChevronUpIcon /> : <ChevronDownIcon />} {/* Ícono de flecha */}
+                    {isOpen ? <ChevronUpIcon /> : <ChevronDownIcon />}
                 </Button>
                 <Collapse in={isOpen}>
                     <VStack spacing={0} mt={2} w="100%" position="absolute" bottom="100%" left={0} 
