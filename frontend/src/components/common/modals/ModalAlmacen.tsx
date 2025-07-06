@@ -36,6 +36,19 @@ const AlmacenModal: React.FC<AlmacenModalProps> = ({
           <Button colorScheme="purple" onClick={onClose}>
             Cerrar
           </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => {
+              if (almacen) {
+                (window as any).focusAlmacenCard(almacen.idAlmacen);
+                onClose();
+              }
+            }}
+            mt={2}
+          >
+            Rutas de Almacén
+          </Button>
         </ModalFooter>
       </ModalContent>
     </Modal>

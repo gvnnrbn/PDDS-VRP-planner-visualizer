@@ -1,4 +1,4 @@
-import { Box, Button, FormControl, FormLabel, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Stack, VStack, HStack, useDisclosure, useToast, Menu, MenuList, MenuItem, MenuButton } from '@chakra-ui/react'
+import { Box, Button, FormControl, FormLabel, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Stack, VStack, HStack, useDisclosure, useToast, Menu, MenuList, MenuItem, MenuButton, Collapse, IconButton } from '@chakra-ui/react'
 import { Route, Routes } from 'react-router-dom'
 import { SectionBar } from '../../components/common/SectionBar'
 import { useEffect, useRef, useState } from 'react'
@@ -16,6 +16,8 @@ import { IndicadoresCard } from '../../components/common/cards/IndicadoresCard'
 import { useSimulation } from '../../components/common/SimulationContextSemanal'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faFilter, faSort } from '@fortawesome/free-solid-svg-icons'
+import { AlmacenCard } from '../../components/common/cards/AlmacenCard'
+import { ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons'
 
 const ORDER_OPTIONS = [
   { label: 'Tiempo de llegada más cercano', value: 'fechaLimite-asc' },
@@ -240,6 +242,56 @@ export default function WeeklySimulation() {
     );
   };
 
+  const [vehiculosPorAlmacen, setVehiculosPorAlmacen] = useState<Record<number, Record<string, number>>>({});
+
+  const [highlightedAlmacenId, setHighlightedAlmacenId] = useState<number | null>(null);
+  const almacenSectionRef = useRef<HTMLDivElement>(null);
+
+  // Permitir que desde fuera se pueda enfocar una card de almacén
+  useEffect(() => {
+    (window as any).focusAlmacenCard = (idAlmacen: number) => {
+      setSection('Almacén');
+      setHighlightedAlmacenId(idAlmacen);
+      setTimeout(() => setHighlightedAlmacenId(null), 2000);
+      // Scroll a la card si es posible
+      setTimeout(() => {
+        const card = document.getElementById(`almacen-card-${idAlmacen}`);
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+    };
+  }, []);
+
+  const AlmacenSection = () => {
+    const { currentMinuteData } = useSimulation();
+    const focusOnAlmacen = (almacen: any) => {
+      (window as any).highlightedWarehouseId = almacen.idAlmacen;
+      setTimeout(() => {
+        (window as any).highlightedWarehouseId = undefined;
+      }, 3000);
+    };
+    return (
+      <Box ref={almacenSectionRef}>
+        <VStack spacing={4} align="stretch">
+          {currentMinuteData?.almacenes?.map((almacen) => {
+            const vehiculos = vehiculosPorAlmacen[almacen.idAlmacen] || {};
+            return (
+              <AlmacenCard
+                key={almacen.idAlmacen}
+                almacen={almacen}
+                onFocus={() => focusOnAlmacen(almacen)}
+                vehiculos={vehiculos}
+                highlighted={highlightedAlmacenId === almacen.idAlmacen}
+                id={`almacen-card-${almacen.idAlmacen}`}
+              />
+            );
+          })}
+        </VStack>
+      </Box>
+    );
+  };
+
   const IndicadoresSection = () => {
     const { currentMinuteData } = useSimulation();
      const [indicadoresVisibles, setIndicadoresVisibles] = useState(currentMinuteData?.indicadores);
@@ -293,6 +345,10 @@ export default function WeeklySimulation() {
     content: <MantenimientoSection/>
   },
   {
+    title: 'Almacén',
+    content: <AlmacenSection/>
+  },
+  {
     title: 'Indicadores',
     content: <IndicadoresSection/>
   },
@@ -331,6 +387,7 @@ export default function WeeklySimulation() {
                       setData={setCurrentMinuteData} 
                       data={currentMinuteData}
                       startDate={selectedDateCount}
+                      onVehiculosPorAlmacenUpdate={setVehiculosPorAlmacen}
                     />
                 )
             }

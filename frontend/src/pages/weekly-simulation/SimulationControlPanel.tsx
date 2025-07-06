@@ -17,7 +17,7 @@ import type { PedidoSimulado } from '../../core/types/pedido';
 import type { VehiculoSimulado, VehiculoSimuladoV2 } from '../../core/types/vehiculo';
 import type { IndicadoresSimulado } from '../../core/types/indicadores';
 import AlmacenModal from '../../components/common/modals/ModalAlmacen';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, differenceInSeconds } from 'date-fns';
 
 interface LogEntry {
   timestamp: string;
@@ -228,6 +228,19 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
       const cacheKey = `${icon.displayName || icon.name || ''}_${color}_${32}`;
       const img = iconImageCache[cacheKey]; // Ahora no hay `await` aquí
 
+      // Si este almacén está resaltado, dibujar un círculo/borde especial
+      if (typeof window !== 'undefined' && (window as any).highlightedWarehouseId === wh.idAlmacen) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(x + 16, y + 16, 24, 0, 2 * Math.PI);
+        ctx.strokeStyle = '#805ad5';
+        ctx.lineWidth = 5;
+        ctx.shadowColor = '#805ad5';
+        ctx.shadowBlur = 12;
+        ctx.stroke();
+        ctx.restore();
+      }
+
       if (img) { // Solo dibujar si la imagen está disponible
         ctx.drawImage(img, x, y, 32, 32);
       } else {
@@ -401,7 +414,7 @@ interface SimulationControlPanelProps {
   startDate: string; // <-- nuevo
 }
 
-const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData, data, startDate }) => {
+const SimulationControlPanel: React.FC<SimulationControlPanelProps & { onVehiculosPorAlmacenUpdate?: (map: Record<number, Record<string, number>>) => void }> = ({ setData, data, startDate, onVehiculosPorAlmacenUpdate }) => {
   const navigate = useNavigate();
   const [initialTime, setInitialTime] = useState(() => {
     const now = new Date();
@@ -972,6 +985,68 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
     }
   }
 
+  // Estado para mapear vehículos por almacén
+  const [vehiculosPorAlmacen, setVehiculosPorAlmacen] = useState<Record<number, Record<string, number>>>({});
+  // Ref para evitar recrear objetos en cada render
+  const vehiculosPorAlmacenRef = useRef<Record<number, Record<string, number>>>({});
+  // Ref para guardar la última posición conocida de cada vehículo
+  const ultimaPosicionVehiculoRef = useRef<Record<string, { posX: number, posY: number } | null>>({});
+
+  useEffect(() => {
+    if (!data?.almacenes || !data?.vehiculos) return;
+    const nuevoMap: Record<number, Record<string, number>> = { ...vehiculosPorAlmacenRef.current };
+    const almacenesPos = Object.fromEntries(data.almacenes.map(a => [a.idAlmacen, a.posicion]));
+    for (const vehiculo of data.vehiculos) {
+      const placa = vehiculo.placa;
+      const posActual = { posX: vehiculo.posicionX, posY: vehiculo.posicionY };
+      const posAnterior = ultimaPosicionVehiculoRef.current[placa];
+      // Para cada almacén, verifica si el vehículo acaba de entrar
+      for (const [idAlmacen, posAlmacen] of Object.entries(almacenesPos)) {
+        if (!posAlmacen) continue;
+        const mismoAhora = posActual.posX === posAlmacen.posX && posActual.posY === posAlmacen.posY;
+        const estabaAntes = posAnterior && posAnterior.posX === posAlmacen.posX && posAnterior.posY === posAlmacen.posY;
+        if (mismoAhora && !estabaAntes) {
+          if (!nuevoMap[Number(idAlmacen)]) nuevoMap[Number(idAlmacen)] = {};
+          if (!nuevoMap[Number(idAlmacen)][placa]) {
+            nuevoMap[Number(idAlmacen)][placa] = 1;
+          } else {
+            nuevoMap[Number(idAlmacen)][placa] += 1;
+          }
+        }
+      }
+      // Actualiza la última posición conocida
+      ultimaPosicionVehiculoRef.current[placa] = posActual;
+    }
+    vehiculosPorAlmacenRef.current = nuevoMap;
+    setVehiculosPorAlmacen({ ...nuevoMap });
+    if (onVehiculosPorAlmacenUpdate) onVehiculosPorAlmacenUpdate({ ...nuevoMap });
+  }, [data?.minuto]);
+
+  // Limpia el registro de vehículos por almacén y posiciones al iniciar una nueva simulación
+  useEffect(() => {
+    if (isSimulating && simStartDate) {
+      setVehiculosPorAlmacen({});
+      vehiculosPorAlmacenRef.current = {};
+      ultimaPosicionVehiculoRef.current = {};
+    }
+  }, [isSimulating, simStartDate]);
+
+  // Calcular duración
+  let duracionStr = '--:--:--';
+  if (simStartDate && data?.minuto) {
+    // simStartDate y data.minuto pueden ser ISO o string tipo dd/MM/yyyy HH:mm
+    let inicio = safeParse(simStartDate);
+    let actual = safeParse(data.minuto);
+    let diff = Math.max(0, differenceInSeconds(actual, inicio));
+    const dias = Math.floor(diff / (60 * 60 * 24));
+    diff -= dias * 60 * 60 * 24;
+    const horas = Math.floor(diff / (60 * 60));
+    diff -= horas * 60 * 60;
+    const minutos = Math.floor(diff / 60);
+    const segundos = diff % 60;
+    duracionStr = `${dias > 0 ? dias + 'd ' : ''}${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}:${String(segundos).padStart(2, '0')}`;
+  }
+
   return (
     <Box borderWidth="1px" borderRadius="md" p={0} mb={0} height="100vh">
       <VStack align="start" spacing={3}>
@@ -1032,9 +1107,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
                 ✕
               </Button>
             </Flex>
-
             <Text>ID: {selectedWarehouse.idAlmacen}</Text>
-
             {selectedWarehouse.isMain ? (
               <>
                 <Text fontStyle="italic">Almacén Principal</Text>
@@ -1046,17 +1119,24 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
                 <Text>Capacidad Máx: {selectedWarehouse.maxGLP}</Text>
               </>
             )}
-
-            <Button variant="primary" size="sm" onClick={onOpenAlmacenRutas} mt={2}>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                (window as any).focusAlmacenCard(selectedWarehouse.idAlmacen);
+                setSelectedWarehouse(null);
+              }}
+              mt={2}
+            >
               Rutas de Almacén
             </Button>
           </Box>
         )}
         <AlmacenModal
-          isOpen={isOpenAlmacenRutas} // ✅ Usar el valor correcto de useDisclosure
+          isOpen={isOpenAlmacenRutas}
           onClose={onCloseAlmacenRutas}
           almacen={selectedWarehouse}
-          onOpenRutas={onOpenAlmacenRutas}
+          onOpenRutas={() => selectedWarehouse && (window as any).focusAlmacenCard(selectedWarehouse.idAlmacen)}
         />
 
         {selectedPedido && pedidoPanelPos && (
@@ -1083,7 +1163,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({ setData
         {(
           <BottomLeftControls
             variant="date-pause"
-            date={`Inicio: ${simStartDate ? format(safeParse(simStartDate), 'dd/MM/yyyy HH:mm') : 'dd/mm/yyyy HH:mm'}\nFecha actual: ${data?.minuto ? format(safeParse(data.minuto), 'dd/MM/yyyy HH:mm') : 'dd/mm/yyyy'}`}
+            date={`Inicio: ${simStartDate ? format(safeParse(simStartDate), 'dd/MM/yyyy HH:mm') : 'dd/mm/yyyy HH:mm'}\nFecha actual: ${data?.minuto ? format(safeParse(data.minuto), 'dd/MM/yyyy HH:mm') : 'dd/mm/yyyy'}\nDuración: ${duracionStr}`}
             onStop={handleStopAndShowSummary}
             onIniciarSimulacion={onIniciarSimulacion}
             isSimulating={isSimulating}
