@@ -14,6 +14,11 @@ public class Solution implements Cloneable {
     // Solution model
     public Map<Integer, List<Node>> routes; // routes[vehicleId] -> nodes
 
+    private Environment environment;
+    public Environment getEnvironment() {
+        return environment;
+    }
+
     private Time startingTime;
 
     private boolean hasRunSimulation = false;
@@ -69,7 +74,7 @@ public class Solution implements Cloneable {
         return value / maxGLP;
     }
 
-    public void updateNormalizationFactors(Environment environment) {
+    public void updateNormalizationFactors() {
         // Calculate maximum possible time-GLP points
         maxTimeGLPPoints = 0;
         for (PlannerOrder order : environment.orders) {
@@ -96,8 +101,9 @@ public class Solution implements Cloneable {
         maxGLP *= 1.2;
     }
 
-    public Solution() {
+    public Solution(Environment environment) {
         routes = new HashMap<>();
+        this.environment = environment;
     }
 
     public void validate() {
@@ -127,7 +133,7 @@ public class Solution implements Cloneable {
 
     @Override
     public Solution clone() {
-        Solution clone = new Solution();
+        Solution clone = new Solution(this.environment);
 
         // Deep copy of routes map with cloned nodes
         for (Map.Entry<Integer, List<Node>> entry : routes.entrySet()) {
@@ -144,22 +150,22 @@ public class Solution implements Cloneable {
         return clone;
     }
 
-    public double fitness(Environment environment) {
+    public double fitness() {
         if (!hasRunSimulation) {
-            updateNormalizationFactors(environment);  // Update factors before simulation
-            simulate(environment);
+            updateNormalizationFactors();  // Update factors before simulation
+            simulate();
         }
         return fitness;
     }
 
-    public boolean isFeasible(Environment environment) {
+    public boolean isFeasible() {
         if (!hasRunSimulation) {
-            simulate(environment);
+            simulate();
         }
         return isFeasible;
     }
 
-    public void simulate(Environment environment) {
+    public void simulate() {
         if (hasRunSimulation) {
             return;
         }
@@ -174,6 +180,10 @@ public class Solution implements Cloneable {
         Map<Integer, PlannerOrder> orderMap = new HashMap<>();
         for (PlannerOrder order : environment.orders) {
             orderMap.put(order.id, order.clone());
+        }
+
+        for (PlannerOrder order : environment.orders) {
+                order.deadline =  order.deadline.subtractMinutes(30);
         }
 
         Map<Integer, PlannerVehicle> vehicleMap = new HashMap<>();
@@ -438,6 +448,10 @@ public class Solution implements Cloneable {
         }
         
         sb.append("}");
+
+        sb.append("\n  Environment:\n");
+        sb.append(environment);
+
         return sb.toString();
     }
 

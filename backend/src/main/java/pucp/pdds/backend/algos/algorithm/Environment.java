@@ -182,7 +182,7 @@ public class Environment {
     }
 
     public Solution getRandomSolution() {
-        Solution solution = new Solution();
+        Solution solution = new Solution(this);
         solution.routes = new HashMap<>();
 
         solution.setStartingTime(this.currentTime);

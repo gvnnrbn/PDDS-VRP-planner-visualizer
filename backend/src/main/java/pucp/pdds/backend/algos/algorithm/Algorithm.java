@@ -8,9 +8,10 @@ import java.util.Random;
 
 public class Algorithm {
     // Hyperparameters
-    private static int maxTimeMs = 30 * 1000;
-    private static int maxNoImprovement = 50;
-    private static int maxNoImprovementFeasible = 50; 
+    private static int maxTimeMs = 20 * 1000;
+    private static int maxNoImprovement = 10;
+    private static int maxNoImprovementFeasible = 10; 
+    private static int neighborsPerOperator = 30;
 
     private boolean isDebug;
     private static final Random random = new Random();
@@ -27,11 +28,11 @@ public class Algorithm {
 
         // Initial solution using one run of local search from a random start
         Solution bestSolution = _run(environment, minutes, null);
-        double bestFitness = bestSolution.fitness(environment);
+        double bestFitness = bestSolution.fitness();
         Solution bestFeasibleSolution = null;
         double bestFeasibleFitness = Double.NEGATIVE_INFINITY;
 
-        if (bestSolution.isFeasible(environment)) {
+        if (bestSolution.isFeasible()) {
             bestFeasibleSolution = bestSolution;
             bestFeasibleFitness = bestFitness;
             if (isDebug) {
@@ -54,9 +55,9 @@ public class Algorithm {
             // Run local search from the perturbed solution
             // Solution newSolution = _run(environment, minutes, perturbedSolution);
             Solution newSolution = _run(environment, minutes, solutionToPerturb);
-            double newFitness = newSolution.fitness(environment);
+            double newFitness = newSolution.fitness();
 
-            boolean newIsFeasible = newSolution.isFeasible(environment);
+            boolean newIsFeasible = newSolution.isFeasible();
 
             // Update best overall solution (feasible or not)
             if (newFitness > bestFitness) {
@@ -104,12 +105,12 @@ public class Algorithm {
     private Solution _run(Environment environment, int minutes, Solution initialSolution) {
         Solution currSolution = (initialSolution == null) ? environment.getRandomSolution() : initialSolution.clone();
         Solution bestSolution = currSolution.clone();
-        double bestFitness = bestSolution.fitness(environment);
+        double bestFitness = bestSolution.fitness();
         double currFitness = bestFitness;
         int noImprovementCount = 0;
 
         while (true) {
-            boolean isFeasible = bestSolution.isFeasible(environment);
+            boolean isFeasible = bestSolution.isFeasible();
 
             // Check termination conditions
             if (isFeasible && noImprovementCount >= maxNoImprovementFeasible) {
@@ -132,7 +133,7 @@ public class Algorithm {
 
             // Find best neighbor (no tabu logic)
             for (Neighbor neighbor : neighborhood) {
-                double neighborFitness = neighbor.solution.fitness(environment);
+                double neighborFitness = neighbor.solution.fitness();
                 if (neighborFitness > bestNeighborFitness) {
                     bestNeighbor = neighbor;
                     bestNeighborFitness = neighborFitness;
@@ -143,8 +144,8 @@ public class Algorithm {
                 currSolution = bestNeighbor.solution;
                 currFitness = bestNeighborFitness;
                 // Update best solution if improved
-                boolean currFeasible = currSolution.isFeasible(environment);
-                boolean bestFeasible = bestSolution.isFeasible(environment);
+                boolean currFeasible = currSolution.isFeasible();
+                boolean bestFeasible = bestSolution.isFeasible();
                 if ((currFeasible && !bestFeasible) ||
                     (currFeasible == bestFeasible && currFitness > bestFitness)) {
                     bestSolution = currSolution.clone();
@@ -240,7 +241,6 @@ public class Algorithm {
     private static class NeighborhoodGenerator {
         private static final Random random = new Random();
         private static final int attemptsPerOperation = 10;
-        private static final int neighborsPerOperator = 3;
 
         public static List<Neighbor> generateNeighborhood(Solution solution, Environment environment) {
             List<Neighbor> neighbors = new ArrayList<>();
