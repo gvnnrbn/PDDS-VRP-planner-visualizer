@@ -75,6 +75,16 @@ public class WeeklyScheduler implements Runnable {
                         );
                         Algorithm algorithm = new Algorithm(true);
                         Solution sol = algorithm.run(environment, state.minutesToSimulate);
+                        System.out.println("======================================");
+                        System.out.println("For environment at " + state.getCurrTime() + ":");
+                        System.out.println(environment);
+                        if (sol.isFeasible(environment)) {
+                            System.out.println("I can guarantee there's a feasible solution:");
+                            System.out.println(sol);
+                        } else {
+                            System.out.println("I can't guarantee there's a feasible solution:");
+                        }
+                        System.out.println("======================================");
                         solutionQueue.put(sol);
                     }
                 } catch (InterruptedException e) {
