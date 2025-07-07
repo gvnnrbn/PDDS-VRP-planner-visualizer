@@ -17,7 +17,7 @@ import type { PedidoSimulado } from '../../core/types/pedido';
 import type { VehiculoSimulado, VehiculoSimuladoV2 } from '../../core/types/vehiculo';
 import type { IndicadoresSimulado } from '../../core/types/indicadores';
 import AlmacenModal from '../../components/common/modals/ModalAlmacen';
-import { format, parseISO, differenceInSeconds } from 'date-fns';
+import { format, parseISO, differenceInSeconds, parse } from 'date-fns';
 
 interface LogEntry {
   timestamp: string;
@@ -969,7 +969,11 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps & { onVehicul
       parsed = parseISO(dateStr);
       if (isNaN(parsed.getTime())) throw new Error('Invalid');
     } catch {
-      parsed = new Date(dateStr);
+      try {
+        parsed = parse(dateStr, 'dd/MM/yyyy HH:mm', new Date());
+      } catch {
+        parsed = new Date(dateStr);
+      }
     }
     return parsed;
   }
@@ -1037,14 +1041,13 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps & { onVehicul
     // simStartDate y data.minuto pueden ser ISO o string tipo dd/MM/yyyy HH:mm
     let inicio = safeParse(simStartDate);
     let actual = safeParse(data.minuto);
-    let diff = Math.max(0, differenceInSeconds(actual, inicio));
-    const dias = Math.floor(diff / (60 * 60 * 24));
-    diff -= dias * 60 * 60 * 24;
-    const horas = Math.floor(diff / (60 * 60));
-    diff -= horas * 60 * 60;
-    const minutos = Math.floor(diff / 60);
-    const segundos = diff % 60;
-    duracionStr = `${dias > 0 ? dias + 'd ' : ''}${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}:${String(segundos).padStart(2, '0')}`;
+    let diff = Math.max(0, actual.getTime() - inicio.getTime());
+    const dias = Math.floor(diff / (1000 * 60 * 60 * 24));
+    diff -= dias * (1000 * 60 * 60 * 24);
+    const horas = Math.floor(diff / (1000 * 60 * 60));
+    diff -= horas * (1000 * 60 * 60);
+    const minutos = Math.floor(diff / (1000 * 60));
+    duracionStr = `${dias > 0 ? dias + 'd ' : ''}${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}`;
   }
 
   return (
