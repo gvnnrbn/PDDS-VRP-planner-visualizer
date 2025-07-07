@@ -1,6 +1,7 @@
 import {
   createContext,
   useContext,
+  useRef,
   useState
 } from "react";
 
@@ -42,9 +43,17 @@ interface Props {
 export const SimulationProvider = ({
   children,
 }: Props) => {
-  const [currentMinuteData, setCurrentMinuteData] = useState<MinutoSimulacion>();
+  const [currentMinuteData, _setCurrentMinuteData] = useState<MinutoSimulacion>();
   const [highlightedPedidoId, setHighlightedPedidoId] = useState<number | null>(null);
+  const lastSetTimeRef = useRef<number>(0);
 
+  const setCurrentMinuteData = (data: MinutoSimulacion) => {
+    // const now = Date.now();
+    // if (now - lastSetTimeRef.current >= 5000) {
+      _setCurrentMinuteData(data);
+    //   lastSetTimeRef.current = now;
+    // }
+  };
   const focusOnPedido = (pedido: PedidoSimulado) => {
     // Centrar el mapa en la posición del pedido
     const margin = 40;

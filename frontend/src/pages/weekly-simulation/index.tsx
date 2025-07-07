@@ -292,40 +292,51 @@ export default function WeeklySimulation() {
     );
   };
 
-  const IndicadoresSection = () => {
-    const { currentMinuteData } = useSimulation();
-     const [indicadoresVisibles, setIndicadoresVisibles] = useState(currentMinuteData?.indicadores);
+const IndicadoresSection = () => {
+  const { currentMinuteData } = useSimulation();
+  const [indicadoresVisibles, setIndicadoresVisibles] = useState(currentMinuteData?.indicadores);
+  const lastSetTimeRef = useRef<number>(0);
 
-    useEffect(() => {
-      const interval = setInterval(() => {
-        setIndicadoresVisibles(currentMinuteData?.indicadores);
-      }, 2000000); // cada 10 segundos
+  useEffect(() => {
+    const now = Date.now();
+    if (
+      currentMinuteData?.indicadores &&
+      (now - lastSetTimeRef.current >= 5000 || lastSetTimeRef.current === 0)
+    ) {
+      setIndicadoresVisibles(currentMinuteData.indicadores);
+      lastSetTimeRef.current = now;
+    }
+    // Si no han pasado 5 segundos, no actualiza el estado y por lo tanto no re-renderiza
+  }, [currentMinuteData?.indicadores]);
 
-      return () => clearInterval(interval); // limpieza al desmontar
-    }, [currentMinuteData?.indicadores]); // reinicia si cambian los indicadores (opcional)
-
-    const indicadores = indicadoresVisibles?? {
-      fuelCounterTA: 0,
-      fuelCounterTB: 0,
-      fuelCounterTC: 0,
-      fuelCounterTD: 0,
-      fuelCounterTotal: 0,
-      glpFilledNorth: 0,
-      glpFilledEast: 0,
-      glpFilledMain: 0,
-      glpFilledTotal: 0,
-      meanDeliveryTime: 0,
-      completedOrders: 0,
-      totalOrders: 0,
-    };
-    return (
-      <Box>
-        <VStack spacing={4} align="stretch">
-            <IndicadoresCard key={'indicadores-default'} indicadores={indicadores}/>
-        </VStack>
-      </Box>
-    );
+  const staticIndicadores: IndicadoresSimulado = {
+    fuelCounterTA: 1200,
+    fuelCounterTB: 95.45,
+    fuelCounterTC: 80.00,
+    fuelCounterTD: 60.32,
+    fuelCounterTotal: 3550,
+    glpFilledNorth: 10,
+    glpFilledEast: 210,
+    glpFilledMain: 401,
+    glpFilledTotal: 600,
+    meanDeliveryTime: 42,
+    completedOrders: 38,
+    totalOrders: 45,
   };
+
+  return (
+    <Box>
+      <VStack spacing={4} align="stretch">
+        {indicadoresVisibles && (
+          <IndicadoresCard key={'indicadores-default'} indicadores={indicadoresVisibles} />
+        )}
+        {/* {staticIndicadores && (
+          <IndicadoresCard key={'indicadores-default'} indicadores={staticIndicadores} />
+        )} */}
+      </VStack>
+    </Box>
+  );
+};
 
   const sections = [
   {

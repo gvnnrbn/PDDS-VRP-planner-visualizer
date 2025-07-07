@@ -69,29 +69,31 @@ const BottomLeftControls: React.FC<BottomLeftControlsProps> = ({
                 ))}
                 </Box>
             )}
+            <Box mt={20}>
 
-            {isSimulating && (
-                <Button
-                    colorScheme="red"
-                    size="s"
-                    p={3}
-                    onClick={onStop}
-                >
-                    Detener Simulación
-                </Button>
-            )}
-            {!isSimulating &&
-                (
-                <Button
-                    colorScheme="green"
-                    size="s"
-                    p={3}
-                    onClick={onIniciarSimulacion}
-                >
-                    Iniciar Simulación
-                </Button>
-                )
-            }
+                {isSimulating && (
+                    <Button
+                        colorScheme="red"
+                        size="s"
+                        p={3}
+                        onClick={onStop}
+                    >
+                        Detener Simulación
+                    </Button>
+                )}
+                {!isSimulating &&
+                    (
+                    <Button
+                        colorScheme="green"
+                        size="s"
+                        p={3}
+                        onClick={onIniciarSimulacion}
+                    >
+                        Iniciar Simulación
+                    </Button>
+                    )
+                }
+            </Box>
 
             {showSpeed && (
                 <Box
