@@ -108,7 +108,7 @@ public class SimulationService {
                     maintenances.stream().map(m -> m.clone()).toList(),
                     new Time(fechaInicio.getYear(), fechaInicio.getMonthValue(), 
                     fechaInicio.getDayOfMonth(), fechaInicio.getHour(), fechaInicio.getMinute()),
-                    60,
+                    120,
                     new Time(fechaInicio.getYear(), fechaInicio.getMonthValue(),
                     fechaInicio.getDayOfMonth(), fechaInicio.getHour(), fechaInicio.getMinute())
                 );

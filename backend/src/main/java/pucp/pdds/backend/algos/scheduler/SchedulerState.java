@@ -341,12 +341,6 @@ public class SchedulerState {
                     continue;
                 }
                 // Has arrived at location
-                if (shouldLog) {
-                    debugPrint("Vehicle " + plannerVehicle.id + " has arrived at location of node " + nextNode);
-                    if (nextNode instanceof OrderDeliverNode) {
-                        OrderDeliverNode orderDeliverNode = (OrderDeliverNode) nextNode;
-                    }
-                }
                 plannerVehicle.processNode(
                     nextNode, 
                     plannerVehicle, 
@@ -363,6 +357,8 @@ public class SchedulerState {
                     if (shouldLog) {
                         debugPrint("Vehicle " + plannerVehicle.id + " has reached final node");
                     }
+                    plannerVehicle.currentFuel = plannerVehicle.maxFuel;
+                    plannerVehicle.currentGLP = plannerVehicle.maxGLP;
                     plannerVehicle.state = PlannerVehicle.VehicleState.FINISHED;
                     plannerVehicle.nextNodeIndex++; // Optional: move index past end
                     continue;

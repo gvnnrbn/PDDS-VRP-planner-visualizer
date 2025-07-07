@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import pucp.pdds.backend.algos.entities.PlannerOrder;
 import pucp.pdds.backend.algos.scheduler.CollapseScheduler;
 import pucp.pdds.backend.algos.scheduler.SchedulerState;
 import pucp.pdds.backend.algos.utils.Time;
@@ -66,6 +67,10 @@ public class CollapseService {
                 
                 logger.info("Loaded {} vehicles, {} orders, {} blockages, {} warehouses, {} failures, {} maintenances", 
                     vehicles.size(), orders.size(), blockages.size(), warehouses.size(), failures.size(), maintenances.size());
+
+                orders.forEach(o -> {
+                    o.deadline = o.deadline.addMinutes(90);
+                });
                 
                 vehicles.forEach(v -> {
                     v.currentFuel = v.maxFuel;

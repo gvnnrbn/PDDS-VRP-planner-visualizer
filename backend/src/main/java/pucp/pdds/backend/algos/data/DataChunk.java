@@ -353,10 +353,10 @@ public class DataChunk {
                     estado,
                     eta,
                     vehicle.type,
-                    (int)vehicle.currentFuel,
+                    (int)Math.max(0, vehicle.currentFuel),
                     vehicle.maxFuel,
                     vehicle.currentGLP,
-                    vehicle.maxGLP,
+                    (int)Math.min(vehicle.maxGLP, vehicle.currentGLP),
                     vehicle.plaque,
                     idPedido,
                     (int)vehicle.position.x,
@@ -392,6 +392,7 @@ public class DataChunk {
             java.util.Map<Integer, List<pucp.pdds.backend.algos.algorithm.Node>> routes,
             pucp.pdds.backend.algos.utils.Time currTime) {
         return orders.stream()
+                .filter(o -> !(o.deadline.isBefore(currTime) && o.amountGLP > 0))
             .sorted((o1, o2) -> {
                 boolean isO1Delivered = o1.isDelivered();
                 boolean isO2Delivered = o2.isDelivered();

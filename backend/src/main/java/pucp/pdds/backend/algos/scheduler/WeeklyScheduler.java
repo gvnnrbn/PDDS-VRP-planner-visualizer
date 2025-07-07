@@ -168,8 +168,27 @@ public class WeeklyScheduler implements Runnable {
                     stateLock.unlock();
 
                     try {
-                        Thread.sleep(500);
+                        Thread.sleep(250);
                     } catch (InterruptedException e) {
+                        isRunning = false;
+                        Thread.currentThread().interrupt();
+                        algorithmThread.interrupt();
+                        sendResponse("SIMULATION_STOPPED", "Simulation stopped by user");
+                        sendSimulationSummary();
+                        return;
+                    }
+
+                    stateLock.lock();
+                    state.getOrders().stream().filter(o -> o.deadline.isBefore(state.getCurrTime()) && !o.isDelivered()).forEach(o -> {
+                        if (!o.hasBeenForgiven) {
+                            o.deadline = o.deadline.addMinutes(60);
+                            o.hasBeenForgiven = true;
+                        }
+                    });
+                    boolean shouldTerminate = state.getOrders().stream().anyMatch(o -> o.deadline.isBefore(state.getCurrTime()) && !o.isDelivered());
+                    stateLock.unlock();
+
+                    if (shouldTerminate) {
                         isRunning = false;
                         Thread.currentThread().interrupt();
                         algorithmThread.interrupt();

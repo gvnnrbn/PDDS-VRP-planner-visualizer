@@ -9,8 +9,8 @@ import java.util.Random;
 public class Algorithm {
     // Hyperparameters
     private static int maxTimeMs = 30 * 1000;
-    private static int maxNoImprovement = 500;
-    private static int maxNoImprovementFeasible = 100; 
+    private static int maxNoImprovement = 50;
+    private static int maxNoImprovementFeasible = 50; 
 
     private boolean isDebug;
     private static final Random random = new Random();
@@ -78,7 +78,8 @@ public class Algorithm {
                 }
             }
 
-            if (iterations % 50 == 0) {
+            if (iterations % 1000 == 0) {
+                System.out.println("Iteration " + iterations + ", " + (System.currentTimeMillis() - startTime) + "ms of " + maxTimeMs + "ms");
                 Thread.yield();
             }
         }

@@ -81,11 +81,6 @@ public class PlannerVehicle implements Cloneable {
             return;
         }
 
-        if (this.currentFuel <= 0) {
-            this.state = VehicleState.STUCK;
-            return;
-        }
-
         while (units > 0 && currentPath.size() > 1 && this.currentFuel > 0) {
             Position from = currentPath.get(0);
             Position to = currentPath.get(1);

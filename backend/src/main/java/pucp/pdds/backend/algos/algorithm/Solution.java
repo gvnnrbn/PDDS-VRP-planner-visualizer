@@ -190,7 +190,7 @@ public class Solution implements Cloneable {
                 vehicle.waitTransition = 0;
             }
 
-            for (int i = 0; i < route.size() - 1 && currentTime.minutesSince(environment.currentTime) < environment.minutesToSimulate + 60; i++) {
+            for (int i = 0; i < route.size() - 1 && currentTime.minutesSince(environment.currentTime) < environment.minutesToSimulate; i++) {
                 Node originNode = route.get(i);
                 Node destinationNode = route.get(i + 1);
 
@@ -266,6 +266,12 @@ public class Solution implements Cloneable {
             }
             if (order.amountGLP == 0) {
                 rawFulfilledOrders++;
+            }
+        }
+
+        for (PlannerVehicle vehicle : vehicleMap.values()) {
+            if (vehicle.currentFuel < 0.3 * vehicle.maxFuel) {
+                errors.add("Vehicle " + vehicle.id + " has not enough fuel to continue.");
             }
         }
 
