@@ -7,6 +7,8 @@ import java.util.ArrayList;
 
 import pucp.pdds.backend.algos.entities.PlannerOrder;
 import pucp.pdds.backend.algos.entities.PlannerVehicle;
+import pucp.pdds.backend.algos.entities.PlannerWarehouse;
+import pucp.pdds.backend.algos.utils.Position;
 import pucp.pdds.backend.algos.utils.SimulationProperties;
 import pucp.pdds.backend.algos.utils.Time;
 
@@ -191,6 +193,60 @@ public class Solution implements Cloneable {
             vehicleMap.put(vehicle.id, vehicle.clone());
         }
 
+        // Find main warehouse position
+        PlannerWarehouse mainWarehouse = null;
+        for (PlannerWarehouse wh : environment.warehouses) {
+            if (wh.isMain) {
+                mainWarehouse = wh;
+                break;
+            }
+        }
+        if (mainWarehouse == null) {
+            throw new RuntimeException("No main warehouse found");
+        }
+        Position mainWarehousePos = mainWarehouse.position;
+        Map<PlannerOrder, Double> orderDistanceMap = new HashMap<>();
+        for (PlannerOrder order : orderMap.values()) {
+            double dist = environment.getDistances().get(mainWarehousePos).get(order.position);
+            orderDistanceMap.put(order, dist);
+        }
+
+        // Sort orders by deadline (soonest first)
+        List<PlannerOrder> sortedOrders = new ArrayList<>(orderMap.values());
+        sortedOrders.sort((o1, o2) -> o1.deadline.compareTo(o2.deadline));
+
+        // Map orderId to deadline-based priority weight: 5,4,3,2,1,1,1...
+        Map<Integer, Integer> deadlinePriorityMap = new HashMap<>();
+        for (int i = 0; i < sortedOrders.size(); i++) {
+            int prio = 1;
+            if (i == 0) prio = 5;
+            else if (i == 1) prio = 4;
+            else if (i == 2) prio = 3;
+            else if (i == 3) prio = 2;
+            deadlinePriorityMap.put(sortedOrders.get(i).id, prio);
+        }
+
+        // Sort orders by distance (farthest first)
+        List<PlannerOrder> sortedByDistance = new ArrayList<>(orderMap.values());
+        sortedByDistance.sort((o1, o2) -> Double.compare(orderDistanceMap.get(o2), orderDistanceMap.get(o1)));
+        Map<Integer, Integer> distancePriorityMap = new HashMap<>();
+        for (int i = 0; i < sortedByDistance.size(); i++) {
+            int prio = 1;
+            if (i == 0) prio = 5;
+            else if (i == 1) prio = 4;
+            else if (i == 2) prio = 3;
+            else if (i == 3) prio = 2;
+            distancePriorityMap.put(sortedByDistance.get(i).id, prio);
+        }
+
+        // Combine priorities
+        Map<Integer, Integer> orderPriorityMap = new HashMap<>();
+        for (PlannerOrder order : orderMap.values()) {
+            int deadlinePrio = deadlinePriorityMap.getOrDefault(order.id, 1);
+            int distancePrio = distancePriorityMap.getOrDefault(order.id, 1);
+            orderPriorityMap.put(order.id, deadlinePrio + distancePrio);
+        }
+
         for (PlannerVehicle vehicle : vehicleMap.values()) {
             List<Node> route = routes.get(vehicle.id);
             Time currentTime = environment.currentTime;
@@ -228,11 +284,6 @@ public class Solution implements Cloneable {
                     } 
 
                     vehicle.currentGLP -= GLPToDeliver;
-
-                    // GLPcounterTA +=
-                    // GLPcounterTB +=
-                    // GLPcounterTC +=
-
                     order.amountGLP -= GLPToDeliver;
 
                     if (currentTime.isAfter(order.deadline)) {
@@ -242,7 +293,9 @@ public class Solution implements Cloneable {
                     // --- Exponential decay for lateness (reward on-time, penalize late) ---
                     double minutesLate = Math.max(0, currentTime.minutesSince(order.deadline));
                     double alpha = 0.01; // Decay rate, tune as needed
-                    rawTimeGLPPoints += order.amountGLP * Math.exp(-alpha * minutesLate);
+                    // Use priority weight, do NOT multiply by amountGLP
+                    int priorityWeight = orderPriorityMap.getOrDefault(order.id, 1);
+                    rawTimeGLPPoints += priorityWeight * Math.exp(-alpha * minutesLate);
                     // This rewards on-time/early deliveries, penalizes late ones smoothly
 
                     // If destination node breaks an order chain (changes order or goes from order to non-order node), wait the corresponding time
@@ -270,7 +323,7 @@ public class Solution implements Cloneable {
         }
 
         Time timeAfterSimulation = environment.currentTime.addMinutes(environment.minutesToSimulate);
-        for (PlannerOrder order : orderMap.values()) {
+        for (PlannerOrder order : sortedOrders) {
             if (order.amountGLP > 0 && timeAfterSimulation.isAfter(order.deadline)) {
                 rawMissedOrders++;
             }
@@ -299,11 +352,9 @@ public class Solution implements Cloneable {
 
         // 1. Normalize expReward
         double maxExpReward = 0.0;
-        for (PlannerOrder order : orderMap.values()) {
-            double minutesUntilDeadline = order.deadline.minutesSince(environment.currentTime);
-            double urgencyWeight = 1.0;
-            if (minutesUntilDeadline < 360) urgencyWeight = 2.5;
-            maxExpReward += urgencyWeight * order.amountGLP;
+        for (PlannerOrder order : sortedOrders) {
+            int priorityWeight = orderPriorityMap.getOrDefault(order.id, 1);
+            maxExpReward += priorityWeight;
         }
         if (maxExpReward <= 0) maxExpReward = 1.0; // Prevent division by zero
         double expRewardNorm = rawTimeGLPPoints / maxExpReward;
@@ -347,6 +398,21 @@ public class Solution implements Cloneable {
         }
         double glpBonus = (maxGLP > 0) ? (totalGLP / maxGLP) : 0.0; // [0,1]
 
+        // Bonus for first node close to vehicle's actual position
+        double firstNodeBonus = 0.0;
+        double firstNodeThreshold = 1.0; // distance units
+        double firstNodeBonusValue = 0.5;
+        for (PlannerVehicle v : environment.vehicles) {
+            List<Node> route = routes.get(v.id);
+            if (route != null && !route.isEmpty()) {
+                Node firstNode = route.get(0);
+                double dist = environment.getDistances().get(v.initialPosition).get(firstNode.getPosition());
+                if (dist < firstNodeThreshold) {
+                    firstNodeBonus += firstNodeBonusValue;
+                }
+            }
+        }
+
         // 7. Fitness (weights as before, now using normalized components)
         fitness = w1 * expRewardNorm
                 + w2 * sigmoidOrders
@@ -354,7 +420,8 @@ public class Solution implements Cloneable {
                 - w4 * logImaginaryGLPNorm
                 - w5 * missedOrdersPenalty
                 + w6 * utilizationBonus
-                + w7 * glpBonus;
+                + w7 * glpBonus
+                + firstNodeBonus;
         if (isFeasible) fitness *= 1.5; // Smoother feasible bonus
 
         // --- Robustness: Clamp fitness to avoid -Infinity/NaN ---

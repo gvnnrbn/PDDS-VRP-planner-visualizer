@@ -182,9 +182,9 @@ public class WeeklyScheduler implements Runnable {
 
                     stateLock.lock();
                     state.getOrders().stream().filter(o -> o.deadline.isBefore(state.getCurrTime()) && !o.isDelivered()).forEach(o -> {
-                        if (!o.hasBeenForgiven) {
-                            o.deadline = o.deadline.addMinutes(60);
-                            o.hasBeenForgiven = true;
+                        if (o.timesForgiven < PlannerOrder.timesToForgive) {
+                            o.deadline = o.deadline.addMinutes(PlannerOrder.forgivenTime);
+                            o.timesForgiven++;
                         }
                     });
                     Optional<PlannerOrder> failedOrder = state.getOrders().stream()
