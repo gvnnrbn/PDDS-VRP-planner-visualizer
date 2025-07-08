@@ -25,11 +25,12 @@ function panelStyles({ left, top }: { left: number; top: number }) {
 }
 
 
-// --- Canvas drawing logic (copied from SimulationControlPanel) ---
+// Cache global para imágenes de íconos
 const iconImageCache: Record<string, HTMLImageElement> = {};
+
+// Helper para convertir un ícono de react-icons a imagen para canvas, usando cache
 function iconToImage(IconComponent: React.ElementType, color: string, size = 32): Promise<HTMLImageElement> {
-  const displayName = (IconComponent as any).displayName || (IconComponent as any).name || '';
-  const cacheKey = `${displayName}_${color}_${size}`;
+  const cacheKey = `${IconComponent.displayName || IconComponent.name || ''}_${color}_${size}`;
   if (iconImageCache[cacheKey]) {
     return Promise.resolve(iconImageCache[cacheKey]);
   }
@@ -43,8 +44,35 @@ function iconToImage(IconComponent: React.ElementType, color: string, size = 32)
       iconImageCache[cacheKey] = img;
       resolve(img);
     };
+    img.onerror = (error) => { // Añadir manejo de error
+      console.error("Error cargando SVG para el ícono:", cacheKey, error);
+      // Opcional: Resolver con una imagen de marcador de posición si falla la carga
+      resolve(new Image()); // Resuelve con una imagen vacía para no bloquear
+    };
   });
 }
+
+// --- NUEVA FUNCIÓN: precargar todos los íconos posibles ---
+export async function preloadIcons(): Promise<void> {
+  const iconSets = [
+    { icon: FaWarehouse, colors: ['#444', '#000'], sizes: [32] },
+    { icon: FaIndustry, colors: ['#444', '#ff0000', '#00c800'], sizes: [32] },
+    { icon: FaMapMarkerAlt, colors: ['#5459EA', '#FFD700'], sizes: [24, 32] }, // Añade los tamaños usados
+    { icon: FaTruck, colors: ['#ffc800', '#ff0000', '#ffa500', '#444'], sizes: [32] }, // Añade los colores usados
+  ];
+
+  const promises: Promise<HTMLImageElement>[] = [];
+  for (const set of iconSets) {
+    for (const color of set.colors) {
+      for (const size of set.sizes) {
+        promises.push(iconToImage(set.icon, color, size));
+      }
+    }
+  }
+  await Promise.all(promises);
+  console.log("Todos los íconos precargados y cacheados.");
+}
+
 
 //VARIBLES PARA ZOOM Y PAN
 export let panX = 0;
@@ -69,14 +97,21 @@ export function setZoom(scale: number) {
 (window as any).panY = panY;
 (window as any).highlightedPedidoId = null;
 
-export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
+// Dibuja el estado de la simulación en el canvas usando íconos
+export function drawState(canvas: HTMLCanvasElement, data: any): {
   margin: number;
   scaleX: number;
   scaleY: number;
-}> {
+} {
   const ctx = canvas.getContext('2d');
   if (!ctx) return { margin: 0, scaleX: 1, scaleY: 1 };
+
+  // --- Optimización: Limpieza y Transformación al inicio ---
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  ctx.translate(panX, panY);
+  ctx.scale(zoomScale, zoomScale);
+
   const margin = 40;
   const width = canvas.width;
   const height = canvas.height;
@@ -84,11 +119,10 @@ export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
   const gridWidth = 50;
   const scaleX = (width - 2 * margin) / gridLength;
   const scaleY = (height - 2 * margin) / gridWidth;
-  ctx.clearRect(0, 0, width, height);
-  ctx.save();
-  ctx.translate(panX, panY);
-  ctx.scale(zoomScale, zoomScale);
-  ctx.strokeStyle = 'rgba(220, 220, 220, 0.55)';
+
+  // --- Dibujar la Cuadrícula ---
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
+  ctx.lineWidth = 1; // Restaurar lineWidth a 1 antes de dibujar la cuadrícula
   for (let x = 0; x <= gridLength; x++) {
     const sx = margin + x * scaleX;
     ctx.beginPath();
@@ -103,9 +137,17 @@ export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
     ctx.lineTo(width - margin, sy);
     ctx.stroke();
   }
+
+  //Limpieza de hitboxes
+  vehicleHitboxes.length = 0;
+  warehouseHitboxes.length = 0;
+  pedidoHitboxes.length = 0;
+
+  // --- Dibujar Bloqueos ---
   if (data.bloqueos) {
     ctx.strokeStyle = '#F80707';
     ctx.lineWidth = 3;
+    ctx.fillStyle = '#F80707'; // Para los círculos de los bloqueos
     data.bloqueos.forEach((blockage: any) => {
       if (blockage.segmentos?.length > 1) {
         ctx.beginPath();
@@ -124,27 +166,62 @@ export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
         });
       }
     });
-    ctx.lineWidth = 1;
   }
+
   let mainWHx = 0;
   let mainWHy = 0;
+
+  // --- Dibujar Almacenes ---
   if (data.almacenes) {
     for (const wh of data.almacenes) {
       const x = margin + wh.posicion.posX * scaleX - 16;
       const y = margin + wh.posicion.posY * scaleY - 16;
+       warehouseHitboxes.push({
+        x,
+        y,
+        size: 32,
+        almacen: wh,
+      });
+
       const icon = wh.isMain ? FaWarehouse : FaIndustry;
       let color = '#444';
-      if (!wh.isMain) {
+      if (wh.isMain) {
+        color = '#000';
+        mainWHx = wh.posicion.posX;
+        mainWHy = wh.posicion.posY;
+      } else {
         color = (wh.currentGLP || 0) === 0 ? '#ff0000' : '#00c800';
-        mainWHx = x;
-        mainWHy = y;
       }
-      const img = await iconToImage(icon, color, 32);
-      ctx.drawImage(img, x, y, 32, 32);
+
+      // Obtener imagen del caché (ya precargada)
+      const cacheKey = `${icon.displayName || icon.name || ''}_${color}_${32}`;
+      const img = iconImageCache[cacheKey]; // Ahora no hay `await` aquí
+
+      // Si este almacén está resaltado, dibujar un círculo/borde especial
+      if (typeof window !== 'undefined' && (window as any).highlightedWarehouseId === wh.idAlmacen) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(x + 16, y + 16, 24, 0, 2 * Math.PI);
+        ctx.strokeStyle = '#805ad5';
+        ctx.lineWidth = 5;
+        ctx.shadowColor = '#805ad5';
+        ctx.shadowBlur = 12;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      if (img) { // Solo dibujar si la imagen está disponible
+        ctx.drawImage(img, x, y, 32, 32);
+      } else {
+        console.warn(`Icono no encontrado en caché para ${cacheKey}`);
+        // Considerar dibujar un placeholder o un círculo si la imagen no está lista
+      }
+
       ctx.fillStyle = '#000';
       ctx.font = '12px Arial';
-      ctx.fillText('W' + (wh.idAlmacen || ''), x + 8, y + 40);
-      if (wh.maxGLP) {
+      ctx.fillText('W' + (wh.idAlmacen || ''), x + 4, y + 50);
+
+      if (!wh.isMain && wh.maxGLP) {
         const perc = wh.currentGLP / wh.maxGLP;
         ctx.fillStyle = '#c8c8c8';
         ctx.fillRect(x + 2, y + 34, 28, 4);
@@ -153,71 +230,131 @@ export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
       }
     }
   }
+
+  // --- Dibujar Nodos de Pedido ---
   if (data.pedidos) {
-    for (const node of data.pedidos.filter((pedido: any) => pedido.estado?.toUpperCase() !== 'COMPLETADO')) {
+    for (const node of data.pedidos.filter((pedido: any) => pedido.estado.toUpperCase() !== 'COMPLETADO')) {
       const x = margin + node.posX * scaleX - 12;
       const y = margin + node.posY * scaleY - 24;
-      const img = await iconToImage(FaMapMarkerAlt, '#ff2d2d', 24);
-      ctx.drawImage(img, x, y, 24, 24);
+      pedidoHitboxes.push({
+        x,
+        y,
+        size: 24,
+        pedido: node,
+      });
+
+      const isHighlighted = (window as any).highlightedPedidoId === node.idPedido;
+      const iconColor = isHighlighted ? '#FFD700' : '#5459EA';
+      const iconSize = isHighlighted ? 32 : 24;
+
+      const cacheKey = `${FaMapMarkerAlt.displayName || FaMapMarkerAlt.name || ''}_${iconColor}_${iconSize}`;
+      const img = iconImageCache[cacheKey]; // No await
+
+      if (img) {
+        if (isHighlighted) {
+          ctx.save();
+          ctx.shadowColor = '#FFD700';
+          ctx.shadowBlur = 15;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 0;
+          ctx.drawImage(img, x - 4, y - 4, iconSize, iconSize);
+          ctx.restore();
+        } else {
+          ctx.drawImage(img, x, y, iconSize, iconSize);
+        }
+      }
+
+      ctx.fillStyle = '#000';
+      ctx.font = '10px Arial';
+      ctx.fillText(`GLP: ${node.glp || 0}`, x + 2, y + 40);
     }
   }
-  vehicleHitboxes.length = 0;
+
+  // --- Dibujar Vehículos ---
   if (data.vehiculos) {
     for (const v of data.vehiculos) {
-      let color = '#ffc800';
+      if (v.posicionX === mainWHx && v.posicionY === mainWHy) {
+        continue;
+      }
+      let color = '#444'; // Color por defecto
       if (v.estado === 'STUCK') color = '#ff0000';
       else if (v.estado === 'MAINTENANCE') color = '#ffa500';
-      else color = '#444';
+      else if (v.estado === 'En Ruta' || v.estado === 'MOVIENDOSE' || v.estado === 'RETURNING_TO_BASE') color = '#00c800'; // Color para vehículos en movimiento
+      else if (v.estado === 'IDLE') color = '#ffc800'; // Color si está inactivo
+
+
       const vx = margin + v.posicionX * scaleX;
       const vy = margin + v.posicionY * scaleY;
+
       vehicleHitboxes.push({
         x: vx - 16,
         y: vy - 16,
         size: 32,
         vehiculo: v,
       });
-      const img = await iconToImage(FaTruck, color, 32);
-      ctx.save();
-      ctx.translate(vx, vy);
-      if (v.rutaActual?.length > 1) {
-        const next = v.rutaActual[1];
-        const dx = next.posX - v.posicionX;
-        const dy = next.posY - v.posicionY;
-        if (Math.abs(dx) > Math.abs(dy)) {
-          if (dx < 0) {
-            ctx.scale(-1, 1);
-          }
-        } else {
-          if (dy < 0) {
-            ctx.rotate(-Math.PI / 2);
+
+      const cacheKey = `${FaTruck.displayName || FaTruck.name || ''}_${color}_${32}`;
+      const img = iconImageCache[cacheKey];
+
+      if (img) {
+        ctx.save();
+        ctx.translate(vx, vy); // centro
+
+        // Lógica de rotación: usa v.rutaActual[0] para el punto actual
+        // y v.rutaActual[1] para el siguiente punto en la ruta.
+        if (v.rutaActual?.length > 1) {
+          const next = v.rutaActual[1]; // El siguiente punto en la ruta
+          const dx = next.posX - v.posicionX; // Diferencia con el punto actual del vehículo
+          const dy = next.posY - v.posicionY;
+
+          if (Math.abs(dx) > Math.abs(dy)) {
+            // Movimiento horizontal
+            if (dx < 0) {
+              ctx.scale(-1, 1); // Flip horizontal para izquierda
+            }
+            // Si va a la derecha, no hacemos nada (rotación base)
           } else {
-            ctx.rotate(Math.PI /2);
+            // Movimiento vertical
+            if (dy < 0) {
+              ctx.rotate(-Math.PI / 2); // Rotar 90 grados a la izquierda para arriba
+            } else if (dy > 0) {
+              ctx.rotate(Math.PI / 2); // Rotar 90 grados a la derecha para abajo
+            }
           }
         }
+
+        ctx.drawImage(img, -16, -16, 32, 32);
+        ctx.restore();
+      } else {
+        console.warn(`Icono de camión no encontrado en caché para ${cacheKey}`);
       }
-      ctx.drawImage(img, -16, -16, 32, 32);
-      ctx.restore();
-      ctx.fillStyle = '#000';
+
+      ctx.fillStyle = '#444';
       ctx.font = '12px Arial';
       ctx.fillText(v.placa || v.idVehiculo || '', vx - 16, vy - 21);
+
+      // --- CORRECCIÓN AQUÍ: Dibujar la ruta del vehículo ---
+      // Si la ruta tiene más de un punto (es decir, hay un segmento que dibujar)
       if (v.rutaActual?.length > 1 && v.estado !== 'STUCK') {
-        ctx.strokeStyle = 'rgba(46, 0, 252, 0.7)';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#2b2661';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([5, 10]);
         ctx.beginPath();
+        // Iterar directamente sobre v.rutaActual
         v.rutaActual.forEach((p: any, i: number) => {
           const px = margin + p.posX * scaleX;
           const py = margin + p.posY * scaleY;
+          // Mover al primer punto, luego dibujar líneas a los siguientes
           i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
         });
         ctx.stroke();
-        ctx.lineWidth = 1;
       }
+      ctx.lineWidth = 1; // Restaurar el grosor de línea para otros dibujos
     }
   }
-  ctx.restore();
+  ctx.restore(); // Restaurar el contexto global al final
   return { margin, scaleX, scaleY };
 }
-
 // --- Main Control Panel ---
 const backend_url = import.meta.env.VITE_ENV_BACKEND_URL;
 
@@ -344,6 +481,11 @@ const DailyOperationControlPanel: React.FC<DailyOperationControlPanelProps> = ({
   useEffect(() => {
       redrawCanvas();
     }, [data, scale.margin, scale.scaleX, scale.scaleY]);
+
+  //Carga de iconos
+  useEffect(() => {
+    preloadIcons().catch(console.error); // Llama a la función de precarga
+  }, []); // Se ejecuta solo una vez al montar  
 
   //ZOOM Y PAN
     useEffect(() => {
