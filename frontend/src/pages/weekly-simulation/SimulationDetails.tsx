@@ -34,7 +34,7 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaArrowLeft, FaDownload, FaChartBar, FaTruck, FaBox, FaExclamationTriangle, FaFilePdf } from 'react-icons/fa';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 interface SimulationDetailsProps {
   simulationData?: any;
@@ -79,23 +79,165 @@ const SimulationDetails: React.FC<SimulationDetailsProps> = ({ simulationData })
   };
 
   const handleExportPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text('Resumen de la Simulación', 14, 18);
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+    const azulCorporativo = '#1A237E';
+    const verdeEntregado = '#388e3c';
+    const naranjaConsumo = '#f57c00';
+    const violetaUnicos = '#7b1fa2';
+    const margen = 40;
+    let y = 40;
+
+    // Encabezado con nombre de empresa
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(28);
+    doc.setTextColor(azulCorporativo);
+    doc.text('PLG System', margen, y);
+    // Si tienes un logo, puedes usar doc.addImage('logo.png', 'PNG', margen, y-30, 60, 60);
+    y += 36;
+
+    // Título y fechas
+    doc.setFontSize(18);
+    doc.setTextColor('#222');
+    doc.text('Resumen consolidado de simulación de rutas', margen, y);
+    y += 24;
     doc.setFontSize(12);
-    let y = 28;
-    doc.text(`Fecha de Inicio: ${data.fechaInicio}`, 14, y); y += 8;
-    doc.text(`Fecha de Fin: ${data.fechaFin}`, 14, y); y += 8;
-    doc.text(`Duración: ${data.duracion}`, 14, y); y += 8;
-    doc.text(`Tiempo de Planificación: ${data.tiempoPlanificacion}`, 14, y); y += 8;
-    doc.text(`Pedidos Entregados: ${data.pedidosEntregados}`, 14, y); y += 8;
-    doc.text(`Consumo de Petróleo: ${data.consumoPetroleo} L`, 14, y); y += 8;
-    if (data.estadisticas) {
-      doc.text(`Vehículos Totales: ${data.estadisticas.totalVehiculos}`, 14, y); y += 8;
-      doc.text(`Máx. Vehículos Activos en un Minuto: ${data.estadisticas.maxVehiculosActivosEnUnMinuto}`, 14, y); y += 8;
-      doc.text(`Vehículos Activos Únicos: ${data.estadisticas.vehiculosActivosUnicos}`, 14, y); y += 8;
-      doc.text(`Minutos Simulados: ${data.estadisticas.minutosSimulados}`, 14, y); y += 8;
+    doc.setTextColor('#444');
+    doc.text(`Fecha de inicio: ${data.fechaInicio}   Fecha de fin: ${data.fechaFin}`, margen, y);
+    y += 18;
+    doc.text(`Duración: ${data.duracion}   Tiempo de planificación: ${data.tiempoPlanificacion}`, margen, y);
+    y += 18;
+    doc.setDrawColor(azulCorporativo);
+    doc.setLineWidth(1.2);
+    doc.line(margen, y, 555, y);
+    y += 16;
+
+    // Sección Resumen General
+    doc.setFontSize(15);
+    doc.setTextColor(azulCorporativo);
+    doc.text('Resumen General', margen, y);
+    y += 18;
+    doc.setFontSize(11);
+    doc.setTextColor('#222');
+    doc.text(`• Consumo de Petróleo: `, margen, y);
+    doc.setTextColor(naranjaConsumo);
+    doc.text(`${data.consumoPetroleo} L`, margen + 140, y);
+    doc.setTextColor('#222');
+    doc.text(`• Vehículos Totales: ${data.estadisticas?.totalVehiculos ?? '-'}`, margen + 240, y);
+    y += 16;
+    doc.text(`• Máx. Vehículos Activos en un Minuto: `, margen, y);
+    doc.setTextColor(azulCorporativo);
+    doc.text(`${data.estadisticas?.maxVehiculosActivosEnUnMinuto ?? '-'}`, margen + 240, y);
+    doc.setTextColor('#222');
+    y += 16;
+    doc.text(`• Vehículos Activos Únicos: `, margen, y);
+    doc.setTextColor(violetaUnicos);
+    doc.text(`${data.estadisticas?.vehiculosActivosUnicos ?? '-'}`, margen + 140, y);
+    y += 16;
+    doc.setTextColor('#222');
+    doc.text(`• Minutos Simulados: ${data.estadisticas?.minutosSimulados ?? '-'}`, margen, y);
+    y += 20;
+    doc.setTextColor('#222');
+    doc.setLineWidth(0.5);
+    doc.line(margen, y, 555, y);
+    y += 16;
+
+    // Pedidos entregados
+    doc.setFontSize(13);
+    doc.setTextColor(verdeEntregado);
+    doc.text(`Pedidos Entregados: ${typeof data.pedidosEntregados !== 'undefined' ? data.pedidosEntregados : 0}`, margen, y);
+    y += 24;
+
+    // Introducción a la tabla de pedidos
+    doc.setFontSize(12);
+    doc.setTextColor('#222');
+    doc.text('A continuación se presenta el resumen de los pedidos gestionados durante la simulación:', margen, y);
+    y += 18;
+
+    // Tabla de pedidos (solo los principales campos)
+    if (data.simulacionCompleta) {
+      // Procesar pedidos minuto a minuto para obtener el estado final de cada pedido
+      const minutos = data.simulacionCompleta;
+      const resumen: Record<string, { estadoFinal: string, glp: number, fechaLimite: string, pos: string, destino: string } > = {};
+      minutos.forEach((minutoSnap: any) => {
+        minutoSnap.pedidos.forEach((pedido: any) => {
+          if (!resumen[pedido.idPedido]) {
+            resumen[pedido.idPedido] = {
+              estadoFinal: pedido.estado,
+              glp: pedido.glp,
+              fechaLimite: pedido.fechaLimite,
+              pos: `(${pedido.posX}, ${pedido.posY})`,
+              destino: pedido.destino || '-',
+            };
+          }
+          resumen[pedido.idPedido].estadoFinal = pedido.estado;
+        });
+      });
+      const pedidosResumen = Object.entries(resumen).map(([id, p]) => ({ id, ...p }));
+      // Tabla con jsPDF-AutoTable
+      autoTable(doc, {
+        startY: y,
+        head: [[
+          'ID',
+          'Estado Final',
+          'GLP',
+          'Fecha Límite',
+          'Posición',
+          'Destino',
+        ]],
+        body: pedidosResumen.map((pedido) => [
+          pedido.id,
+          pedido.estadoFinal,
+          pedido.glp,
+          pedido.fechaLimite,
+          pedido.pos,
+          pedido.destino
+        ]),
+        styles: {
+          font: 'helvetica',
+          fontSize: 10,
+          cellPadding: 4,
+          valign: 'middle',
+          textColor: '#222',
+          lineColor: azulCorporativo,
+          lineWidth: 0.5,
+        },
+        headStyles: {
+          fillColor: azulCorporativo,
+          textColor: '#fff',
+          fontStyle: 'bold',
+        },
+        bodyStyles: {
+          fillColor: [245, 248, 255],
+        },
+        alternateRowStyles: {
+          fillColor: [255, 255, 255],
+        },
+        columnStyles: {
+          1: { cellWidth: 70 },
+          2: { cellWidth: 40 },
+          3: { cellWidth: 80 },
+          4: { cellWidth: 60 },
+          5: { cellWidth: 60 },
+        },
+        margin: { left: margen, right: margen },
+        theme: 'grid',
+        didDrawPage: (data: any) => {
+          // Pie de página
+          const pageHeight = doc.internal.pageSize.height;
+          doc.setFontSize(9);
+          doc.setTextColor('#888');
+          doc.text(
+            `Generado por PLG System - ${new Date().toLocaleString()}`,
+            margen,
+            pageHeight - 12
+          );
+        },
+      });
+      // y = doc.lastAutoTable.finalY + 24; // Si necesitas usar y después
     }
+
+    // Puedes agregar más tablas o secciones aquí si lo deseas
+
     doc.save(`Resumen_Simulacion_${data.fechaInicio.replace(/[\/\s:]/g, '_')}.pdf`);
   };
 
@@ -215,6 +357,30 @@ const SimulationDetails: React.FC<SimulationDetailsProps> = ({ simulationData })
                   <Stat>
                     <StatLabel>Minutos Simulados</StatLabel>
                     <StatNumber>{data.estadisticas.minutosSimulados}</StatNumber>
+                  </Stat>
+                </GridItem>
+                <GridItem>
+                  <Stat>
+                    <StatLabel>Pedidos Entregados</StatLabel>
+                    <StatNumber color="green.600">{typeof data.pedidosEntregados !== 'undefined' ? data.pedidosEntregados : (
+                      (() => {
+                        // Calcular desde el resumen de pedidos si no está en data
+                        if (data.simulacionCompleta) {
+                          const minutos = data.simulacionCompleta;
+                          const resumen: Record<string, { estadoFinal: string }> = {};
+                          minutos.forEach((minutoSnap: any) => {
+                            minutoSnap.pedidos.forEach((pedido: any) => {
+                              if (!resumen[pedido.idPedido]) {
+                                resumen[pedido.idPedido] = { estadoFinal: pedido.estado };
+                              }
+                              resumen[pedido.idPedido].estadoFinal = pedido.estado;
+                            });
+                          });
+                          return Object.values(resumen).filter((p) => p.estadoFinal === 'COMPLETADO').length;
+                        }
+                        return 0;
+                      })()
+                    )}</StatNumber>
                   </Stat>
                 </GridItem>
               </Grid>

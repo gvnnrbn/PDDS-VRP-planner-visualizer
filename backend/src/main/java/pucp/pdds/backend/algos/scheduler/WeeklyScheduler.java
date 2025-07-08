@@ -456,12 +456,9 @@ public class WeeklyScheduler implements Runnable {
         for (Map<String, Object> minuto : simulacionCompleta) {
             @SuppressWarnings("unchecked")
             List<Object> vehiculos = (List<Object>) minuto.get("vehiculos");
-            @SuppressWarnings("unchecked")
-            List<Object> pedidos = (List<Object>) minuto.get("pedidos");
-            
-            int vehiculosActivosEsteMinuto = 0;
             if (vehiculos != null) {
                 totalVehiculos = Math.max(totalVehiculos, vehiculos.size());
+                int vehiculosActivosEsteMinuto = 0;
                 for (Object v : vehiculos) {
                     try {
                         var estadoField = v.getClass().getField("estado");
@@ -482,22 +479,32 @@ public class WeeklyScheduler implements Runnable {
                         consumoPetroleo += (maxCombustible - combustible) * 0.1; // Factor de conversión
                     } catch (Exception ignored) {}
                 }
+                maxVehiculosActivosEnUnMinuto = Math.max(maxVehiculosActivosEnUnMinuto, vehiculosActivosEsteMinuto);
             }
-            maxVehiculosActivosEnUnMinuto = Math.max(maxVehiculosActivosEnUnMinuto, vehiculosActivosEsteMinuto);
-            
+        }
+
+        // Contar pedidos entregados únicos SOLO en el último minuto simulado
+        Set<Integer> pedidosEntregadosUnicos = new HashSet<>();
+        if (!simulacionCompleta.isEmpty()) {
+            Map<String, Object> ultimoMinuto = simulacionCompleta.get(simulacionCompleta.size() - 1);
+            @SuppressWarnings("unchecked")
+            List<Object> pedidos = (List<Object>) ultimoMinuto.get("pedidos");
             if (pedidos != null) {
                 for (Object p : pedidos) {
                     try {
                         var estadoField = p.getClass().getField("estado");
                         String estado = (String) estadoField.get(p);
-                        if ("DELIVERED".equals(estado)) {
-                            pedidosEntregados++;
+                        var idField = p.getClass().getField("idPedido");
+                        int idPedido = (int) idField.get(p);
+                        if ("Completado".equals(estado)) {
+                            pedidosEntregadosUnicos.add(idPedido);
                         }
                     } catch (Exception ignored) {}
                 }
             }
         }
-        
+        pedidosEntregados = pedidosEntregadosUnicos.size();
+
         stats.put("pedidosEntregados", pedidosEntregados);
         stats.put("consumoPetroleo", Math.round(consumoPetroleo * 100.0) / 100.0);
         stats.put("totalVehiculos", totalVehiculos);
