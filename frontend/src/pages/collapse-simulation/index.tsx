@@ -1,4 +1,4 @@
-import { Box, Button, FormControl, FormLabel, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Stack, useColorModeValue, VStack, HStack, useDisclosure, useToast, Menu, MenuList, MenuItem, MenuButton } from '@chakra-ui/react'
+import { Box,  useColorModeValue, VStack } from '@chakra-ui/react'
 import { Route, Routes } from 'react-router-dom'
 import { SectionBar } from '../../components/common/SectionBar'
 import { useEffect, useState } from 'react'
@@ -13,10 +13,6 @@ import { FlotaCard } from '../../components/common/cards/FlotaCard'
 import { IncidenciaCard } from '../../components/common/cards/IncidenciaCard'
 import { MantenimientoCard } from '../../components/common/cards/MantenimientoCard'
 import CollapseSimulationControlPanel from './CollapseSimulationControlPanel'
-import { PedidoForm } from '../../components/PedidoForm'
-import { PedidoService } from '../../core/services/PedidoService'
-import { IncidenciaService } from '../../core/services/IncidenciaService'
-import { ModalInsertAveria } from '../../components/common/modals/ModalInsertAveria'
 import { CollapseSimulationProvider, useCollapseSimulation } from './CollapseSimulationContext'
 
 export default function CollapseSimulation() {
@@ -95,8 +91,8 @@ function CollapseSimulationInner() {
   ];
 
   return (
-    <Flex height="full" overflowY="auto" position="relative">
-      <Box flex={1} p={4} bg={bgColor} h="full">
+    <Flex height="100%" width="100%" overflowY="hidden" position="relative">
+      <Box flex={1} p={0} bg={bgColor} h="full">
         <Routes>
           <Route
             path="simulacion"
