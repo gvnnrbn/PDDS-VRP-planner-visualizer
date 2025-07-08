@@ -1168,7 +1168,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps & { onVehicul
         {(
           <BottomLeftControls
             variant="date-pause"
-            date={`Inicio: ${simStartDate ? format(safeParse(simStartDate), 'dd/MM/yyyy HH:mm') : 'dd/mm/yyyy HH:mm'}\nFecha actual: ${data?.minuto ? format(safeParse(data.minuto), 'dd/MM/yyyy HH:mm') : 'dd/mm/yyyy'}\nDuración: ${duracionStr}`}
+            date={`Inicio: ${simStartDate ? format(safeParse(simStartDate), 'dd/MM/yyyy HH:mm') : 'dd/mm/yyyy HH:mm'}\nFecha actual: ${data?.minuto ? format(safeParse(data.minuto), 'dd/MM/yyyy HH:mm') : 'dd/mm/yyyy'}\nTiempo Simulado: ${duracionStr}`}
             onStop={handleStopAndShowSummary}
             onIniciarSimulacion={onIniciarSimulacion}
             isSimulating={isSimulating}

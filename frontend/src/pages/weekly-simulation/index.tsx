@@ -17,7 +17,6 @@ import { useSimulation } from '../../components/common/SimulationContextSemanal'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faFilter, faSort } from '@fortawesome/free-solid-svg-icons'
 import { AlmacenCard } from '../../components/common/cards/AlmacenCard'
-import { ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons'
 
 const ORDER_OPTIONS = [
   { label: 'Tiempo de llegada más cercano', value: 'fechaLimite-asc' },

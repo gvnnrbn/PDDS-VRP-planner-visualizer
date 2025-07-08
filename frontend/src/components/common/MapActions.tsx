@@ -1,6 +1,7 @@
 import React, { useState} from "react";
 import { Box,Flex,Button,Collapse,Text,useColorModeValue,VStack } from "@chakra-ui/react";
 import { ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
+import { useLocation } from 'react-router-dom';
 
 
 type BottomControlsVariant = "date-pause" | "full";
@@ -42,6 +43,9 @@ const BottomLeftControls: React.FC<BottomLeftControlsProps> = ({
         setIsOpen(false);
     };
 
+
+    const location = useLocation();
+
     return (
         <Flex
             position="absolute"
@@ -64,12 +68,15 @@ const BottomLeftControls: React.FC<BottomLeftControlsProps> = ({
                     borderColor="blue.600"
                     style={extraBoxStyle}
                 >
-                {date.split('\n').map((line, idx) => (
-                  <Text key={idx} fontWeight="bold" color="purple.800">{line}</Text>
-                ))}
+                    {location.pathname.includes("dia")
+                        ? <Text fontWeight="bold" color="purple.800">{date}</Text>
+                        : date.split('\n').map((line, idx) => (
+                            <Text key={idx} fontWeight="bold" color="purple.800">{line}</Text>
+                            ))
+                        }
                 </Box>
-            )}
-            <Box mt={20}>
+                )}
+            <Box mt={0}>
 
                 {isSimulating && (
                     <Button
