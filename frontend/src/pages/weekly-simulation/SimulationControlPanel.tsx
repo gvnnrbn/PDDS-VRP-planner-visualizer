@@ -18,6 +18,7 @@ import type { VehiculoSimulado, VehiculoSimuladoV2 } from '../../core/types/vehi
 import type { IndicadoresSimulado } from '../../core/types/indicadores';
 import AlmacenModal from '../../components/common/modals/ModalAlmacen';
 import { format, parseISO, differenceInSeconds, parse } from 'date-fns';
+import { selectCalculatedXAxisPadding } from 'recharts/types/state/selectors/axisSelectors';
 
 interface LogEntry {
   timestamp: string;
@@ -152,7 +153,7 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
   const scaleY = (height - 2 * margin) / gridWidth;
 
   // --- Dibujar la Cuadrícula ---
-  ctx.strokeStyle = 'rgba(220, 220, 220, 0.55)';
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
   ctx.lineWidth = 1; // Restaurar lineWidth a 1 antes de dibujar la cuadrícula
   for (let x = 0; x <= gridLength; x++) {
     const sx = margin + x * scaleX;
@@ -367,8 +368,9 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
       // --- CORRECCIÓN AQUÍ: Dibujar la ruta del vehículo ---
       // Si la ruta tiene más de un punto (es decir, hay un segmento que dibujar)
       if (v.rutaActual?.length > 1 && v.estado !== 'STUCK') {
-        ctx.strokeStyle = '#444';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#2b2661';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([5, 10]);
         ctx.beginPath();
         // Iterar directamente sobre v.rutaActual
         v.rutaActual.forEach((p: any, i: number) => {
