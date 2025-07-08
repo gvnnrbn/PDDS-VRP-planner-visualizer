@@ -80,7 +80,7 @@ public class WeeklyScheduler implements Runnable {
                         System.out.println("======================================");
                         System.out.println("For environment at " + state.getCurrTime() + ":");
                         System.out.println(environment);
-                        if (sol.isFeasible(environment)) {
+                        if (sol.isFeasible()) {
                             System.out.println("I can guarantee there's a feasible solution:");
                             System.out.println(sol);
                         } else {
