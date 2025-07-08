@@ -1,7 +1,7 @@
 package pucp.pdds.backend.algos.utils;
 
 public class SimulationProperties {
-    public static double speed = 50.0; // km/h
+    public static double speed = 70.0; // km/h
     public static int timeAfterDelivery = 15; // minutes
     public static int timeAfterRefill = 0; // minutes
 

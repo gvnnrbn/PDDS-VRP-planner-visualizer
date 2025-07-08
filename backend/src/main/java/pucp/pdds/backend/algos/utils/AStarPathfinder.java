@@ -93,14 +93,20 @@ class AStarPathfinder {
             
             closedSet.add(current);
             
+            boolean currentIsBlocked = isInsideBlockage(current.pos, blockages);
             // Generate neighbors
             for (Position neighborPos : getNeighbors(current.pos)) {
                 // Skip if this move would cross a blockage or move along it
                 if (isBlocked(current.pos, neighborPos, blockages)) continue;
                 
-                // Skip if either current position or neighbor is inside a blockage
-                if (isInsideBlockage(current.pos, blockages) || isInsideBlockage(neighborPos, blockages)) continue;
-                
+                // If current is inside blockage, only allow moving to parent
+                if (currentIsBlocked) {
+                    if (current.parent == null || !isPointEqual(neighborPos, current.parent.pos)) {
+                        continue;
+                    }
+                }
+                // Do NOT skip if neighbor is inside blockage (vehicles can enter blocked nodes)
+                // Node neighbor = new Node(...)
                 Node neighbor = new Node(
                     neighborPos,
                     current,

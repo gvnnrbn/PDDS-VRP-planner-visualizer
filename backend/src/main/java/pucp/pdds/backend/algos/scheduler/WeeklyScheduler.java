@@ -9,6 +9,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.SynchronousQueue;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -22,6 +23,7 @@ import pucp.pdds.backend.algos.algorithm.Environment;
 import pucp.pdds.backend.algos.algorithm.Solution;
 import pucp.pdds.backend.algos.data.DataChunk;
 import pucp.pdds.backend.algos.entities.PlannerFailure;
+import pucp.pdds.backend.algos.entities.PlannerOrder;
 import pucp.pdds.backend.algos.utils.Time;
 import pucp.pdds.backend.dto.SimulationResponse;
 import pucp.pdds.backend.dto.SimulationSummaryDTO;
@@ -190,15 +192,23 @@ public class WeeklyScheduler implements Runnable {
 
                     stateLock.lock();
                     state.getOrders().stream().filter(o -> o.deadline.isBefore(state.getCurrTime()) && !o.isDelivered()).forEach(o -> {
-                        if (!o.hasBeenForgiven) {
-                            o.deadline = o.deadline.addMinutes(60);
-                            o.hasBeenForgiven = true;
+                        if (o.timesForgiven < PlannerOrder.timesToForgive) {
+                            o.deadline = o.deadline.addMinutes(PlannerOrder.forgivenTime);
+                            o.timesForgiven++;
                         }
                     });
-                    boolean shouldTerminate = state.getOrders().stream().anyMatch(o -> o.deadline.isBefore(state.getCurrTime()) && !o.isDelivered());
+                    Optional<PlannerOrder> failedOrder = state.getOrders().stream()
+                        .filter(o -> o.deadline.isBefore(state.getCurrTime()) && !o.isDelivered())
+                        .findAny();
                     stateLock.unlock();
 
-                    if (shouldTerminate) {
+                    if (failedOrder.isPresent()) {
+                        System.out.println("Couldn't deliver order " + failedOrder.get().id + " at " + state.getCurrTime());
+                        System.out.println(failedOrder.get());
+
+                        boolean isInEnvironment = sol.getEnvironment().orders.stream().anyMatch(o -> o.id == failedOrder.get().id);
+                        System.out.println("Is in environment: " + isInEnvironment);
+
                         isRunning = false;
                         Thread.currentThread().interrupt();
                         algorithmThread.interrupt();

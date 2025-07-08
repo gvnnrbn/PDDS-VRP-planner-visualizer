@@ -61,7 +61,7 @@ public class CollapseScheduler implements Runnable {
                 Algorithm algorithm = new Algorithm(true);
                 Solution sol = algorithm.run(environment, state.minutesToSimulate);
 
-                if (!sol.isFeasible(environment)) {
+                if (!sol.isFeasible()) {
                     sendError("System collapsed. Could not find a feasible plan for the next " + state.minutesToSimulate + " minutes.");
                     running = false;
                     break;

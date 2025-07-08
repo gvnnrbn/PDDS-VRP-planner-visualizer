@@ -15,7 +15,9 @@ public class PlannerOrder implements Cloneable {
     public Time deliverTime;
     public Time releaseTime;
 
-    public boolean hasBeenForgiven = false;
+    public int timesForgiven = 0;
+    public static int timesToForgive = 2; 
+    public static int forgivenTime = 120; // minutes
 
     public PlannerOrder(int id, Time arrivalTime, Position position, int amountGLP, String clientId, Time deadline) {
         this.id = id;
