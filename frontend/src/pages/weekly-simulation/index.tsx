@@ -256,7 +256,7 @@ export default function WeeklySimulation() {
       setTimeout(() => {
         const card = document.getElementById(`almacen-card-${idAlmacen}`);
         if (card) {
-          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
       }, 100);
     };
@@ -406,18 +406,20 @@ const IndicadoresSection = () => {
       </Box>
       {!isSimulationLoading && (
         <>
-          <SectionBar
-            sections={sections}
-            onSectionChange={handleSectionChange}
-            currentSection={section}
-            isCollapsed={isCollapsed}
-            onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+          <Box
+            maxH="calc(100vh - 100px)" // Altura visible del panel
+            overflowY="auto"
+          >
+            <SectionBar
+              sections={sections}
+              onSectionChange={handleSectionChange}
+              currentSection={section}
+              isCollapsed={isCollapsed}
+              onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
 
-          />
-
+            />
+          </Box>
           <LegendPanel isSidebarCollapsed={isCollapsed} />
-
-          
         </>
       )}
       <Modal isOpen={isModalOpen} onClose={()=>{}}>

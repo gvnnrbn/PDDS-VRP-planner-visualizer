@@ -696,9 +696,12 @@ const DailyOperationControlPanel: React.FC<DailyOperationControlPanelProps> = ({
             <Text>ID: {selectedVehicle.idVehiculo}</Text>
             <Text>Placa: {selectedVehicle.placa}</Text>
             <Text>Estado: {estadoVehiculo}</Text>
-            <Button variant={'primary'} size={'sm'} onClick={onOpenAveria} mt={2}>
+            <Text>Combustible: {selectedVehicle.combustible} L</Text>
+            <Text>GLP: {selectedVehicle.currGLP} m3</Text>
+            {/*<Button variant={'primary'} size={'sm'} onClick={onOpenAveria} mt={2}>
               Registrar Avería
-            </Button>
+            </Button> */
+            }
           </Box>
         )}
         <ModalInsertAveria
