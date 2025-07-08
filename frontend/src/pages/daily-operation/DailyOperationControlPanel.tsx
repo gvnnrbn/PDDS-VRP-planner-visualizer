@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import type { IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
@@ -7,6 +7,23 @@ import { FaTruck, FaWarehouse, FaMapMarkerAlt, FaIndustry } from 'react-icons/fa
 import { renderToStaticMarkup } from 'react-dom/server';
 import BottomLeftControls from '../../components/common/MapActions';
 import { ModalInsertAveria } from '../../components/common/modals/ModalInsertAveria';
+
+function panelStyles({ left, top }: { left: number; top: number }) {
+  return {
+    position: 'absolute',
+    left,
+    top,
+    transform: 'translate(-50%, -120%)',
+    background: 'white',
+    padding: '12px',
+    border: '1px solid #ccc',
+    borderRadius: '6px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+    zIndex: 1000,
+    minWidth: '200px',
+  };
+}
+
 
 // --- Canvas drawing logic (copied from SimulationControlPanel) ---
 const iconImageCache: Record<string, HTMLImageElement> = {};
@@ -29,10 +46,28 @@ function iconToImage(IconComponent: React.ElementType, color: string, size = 32)
   });
 }
 
-let panX = 0;
-let panY = 0;
-let zoomScale = 1;
+//VARIBLES PARA ZOOM Y PAN
+export let panX = 0;
+export let panY = 0;
+export let zoomScale = 1;
 export const vehicleHitboxes: { x: number; y: number; size: number; vehiculo: any }[] = [];
+export const warehouseHitboxes: { x: number; y: number; size: number; almacen: any }[] = [];
+export const pedidoHitboxes: { x: number; y: number; size: number; pedido: any }[] = [];
+
+// Funciones para actualizar pan y zoom desde fuera
+export function setPan(x: number, y: number) {
+    panX = x;
+    panY = y;
+}
+
+export function setZoom(scale: number) {
+    zoomScale = scale;
+}
+
+// Variables globales para el enfoque de pedidos
+(window as any).panX = panX;
+(window as any).panY = panY;
+(window as any).highlightedPedidoId = null;
 
 export async function drawState(canvas: HTMLCanvasElement, data: any): Promise<{
   margin: number;
@@ -294,51 +329,108 @@ const DailyOperationControlPanel: React.FC<DailyOperationControlPanelProps> = ({
       if (result) setScale(result);
     }
   };
-  // ZOOM Y PAN
+
+  // Función para dibujar el estado actual del canvas
+    const redrawCanvas = useCallback(async () => {
+      const canvas = canvasRef.current;
+      if (canvas && data) {
+        // Pasamos los datos originales Y el estado de animación al `drawState`
+        // `drawState` usará `vehiclesAnimState.current` para las posiciones
+        const result = drawState(canvas, data);
+        if (result) setScale(await result);
+      }
+    }, [data]); 
+
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    let isDragging = false;
-    let startX = 0;
-    let startY = 0;
-    let panStartX = 0;
-    let panStartY = 0;
-    const handleWheel = async (e: WheelEvent) => {
-      e.preventDefault();
-      const zoomIntensity = 0.1;
-      const delta = e.deltaY < 0 ? 1 + zoomIntensity : 1 - zoomIntensity;
-      zoomScale = Math.min(Math.max(0.25, zoomScale * delta), 4);
-      const result = await drawState(canvas, data);
-      if (result) setScale(result);
-    };
-    const handleMouseDown = (e: MouseEvent) => {
-      isDragging = true;
-      startX = e.clientX;
-      startY = e.clientY;
-      panStartX = panX;
-      panStartY = panY;
-    };
-    const handleMouseMove = async (e: MouseEvent) => {
-      if (!isDragging) return;
-      panX = panStartX + (e.clientX - startX);
-      panY = panStartY + (e.clientY - startY);
-      const result = await drawState(canvas, data);
-      if (result) setScale(result);
-    };
-    const handleMouseUp = () => {
-      isDragging = false;
-    };
-    canvas.addEventListener('wheel', handleWheel);
-    canvas.addEventListener('mousedown', handleMouseDown);
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-    return () => {
-      canvas.removeEventListener('wheel', handleWheel);
-      canvas.removeEventListener('mousedown', handleMouseDown);
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [canvasRef, data]);
+      redrawCanvas();
+    }, [data, scale.margin, scale.scaleX, scale.scaleY]);
+
+  //ZOOM Y PAN
+    useEffect(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+  
+      const resizeCanvas = () => {
+        const parent = canvas.parentElement;
+        if (parent) {
+          canvas.width = parent.offsetWidth;
+          canvas.height = parent.offsetHeight;
+          redrawCanvas();
+        }
+      };
+  
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+  
+      let isDragging = false;
+      let lastX = 0;
+      let lastY = 0;
+  
+      const handleWheel = (e: WheelEvent) => {
+        e.preventDefault();
+        const scaleAmount = 1.1;
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+  
+        const worldX = (mouseX - panX) / zoomScale;
+        const worldY = (mouseY - panY) / zoomScale;
+  
+        const newZoomScale = e.deltaY < 0 ? zoomScale * scaleAmount : zoomScale / scaleAmount;
+        setZoom(Math.min(Math.max(0.25, newZoomScale), 4));
+  
+        const newPanX = mouseX - worldX * zoomScale;
+        const newPanY = mouseY - worldY * zoomScale;
+        setPan(newPanX, newPanY);
+  
+        redrawCanvas();
+      };
+  
+      const handleMouseDown = (e: MouseEvent) => {
+        isDragging = true;
+        lastX = e.clientX;
+        lastY = e.clientY;
+      };
+  
+      const handleMouseMove = (e: MouseEvent) => {
+        if (!isDragging) return;
+        const dx = e.clientX - lastX;
+        const dy = e.clientY - lastY;
+        setPan(panX + dx, panY + dy);
+        lastX = e.clientX;
+        lastY = e.clientY;
+        redrawCanvas();
+      };
+  
+      const handleMouseUp = () => {
+        isDragging = false;
+      };
+  
+      canvas.addEventListener('wheel', handleWheel);
+      canvas.addEventListener('mousedown', handleMouseDown);
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+  
+      return () => {
+        canvas.removeEventListener('wheel', handleWheel);
+        canvas.removeEventListener('mousedown', handleMouseDown);
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+        window.removeEventListener('resize', resizeCanvas);
+      };
+    }, [redrawCanvas]); // Ahora depende de redrawCanvas
+  
+    //AUXILIAR
+    useEffect(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+  
+      // Solo una vez al montar
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    }, []);
+
+
   // Vehicle panel logic (copied, but can be refactored later)
   const [selectedVehicle, setSelectedVehicle] = useState<any | null>(null);
   const [vehiclePanelPos, setVehiclePanelPos] = useState<{ left: number; top: number } | null>(null);
@@ -425,20 +517,19 @@ const DailyOperationControlPanel: React.FC<DailyOperationControlPanelProps> = ({
   }, [selectedVehicle]);
   // --- Render ---
   return (
-    <Box borderWidth="1px" borderRadius="md" p={4} mb={4}>
+    <Box borderWidth="1px" borderRadius="md" p={0} mb={0} height="100vh">
       <VStack align="start" spacing={3}>
-        <Box position="relative" width="100%" height="calc(100vh - 64px)">
-          <canvas ref={canvasRef} width={1720} height={1080}
+        <Box position="relative" width="100%" height="100vh">
+          <canvas ref={canvasRef} width={1720} height={1080} 
             style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              border: '1px solid #ccc',
-              background: '#fff',
-              zIndex: 1,
-            }} />
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            border: '1px solid #ccc',
+            background: '#fff',
+            zIndex: 1,}} />
         </Box>
         {selectedVehicle && vehiclePanelPos && (
           <Box
@@ -477,10 +568,11 @@ const DailyOperationControlPanel: React.FC<DailyOperationControlPanelProps> = ({
         />
         <BottomLeftControls
           variant="date-pause"
-          date={`Tiempo: ${data?.minuto || "dd/mm/yyyy"}`}
+          date={`Fecha: ${data?.minuto || "dd/mm/yyyy"}`}
           onStop={() => {}}
           onIniciarSimulacion={() => {}}
           isSimulating={true}
+          extraBoxStyle={{ fontSize: '1.2rem', minWidth: '320px', minHeight: '10px', padding: '14px 32px' }}
         />
       </VStack>
     </Box>

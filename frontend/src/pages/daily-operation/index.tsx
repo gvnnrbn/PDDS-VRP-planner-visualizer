@@ -219,8 +219,8 @@ export default function DailyOperation() {
 
   return (
     <OperacionProvider>
-    <Flex height="full" overflowY="auto" position="relative">
-      <Box flex={1} p={4} bg={bgColor} h="full">
+    <Flex height="100%" width="100%" overflowY="hidden" position="relative">
+      <Box flex={1} p={0} bg={bgColor} h="full">
           <DailyOperationControlPanel data={operationData} setData={setOperationData} />
       </Box>
       <SectionBar
