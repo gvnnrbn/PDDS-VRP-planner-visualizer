@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import pucp.pdds.backend.algos.scheduler.WeeklyScheduler;
 import pucp.pdds.backend.algos.scheduler.SchedulerState;
 import pucp.pdds.backend.algos.utils.Position;
+import pucp.pdds.backend.algos.utils.SimulationProperties;
 import pucp.pdds.backend.algos.utils.Time;
 import pucp.pdds.backend.algos.entities.PlannerVehicle.VehicleState;
 import pucp.pdds.backend.algos.scheduler.DataProvider;
@@ -108,7 +109,7 @@ public class SimulationService {
                     maintenances.stream().map(m -> m.clone()).toList(),
                     new Time(fechaInicio.getYear(), fechaInicio.getMonthValue(), 
                     fechaInicio.getDayOfMonth(), fechaInicio.getHour(), fechaInicio.getMinute()),
-                    90,
+                    SimulationProperties.replanningInterval,
                     new Time(fechaInicio.getYear(), fechaInicio.getMonthValue(),
                     fechaInicio.getDayOfMonth(), fechaInicio.getHour(), fechaInicio.getMinute())
                 );

@@ -5,8 +5,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.SynchronousQueue;
 import java.util.Map;
 import java.util.Optional;
@@ -24,6 +22,7 @@ import pucp.pdds.backend.algos.algorithm.Solution;
 import pucp.pdds.backend.algos.data.DataChunk;
 import pucp.pdds.backend.algos.entities.PlannerFailure;
 import pucp.pdds.backend.algos.entities.PlannerOrder;
+import pucp.pdds.backend.algos.utils.SimulationProperties;
 import pucp.pdds.backend.algos.utils.Time;
 import pucp.pdds.backend.dto.SimulationResponse;
 import pucp.pdds.backend.dto.SimulationSummaryDTO;
@@ -69,7 +68,7 @@ public class WeeklyScheduler implements Runnable {
                             state.getActiveVehicles(), 
                             state.getActiveOrders(), 
                             state.getWarehouses(), 
-                            state.getActiveBlockages(), 
+                            state.getActiveBlockagesOverTimeFrame(state.getCurrTime(), state.getCurrTime().addMinutes(state.minutesToSimulate)), 
                             state.getFailures(), 
                             state.getActiveMaintenances(), 
                             state.getCurrTime(), 
@@ -77,16 +76,6 @@ public class WeeklyScheduler implements Runnable {
                         );
                         Algorithm algorithm = new Algorithm(true);
                         Solution sol = algorithm.run(environment, state.minutesToSimulate);
-                        System.out.println("======================================");
-                        System.out.println("For environment at " + state.getCurrTime() + ":");
-                        System.out.println(environment);
-                        if (sol.isFeasible()) {
-                            System.out.println("I can guarantee there's a feasible solution:");
-                            System.out.println(sol);
-                        } else {
-                            System.out.println("I can't guarantee there's a feasible solution:");
-                        }
-                        System.out.println("======================================");
                         solutionQueue.put(sol);
                     }
                 } catch (InterruptedException e) {
@@ -116,7 +105,7 @@ public class WeeklyScheduler implements Runnable {
             initialState.getActiveVehicles(), 
             initialState.getActiveOrders(), 
             initialState.getWarehouses(), 
-            initialState.getActiveBlockages(), 
+            initialState.getActiveBlockagesOverTimeFrame(initialState.getCurrTime(), initialState.getCurrTime().addMinutes(initialState.minutesToSimulate)), 
             initialState.getFailures(), 
             initialState.getActiveMaintenances(), 
             initialState.getCurrTime(), 
@@ -173,14 +162,14 @@ public class WeeklyScheduler implements Runnable {
                 state.initializeVehicles();
                 stateLock.unlock();
 
-                for (int iteration = 0; iteration < state.minutesToSimulate && isRunning && !Thread.currentThread().isInterrupted(); iteration++) {
+                for (int iteration = 0; iteration < state.minutesToSimulate && state.getCurrTime().isBefore(endSimulationTime) && isRunning && !Thread.currentThread().isInterrupted(); iteration++) {
                     stateLock.lock();
                     state.advance(sol, true);
                     onAfterExecution(iteration, sol);
                     stateLock.unlock();
 
                     try {
-                        Thread.sleep(250);
+                        Thread.sleep(SimulationProperties.msPerMinute);
                     } catch (InterruptedException e) {
                         isRunning = false;
                         Thread.currentThread().interrupt();

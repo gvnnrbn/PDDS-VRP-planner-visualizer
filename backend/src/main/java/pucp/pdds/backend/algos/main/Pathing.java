@@ -27,37 +27,56 @@ public class Pathing {
             e.printStackTrace();
         }
 
+        // Run all cases and add them to collage
+        runAllCasesForCollage();
+        
+        System.out.println("All cases completed and added to collage visualization.");
+        
+        // Keep the program running for a few seconds to allow viewing the collage
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void runAllCasesForCollage() {
+        // Clear any existing collage data
+        PathVisualizer.clearCollage();
+        
+        // Run all cases and add to collage
         CaseA();
-        System.out.println("\n" + "=".repeat(50) + "\n");
+        System.out.println("--------------------------------");
         CaseB();
-        System.out.println("\n" + "=".repeat(50) + "\n");
+        System.out.println("--------------------------------");
         CaseC();
-        System.out.println("\n" + "=".repeat(50) + "\n");
+        System.out.println("--------------------------------");
         CaseD();
-        System.out.println("\n" + "=".repeat(50) + "\n");
+        System.out.println("--------------------------------");
         CaseE();
-        System.out.println("\n" + "=".repeat(50) + "\n");
+        System.out.println("--------------------------------");
         CaseF();
-        System.out.println("\n" + "=".repeat(50) + "\n");
+        System.out.println("--------------------------------");
         CaseG();
-        System.out.println("\n" + "=".repeat(50) + "\n");
+        System.out.println("--------------------------------");
         CaseH();
-        System.out.println("\n" + "=".repeat(50) + "\n");
+        System.out.println("--------------------------------");
         CaseI();
-        System.out.println("\n" + "=".repeat(50) + "\n");
+        System.out.println("--------------------------------");
         CaseJ();
-        System.out.println("\n==================================================\n");
+        System.out.println("--------------------------------");
         CaseK();
-        System.out.println("\n==================================================\n");
+        System.out.println("--------------------------------");
         CaseL();
-        System.out.println("\n==================================================\n");
+        System.out.println("--------------------------------");
         CaseM();
-        System.out.println("\n==================================================\n");
+        System.out.println("--------------------------------");
         CaseN();
-        System.out.println("\n==================================================\n");
+        System.out.println("--------------------------------");
         CaseO();
-        System.out.println("\n==================================================\n");
+        System.out.println("--------------------------------");
         CaseP();
+        System.out.println("--------------------------------");
     }
 
     private static void printPathInfo(String caseName, Position start, Position end, List<Position> path) {
@@ -87,9 +106,9 @@ public class Pathing {
         List<Position> path = PathBuilder.buildPath(start, end, emptyBlockages);
         printPathInfo("Case A - Simple Path", start, end, path);
         
-        // Visualize the path with null handling
+        // Add to collage instead of individual visualization
         List<Position> visualPath = (path != null) ? path : new ArrayList<>();
-        PathVisualizer.visualizePath(start, end, visualPath, emptyBlockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
+        PathVisualizer.addCaseToCollage("Case A - Simple Path", start, end, visualPath, emptyBlockages);
         
         System.out.println("Ended Case A Simulation");
     }
@@ -104,9 +123,9 @@ public class Pathing {
         List<Position> path = PathBuilder.buildPath(start, end, blockages);
         printPathInfo("Case B - Path with Single Blockage", start, end, path);
 
-        // Visualize the path with null handling
+        // Add to collage instead of individual visualization
         List<Position> visualPath = (path != null) ? path : new ArrayList<>();
-        PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
+        PathVisualizer.addCaseToCollage("Case B - Single Blockage", start, end, visualPath, blockages);
         
         System.out.println("Ended Case B Simulation");
     }
@@ -141,9 +160,9 @@ public class Pathing {
         List<Position> path = PathBuilder.buildPath(start, end, blockages);
         printPathInfo("Case C - Unreachable Route (Blocked by Walls)", start, end, path);
 
-        // Visualize the path with null handling
+        // Add to collage instead of individual visualization
         List<Position> visualPath = (path != null) ? path : new ArrayList<>();
-        PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
+        PathVisualizer.addCaseToCollage("Case C - Unreachable", start, end, visualPath, blockages);
         
         System.out.println("Ended Case C Simulation");
     }
@@ -196,9 +215,9 @@ public class Pathing {
         List<Position> path = PathBuilder.buildPath(start, end, blockages);
         printPathInfo("Case D - Fortress with Single Entry Point", start, end, path);
 
-        // Visualize the path with null handling
+        // Add to collage instead of individual visualization
         List<Position> visualPath = (path != null) ? path : new ArrayList<>();
-        PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
+        PathVisualizer.addCaseToCollage("Case D - Fortress", start, end, visualPath, blockages);
         
         System.out.println("Ended Case D Simulation");
     }
@@ -214,9 +233,9 @@ public class Pathing {
         List<Position> path = PathBuilder.buildPath(start, end, blockages);
         printPathInfo("Case E - Corner Start Position", start, end, path);
 
-        // Visualize the path with null handling
+        // Add to collage instead of individual visualization
         List<Position> visualPath = (path != null) ? path : new ArrayList<>();
-        PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
+        PathVisualizer.addCaseToCollage("Case E - Corner Start", start, end, visualPath, blockages);
         
         System.out.println("Ended Case E Simulation");
     }
@@ -253,54 +272,14 @@ public class Pathing {
         List<Position> path = PathBuilder.buildPath(start, end, blockages);
         printPathInfo("Case F - Maze Navigation", start, end, path);
 
-        // Visualize the path with null handling
+        // Add to collage instead of individual visualization
         List<Position> visualPath = (path != null) ? path : new ArrayList<>();
-        PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
+        PathVisualizer.addCaseToCollage("Case F - Maze", start, end, visualPath, blockages);
         
         System.out.println("Ended Case F Simulation");
     }
 
     public static void CaseG() {
-        // Narrow corridor scenario
-        Position start = new Position(10, 20);
-        Position end = new Position(40, 20);
-
-        List<PlannerBlockage> blockages = new ArrayList<>();
-        
-        // Create parallel walls forming a narrow corridor
-        blockages.add(new PlannerBlockage(0, startTime, endTime,
-            new ArrayList<>(Arrays.asList(
-                new Position(20, 15),
-                new Position(30, 15)
-            ))
-        ));
-        
-        blockages.add(new PlannerBlockage(1, startTime, endTime,
-            new ArrayList<>(Arrays.asList(
-                new Position(20, 25),
-                new Position(30, 25)
-            ))
-        ));
-        
-        // Add some obstacles in the corridor
-        blockages.add(new PlannerBlockage(2, startTime, endTime,
-            new ArrayList<>(Arrays.asList(
-                new Position(25, 15),
-                new Position(25, 19)
-            ))
-        ));
-
-        List<Position> path = PathBuilder.buildPath(start, end, blockages);
-        printPathInfo("Case G - Narrow Corridor Navigation", start, end, path);
-
-        // Visualize the path with null handling
-        List<Position> visualPath = (path != null) ? path : new ArrayList<>();
-        PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
-        
-        System.out.println("Ended Case G Simulation");
-    }
-
-    public static void CaseH() {
         // Vertex-to-vertex movement scenario
         Position start = new Position(10, 10);
         Position end = new Position(30, 30);
@@ -330,11 +309,50 @@ public class Pathing {
         ));
 
         List<Position> path = PathBuilder.buildPath(start, end, blockages);
+        printPathInfo("Case G - Vertex-to-Vertex Path", start, end, path);
+
+        // Add to collage instead of individual visualization
+        List<Position> visualPath = (path != null) ? path : new ArrayList<>();
+        PathVisualizer.addCaseToCollage("Case G - Vertex Path", start, end, visualPath, blockages);
+        
+        System.out.println("Ended Case G Simulation");
+    }
+
+    public static void CaseH() {
+        // Vertex-to-vertex movement scenario
+        Position start = new Position(10, 10);
+        Position end = new Position(30, 25);
+
+        List<PlannerBlockage> blockages = new ArrayList<>();
+        
+        // Create a pattern where the optimal path should use blockage vertices
+        blockages.add(new PlannerBlockage(0, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(20, 10),
+                new Position(20, 20)
+            ))
+        ));
+        
+        blockages.add(new PlannerBlockage(1, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(20, 20),
+                new Position(30, 20)
+            ))
+        ));
+        
+        blockages.add(new PlannerBlockage(2, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(30, 20),
+                new Position(30, 30)
+            ))
+        ));
+
+        List<Position> path = PathBuilder.buildPath(start, end, blockages);
         printPathInfo("Case H - Vertex-to-Vertex Path", start, end, path);
 
-        // Visualize the path with null handling
+        // Add to collage instead of individual visualization
         List<Position> visualPath = (path != null) ? path : new ArrayList<>();
-        PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
+        PathVisualizer.addCaseToCollage("Case H - Vertex Path", start, end, visualPath, blockages);
         
         System.out.println("Ended Case H Simulation");
     }
@@ -365,9 +383,9 @@ public class Pathing {
         List<Position> path = PathBuilder.buildPath(start, end, blockages);
         printPathInfo("Case I - Grid Boundary Path", start, end, path);
 
-        // Visualize the path with null handling
+        // Add to collage instead of individual visualization
         List<Position> visualPath = (path != null) ? path : new ArrayList<>();
-        PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
+        PathVisualizer.addCaseToCollage("Case I - Boundary", start, end, visualPath, blockages);
         
         System.out.println("Ended Case I Simulation");
     }
@@ -393,9 +411,9 @@ public class Pathing {
         List<Position> path = PathBuilder.buildPath(start, end, blockages);
         printPathInfo("Case J - End Point Caged in Square", start, end, path);
 
-        // Visualize the path with null handling
+        // Add to collage instead of individual visualization
         List<Position> visualPath = (path != null) ? path : new ArrayList<>();
-        PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
+        PathVisualizer.addCaseToCollage("Case J - Caged End", start, end, visualPath, blockages);
         
         System.out.println("Ended Case J Simulation");
     }
@@ -418,41 +436,48 @@ public class Pathing {
         List<Position> path = PathBuilder.buildPath(start, end, blockages);
         printPathInfo("Case K - Decimal Coordinate Path", start, end, path);
 
-        // Visualize the path with null handling
+        // Add to collage instead of individual visualization
         List<Position> visualPath = (path != null) ? path : new ArrayList<>();
-        PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
+        PathVisualizer.addCaseToCollage("Case K - Decimal Coords", start, end, visualPath, blockages);
         
         System.out.println("Ended Case K Simulation");
     }
 
     public static void CaseL() {
-        // Test case with decimal coordinates and multiple path options
-        Position start = new Position(3, 4.2); // Start with decimal y
-        Position end = new Position(25.8, 30); // End with decimal x
+        // Vertex-to-vertex movement scenario (swapped start/end)
+        Position start = new Position(30, 25);
+        Position end = new Position(10, 10);
 
         List<PlannerBlockage> blockages = new ArrayList<>();
         
-        // Create a more complex scenario with multiple possible paths
+        // Create a pattern where the optimal path should use blockage vertices
         blockages.add(new PlannerBlockage(0, startTime, endTime,
             new ArrayList<>(Arrays.asList(
-                new Position(15, 10),
-                new Position(15, 20)
+                new Position(20, 10),
+                new Position(20, 20)
             ))
         ));
         
         blockages.add(new PlannerBlockage(1, startTime, endTime,
             new ArrayList<>(Arrays.asList(
-                new Position(20, 15),
-                new Position(20, 25)
+                new Position(20, 20),
+                new Position(30, 20)
+            ))
+        ));
+        
+        blockages.add(new PlannerBlockage(2, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(30, 20),
+                new Position(30, 30)
             ))
         ));
 
         List<Position> path = PathBuilder.buildPath(start, end, blockages);
-        printPathInfo("Case L - Complex Decimal Coordinate Path", start, end, path);
+        printPathInfo("Case L - Vertex-to-Vertex Path (Swapped)", start, end, path);
 
-        // Visualize the path with null handling
+        // Add to collage instead of individual visualization
         List<Position> visualPath = (path != null) ? path : new ArrayList<>();
-        PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
+        PathVisualizer.addCaseToCollage("Case L - Vertex Path (Swapped)", start, end, visualPath, blockages);
         
         System.out.println("Ended Case L Simulation");
     }
@@ -489,9 +514,9 @@ public class Pathing {
         List<Position> path = PathBuilder.buildPath(start, end, blockages);
         printPathInfo("Case M - Zigzag Maze (A* Optimal Path)", start, end, path);
 
-        // Visualize the path with null handling
+        // Add to collage instead of individual visualization
         List<Position> visualPath = (path != null) ? path : new ArrayList<>();
-        PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
+        PathVisualizer.addCaseToCollage("Case M - Zigzag", start, end, visualPath, blockages);
         
         System.out.println("Ended Case M Simulation");
     }
@@ -535,9 +560,9 @@ public class Pathing {
         List<Position> path = PathBuilder.buildPath(start, end, blockages);
         printPathInfo("Case N - Complex Maze with Dead Ends (A* Navigation)", start, end, path);
 
-        // Visualize the path with null handling
+        // Add to collage instead of individual visualization
         List<Position> visualPath = (path != null) ? path : new ArrayList<>();
-        PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
+        PathVisualizer.addCaseToCollage("Case N - Complex Maze", start, end, visualPath, blockages);
         
         System.out.println("Ended Case N Simulation");
     }
@@ -581,9 +606,9 @@ public class Pathing {
         List<Position> path = PathBuilder.buildPath(start, end, blockages);
         printPathInfo("Case O - Spiral Pattern (A* Efficiency Test)", start, end, path);
 
-        // Visualize the path with null handling
+        // Add to collage instead of individual visualization
         List<Position> visualPath = (path != null) ? path : new ArrayList<>();
-        PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
+        PathVisualizer.addCaseToCollage("Case O - Spiral", start, end, visualPath, blockages);
         
         System.out.println("Ended Case O Simulation");
     }
@@ -627,9 +652,9 @@ public class Pathing {
         List<Position> path = PathBuilder.buildPath(start, end, blockages);
         printPathInfo("Case P - Multiple Equivalent Paths (A* Optimal Choice)", start, end, path);
 
-        // Visualize the path with null handling
+        // Add to collage instead of individual visualization
         List<Position> visualPath = (path != null) ? path : new ArrayList<>();
-        PathVisualizer.visualizePath(start, end, visualPath, blockages, SimulationProperties.gridLength, SimulationProperties.gridWidth);
+        PathVisualizer.addCaseToCollage("Case P - Multiple Paths", start, end, visualPath, blockages);
         
         System.out.println("Ended Case P Simulation");
     }

@@ -11,7 +11,6 @@ import pucp.pdds.backend.algos.entities.PlannerWarehouse;
 import pucp.pdds.backend.algos.entities.PlannerFailure;
 import pucp.pdds.backend.algos.entities.PlannerMaintenance;
 import pucp.pdds.backend.algos.algorithm.Node;
-import pucp.pdds.backend.algos.algorithm.OrderDeliverNode;
 import pucp.pdds.backend.algos.algorithm.Solution;
 import pucp.pdds.backend.algos.data.Indicator;
 import pucp.pdds.backend.algos.utils.Time;
@@ -107,7 +106,14 @@ public class SchedulerState {
 
     public List<PlannerBlockage> getActiveBlockages() {
         return blockages.stream()
-            .filter(blockage -> blockage.isActive(currTime, currTime.addMinutes(minutesToSimulate)))
+            .filter(blockage -> blockage.isActive(currTime))
+            .collect(Collectors.toList());
+    }
+
+    public List<PlannerBlockage> getActiveBlockagesOverTimeFrame(Time startTime, Time endTime) {
+        return blockages.stream()
+            .filter(b -> (startTime.isBefore(b.endTime) || startTime.equals(b.endTime)) && 
+                        (endTime.isAfter(b.startTime) || endTime.equals(b.startTime)))
             .collect(Collectors.toList());
     }
 
@@ -327,9 +333,6 @@ public class SchedulerState {
             }
 
             if (plannerVehicle.waitTransition > 0) {
-                if (shouldLog) {
-                    debugPrint("Vehicle " + plannerVehicle.id + " is waiting for " + plannerVehicle.waitTransition + " minutes");
-                }
                 plannerVehicle.waitTransition--;
                 continue;
             } 
@@ -344,7 +347,7 @@ public class SchedulerState {
                 // Check if at the node's position
                 if (Math.abs(plannerVehicle.position.x - nextNode.getPosition().x) > 0.2 || Math.abs(plannerVehicle.position.y - nextNode.getPosition().y) > 0.2) {
                     // Not at node yet: build path to it
-                    plannerVehicle.currentPath = PathBuilder.buildPath(plannerVehicle.position, nextNode.getPosition(), getActiveBlockages());
+                    plannerVehicle.currentPath = PathBuilder.buildPath(plannerVehicle.position, nextNode.getPosition(), getActiveBlockagesOverTimeFrame(currTime, currTime.addMinutes(minutesToSimulate)));
                     continue;
                 }
                 // Has arrived at location

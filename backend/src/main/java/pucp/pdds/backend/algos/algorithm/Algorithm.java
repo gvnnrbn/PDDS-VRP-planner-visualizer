@@ -6,12 +6,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import pucp.pdds.backend.algos.utils.SimulationProperties;
+
 public class Algorithm {
     // Hyperparameters
-    private static int maxTimeMs = 20 * 1000;
-    private static int maxNoImprovement = 10;
-    private static int maxNoImprovementFeasible = 10; 
-    private static int neighborsPerOperator = 30;
+    private static int maxTimeMs = SimulationProperties.maxTimeMs;
+    private static int maxNoImprovement = 250;
+    private static int maxNoImprovementFeasible = 250; 
+    private static int neighborsPerOperator = 50;
 
     private boolean isDebug;
     private static final Random random = new Random();
@@ -96,8 +98,6 @@ public class Algorithm {
         
         // Always return a solution, preferring feasible ones
         Solution solutionToReturn = bestFeasibleSolution != null ? bestFeasibleSolution : bestSolution;
-
-        solutionToReturn.validate();
 
         return solutionToReturn;
     }

@@ -152,8 +152,8 @@ public class PlannerBlockage implements Cloneable {
         }
     }
 
-    public boolean isActive(Time from, Time to) {
-        return (from.isBefore(endTime) || from.equals(endTime)) && (to.isAfter(startTime) || to.equals(startTime));
+    public boolean isActive(Time currTime) {
+        return currTime.isAfterOrAt(startTime) && currTime.isBeforeOrAt(endTime);
     }
 
     @Override

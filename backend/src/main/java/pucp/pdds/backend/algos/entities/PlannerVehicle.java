@@ -32,7 +32,7 @@ public class PlannerVehicle implements Cloneable {
     public PlannerFailure failure;
     public int minutesUntilFailure;
     public Time reincorporationTime;
-    
+
     // Path and node information
     public List<Position> currentPath;
     public int nextNodeIndex;
