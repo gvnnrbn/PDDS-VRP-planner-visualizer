@@ -243,7 +243,7 @@ public class SimulationVisualizer {
                         visFrame.setVisible(true); 
                     }
                     List<PlannerBlockage> activeBlockages = blockages.stream()
-                        .filter(blockage -> blockage.isActive(currentTime, currentTime.addMinutes(minutesToSimulate)))
+                        .filter(blockage -> blockage.isActive(currentTime))
                         .collect(Collectors.toList());
                     visPanel.warehouses = warehouses;
                     visPanel.updateState(vehicles, activeBlockages, deliveryNodes, refillNodes, currentTime.toString());

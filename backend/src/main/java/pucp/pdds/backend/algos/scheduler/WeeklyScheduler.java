@@ -5,8 +5,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.SynchronousQueue;
 import java.util.Map;
 import java.util.Optional;
@@ -70,7 +68,7 @@ public class WeeklyScheduler implements Runnable {
                             state.getActiveVehicles(), 
                             state.getActiveOrders(), 
                             state.getWarehouses(), 
-                            state.getActiveBlockages(), 
+                            state.getActiveBlockagesOverTimeFrame(state.getCurrTime(), state.getCurrTime().addMinutes(state.minutesToSimulate)), 
                             state.getFailures(), 
                             state.getActiveMaintenances(), 
                             state.getCurrTime(), 
@@ -78,16 +76,6 @@ public class WeeklyScheduler implements Runnable {
                         );
                         Algorithm algorithm = new Algorithm(true);
                         Solution sol = algorithm.run(environment, state.minutesToSimulate);
-                        System.out.println("======================================");
-                        System.out.println("For environment at " + state.getCurrTime() + ":");
-                        System.out.println(environment);
-                        if (sol.isFeasible()) {
-                            System.out.println("I can guarantee there's a feasible solution:");
-                            System.out.println(sol);
-                        } else {
-                            System.out.println("I can't guarantee there's a feasible solution:");
-                        }
-                        System.out.println("======================================");
                         solutionQueue.put(sol);
                     }
                 } catch (InterruptedException e) {
@@ -117,7 +105,7 @@ public class WeeklyScheduler implements Runnable {
             initialState.getActiveVehicles(), 
             initialState.getActiveOrders(), 
             initialState.getWarehouses(), 
-            initialState.getActiveBlockages(), 
+            initialState.getActiveBlockagesOverTimeFrame(initialState.getCurrTime(), initialState.getCurrTime().addMinutes(initialState.minutesToSimulate)), 
             initialState.getFailures(), 
             initialState.getActiveMaintenances(), 
             initialState.getCurrTime(), 
