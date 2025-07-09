@@ -12,23 +12,28 @@ export const IncidenciaCard = ({
     onClick,
 }:IncidenciaCardProps) => {
     let cardColor;
-    let isFocus = false;
     let isEstimada = false;
     let estadoText = '';
     const primaryTextSize = 18;
     //console.log('➡️ Estado recibido:', JSON.stringify(incidencia.estado), ` desde ${incidencia.fechaInicio}`);
     switch(incidencia.estado.toUpperCase()){
-        case 'ACTIVE': 
+        case 'EN CURSO': 
             estadoText = 'En curso';
             cardColor = '#FFCFCF';
             break;
-        case 'FINISHED':
+        case 'RESUELTA':
             estadoText = 'Resuelta';
             cardColor = '#C4C4C4'
-            isFocus = true;
+            break;
+        case 'INMINENTE':
+            estadoText = 'Inminente';
+            cardColor = 'white';
+            isEstimada=true;
             break;
         default:
-            cardColor = 'white';
+            estadoText = incidencia.estado;
+            isEstimada=true;
+            cardColor = 'gray.100';
             break;
     }
   return (<>
@@ -56,28 +61,20 @@ export const IncidenciaCard = ({
                 }
                 
             </Box>
-            <Box>
-            {!isFocus 
-                ? 
-                <Button disabled={isFocus} size='sm' gap={1} variant='primary' onClick={onClick}>
-                Enfocar
-                <FontAwesomeIcon icon={faArrowsToDot} />
-                </Button>
-                :
-                <></>}
-            </Box>
         </Flex>
         <Flex gap={1} color='grey' fontSize={14}>
         {isEstimada 
         ?
-            <Text id='tipo'>Incidente tipo {incidencia.tipo.replace("TI", "")}</Text>
+        <>
+            <Text id='tipo'>Incidente Tipo {incidencia.tipo.replace("Ti", "")}</Text>
+        </>
             :
             <>
             <Text id='placa'>{incidencia.placa}</Text>
             |
             <Text id='fechaFin'>Fin: {incidencia.fechaFin}</Text>
             |
-            <Text id='tipo'>Incidente Tipo {incidencia.tipo.replace("TI", "")}</Text>
+            <Text id='tipo'>Incidente Tipo {incidencia.tipo.replace("Ti", "")}</Text>
             </>
         }
         </Flex>

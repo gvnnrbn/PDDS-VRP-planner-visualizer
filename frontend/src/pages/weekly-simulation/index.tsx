@@ -17,6 +17,7 @@ import { useSimulation } from '../../components/common/SimulationContextSemanal'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faFilter, faSort } from '@fortawesome/free-solid-svg-icons'
 import { AlmacenCard } from '../../components/common/cards/AlmacenCard'
+import type { IndicadoresSimulado } from '../../core/types/indicadores'
 
 const ORDER_OPTIONS = [
   { label: 'Tiempo de llegada más cercano', value: 'fechaLimite-asc' },
@@ -246,22 +247,6 @@ export default function WeeklySimulation() {
   const [highlightedAlmacenId, setHighlightedAlmacenId] = useState<number | null>(null);
   const almacenSectionRef = useRef<HTMLDivElement>(null);
 
-  // Permitir que desde fuera se pueda enfocar una card de almacén
-  useEffect(() => {
-    (window as any).focusAlmacenCard = (idAlmacen: number) => {
-      setSection('Almacén');
-      setHighlightedAlmacenId(idAlmacen);
-      setTimeout(() => setHighlightedAlmacenId(null), 2000);
-      // Scroll a la card si es posible
-      setTimeout(() => {
-        const card = document.getElementById(`almacen-card-${idAlmacen}`);
-        if (card) {
-          card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-      }, 100);
-    };
-  }, []);
-
   const AlmacenSection = () => {
     const { currentMinuteData } = useSimulation();
     const focusOnAlmacen = (almacen: any) => {
@@ -366,13 +351,39 @@ const IndicadoresSection = () => {
 
   const [section, setSection] = useState(sections[0].title);
   const { currentMinuteData, setCurrentMinuteData } = useSimulation();
+  const ignoreCollapseEffectRef = useRef(false);
+
+  // Permitir que desde fuera se pueda enfocar una card de almacén
+  useEffect(() => {
+    (window as any).focusAlmacenCard = (idAlmacen: number) => {
+      ignoreCollapseEffectRef.current = true;
+      if(isCollapsed){
+        setIsCollapsed(false);
+        console.log('Abriendo panel de secciones');
+      }
+      setSection('Almacén');
+      setHighlightedAlmacenId(idAlmacen);
+      setTimeout(() => setHighlightedAlmacenId(null), 2000);
+      // Scroll a la card si es posible
+      setTimeout(() => {
+        const card = document.getElementById(`almacen-card-${idAlmacen}`);
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }, 100);
+    };
+  }, []);
 
   const handleSectionChange = (section: string) => {
     setSection(section)
   }
   useEffect(() => {
-    if(isCollapsed){
-      setSection('')
+    if (isCollapsed) {
+      if (ignoreCollapseEffectRef.current) {
+        ignoreCollapseEffectRef.current = false;
+        return;
+      }
+      setSection('');
     }
   }, [isCollapsed]);
 

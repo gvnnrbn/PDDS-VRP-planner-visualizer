@@ -282,7 +282,7 @@ public class WeeklyScheduler implements Runnable {
         var almacenes = DataChunk.convertWarehousesToDataChunk(state.getWarehouses());
         var vehiculos = DataChunk.convertVehiclesToDataChunk(state.getVehicles(), sol.routes);
         var pedidos = DataChunk.convertOrdersToDataChunk(state.getPastOrders(), state.getVehicles(), sol.routes, state.getCurrTime());
-        var incidencias = DataChunk.convertIncidentsToDataChunk(state.getFailures());
+        var incidencias = DataChunk.convertIncidentsToDataChunk(state.getFailures(), state.getCurrTime());
         var mantenimientos = DataChunk.convertMaintenancesToDataChunk(state.getActiveMaintenances());
         var bloqueos = DataChunk.convertBlockagesToDataChunk(state.getActiveBlockages());
         var indicadores = DataChunk.convertIndicatorsToDataChunk(state.getActiveIndicators());

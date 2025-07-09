@@ -756,7 +756,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps & { onVehicul
   const [selectedWarehouse, setSelectedWarehouse] = useState<any | null>(null);
   const [warehousePanelPos, setWarehousePanelPos] = useState<{ left: number; top: number } | null>(null);
 
-  const [selectedPedido, setSelectedPedido] = useState<any | null>(null);
+  const [selectedPedido, setSelectedPedido] = useState<PedidoSimulado | null>(null);
   const [pedidoPanelPos, setPedidoPanelPos] = useState<{ left: number; top: number } | null>(null);
 
   const clearAllSelections = () => {
@@ -1082,17 +1082,17 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps & { onVehicul
             zIndex={1000}
             minW="200px"
           >
-            <Flex justify="space-between" align="center" mb={2}>
-              <Text fontWeight="bold">Vehículo</Text>
+            <Flex justify="space-between" align="center" mb={0}>
+              <Text fontWeight="bold">Vehículo {selectedVehicle.placa}</Text>
               <Button size="xs" onClick={() => setSelectedVehicle(null)} variant="ghost" colorScheme="red">
                 ✕
               </Button>
             </Flex>
-            <Text>ID: {selectedVehicle.idVehiculo}</Text>
-            <Text>Placa: {selectedVehicle.placa}</Text>
-            <Text>Estado: {estadoVehiculo}</Text>
-            <Text>Combustible: {selectedVehicle.combustible} L</Text>
-            <Text>GLP: {selectedVehicle.currGLP} m3</Text>
+            {/* <Text>ID: {selectedVehicle.idVehiculo}</Text> */}
+            <Text color={'purple.100'}>{estadoVehiculo}</Text>
+            {/* <Text>Placa: </Text> */}
+            <Text>Combustible: {selectedVehicle.combustible} Gal.</Text>
+            <Text>GLP: {selectedVehicle.currGLP>0?selectedVehicle.currGLP:0} m3</Text>
             {/* <Text>Posición: ({selectedVehicle.posicionX}, {selectedVehicle.posicionY})</Text> */}
             <Button variant={'primary'} size={'sm'} onClick={onOpenAveria} mt={2}>
               Registrar Avería
@@ -1101,27 +1101,39 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps & { onVehicul
         )}
         {selectedWarehouse && warehousePanelPos && (
           <Box style={panelStyles(warehousePanelPos)}>
-            <Flex justify="space-between" align="center" mb={2}>
-              <Text fontWeight="bold">Almacén</Text>
+            <Flex justify="space-between" align="center" mb={0}>
+              {selectedWarehouse.isMain ? (
+                <Text fontWeight="bold">Almacén principal</Text>
+              ) : (
+                <Text fontWeight="bold">
+                  {selectedWarehouse.posicion.posX === 42 && selectedWarehouse.posicion.posY === 42
+                    ? 'Almacén Norte'
+                    : selectedWarehouse.posicion.posX === 63 && selectedWarehouse.posicion.posY === 3
+                    ? 'Almacén Este'
+                    : 'Almacén Intermedio'}
+                </Text>
+              )}
               <Button
                 size="xs"
                 onClick={() => setSelectedWarehouse(null)}
                 variant="ghost"
                 colorScheme="red"
+                mt={2}
               >
                 ✕
               </Button>
             </Flex>
-            <Text>ID: {selectedWarehouse.idAlmacen}</Text>
+            {/* <Text>ID: {selectedWarehouse.idAlmacen}</Text> */}
             {selectedWarehouse.isMain ? (
               <>
-                <Text fontStyle="italic">Almacén Principal</Text>
+                {/* <Text fontStyle="italic">Almacén Principal</Text> */}
                 <Text>Capacidad: Infinita</Text>
               </>
             ) : (
               <>
-                <Text>GLP Actual: {selectedWarehouse.currentGLP}</Text>
-                <Text>Capacidad Máx: {selectedWarehouse.maxGLP}</Text>
+                
+                <Text>GLP: {selectedWarehouse.currentGLP>0?selectedWarehouse.currentGLP:0}/{selectedWarehouse.maxGLP}</Text>
+                {/* <Text>Capacidad Máx: </Text> */}
               </>
             )}
             <Button
@@ -1146,15 +1158,19 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps & { onVehicul
 
         {selectedPedido && pedidoPanelPos && (
           <Box style={panelStyles(pedidoPanelPos)}>
-            <Flex justify="space-between" align="center" mb={2}>
-              <Text fontWeight="bold">Pedido</Text>
+            <Flex justify="space-between" align="center" mb={0}>
+                {selectedPedido && (
+                <Text fontWeight="bold">
+                  Pedido {`PE${selectedPedido.idPedido.toString().padStart(3, '0')}`}
+                </Text>
+                )}
               <Button size="xs" onClick={() => setSelectedPedido(null)} variant="ghost" colorScheme="red">
                 ✕
               </Button>
             </Flex>
-            <Text>ID Pedido: {selectedPedido.idPedido}</Text>
-            <Text>Estado: {selectedPedido.estado}</Text>
+            <Text color={'purple.100'}>{selectedPedido.estado}</Text>
             <Text>GLP: {selectedPedido.glp}</Text>
+            <Text>Entregar antes de: {selectedPedido.fechaLimite}</Text>
           </Box>
         )}
         <ModalInsertAveria

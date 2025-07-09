@@ -45,6 +45,7 @@ const BottomLeftControls: React.FC<BottomLeftControlsProps> = ({
 
 
     const location = useLocation();
+    const isDiaADiaRoute = location.pathname.includes("dia-a-dia");
 
     return (
         <Flex
@@ -76,31 +77,32 @@ const BottomLeftControls: React.FC<BottomLeftControlsProps> = ({
                         }
                 </Box>
                 )}
-            <Box mt={0}>
-
-                {isSimulating && (
+            {!isDiaADiaRoute && (
+                <Box mt={0}>
+                    {isSimulating && (
                     <Button
                         colorScheme="red"
                         size="s"
                         p={3}
                         onClick={onStop}
+                        mt={20}
                     >
                         Detener Simulación
                     </Button>
-                )}
-                {!isSimulating &&
-                    (
+                    )}
+                    {!isSimulating && (
                     <Button
                         colorScheme="green"
                         size="s"
                         p={3}
                         onClick={onIniciarSimulacion}
+                        mt={20}
                     >
                         Iniciar Simulación
                     </Button>
-                    )
-                }
-            </Box>
+                    )}
+                </Box>
+                )}
 
             {showSpeed && (
                 <Box
