@@ -84,6 +84,7 @@ const BottomLeftControls: React.FC<BottomLeftControlsProps> = ({
                         size="s"
                         p={3}
                         onClick={onStop}
+                        mt={20}
                     >
                         Detener Simulación
                     </Button>
@@ -95,6 +96,7 @@ const BottomLeftControls: React.FC<BottomLeftControlsProps> = ({
                         size="s"
                         p={3}
                         onClick={onIniciarSimulacion}
+                        mt={20}
                     >
                         Iniciar Simulación
                     </Button>
