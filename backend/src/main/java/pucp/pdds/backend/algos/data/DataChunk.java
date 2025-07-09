@@ -6,6 +6,8 @@ import java.time.LocalDateTime;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import pucp.pdds.backend.algos.algorithm.Node;
+import pucp.pdds.backend.algos.entities.PlannerFailure;
+import pucp.pdds.backend.algos.utils.Time;
 
 public class DataChunk {
     public LocalDateTime fechaInicio;
@@ -448,18 +450,86 @@ public class DataChunk {
     }
 
     public static List<Incidencia> convertIncidentsToDataChunk(
-            List<pucp.pdds.backend.algos.entities.PlannerFailure> failures) {
+        List<PlannerFailure> failures,
+        Time currTime
+    ) {
         List<Incidencia> incidencias = new ArrayList<>();
         // Add failures as incidents
-        failures.forEach(failure -> incidencias.add(new Incidencia(
-            failure.id,
-            failure.timeOccuredOn != null ? failure.timeOccuredOn.toString() : "",
-            failure.timeOccuredOn != null ? failure.timeOccuredOn.toString() : "",
-            failure.shiftOccurredOn != null ? failure.shiftOccurredOn.toString() : "",
-            failure.type != null ? failure.type.toString() : "",
-            failure.vehiclePlaque,
-            failure.timeOccuredOn != null ? "FINISHED" : "ACTIVE"
-        )));
+		for(PlannerFailure f : failures){
+            String failureState = "";
+            Time reincorporationTime = null;
+			if(f.timeOccuredOn!=null){
+                // if(f.timeOccuredOn.isAfterOrAt(currTime)){
+                    switch (f.type) {
+                        case Ti1:
+                            reincorporationTime = new Time(f.timeOccuredOn).addMinutes(120);
+                            break;
+                        case Ti2:						
+                            // Determine reincorporation time based on the shift
+                            switch (f.shiftOccurredOn) {
+                                case T1:  // 00:00-08:00
+                                    // Available in T3 of same day
+                                    reincorporationTime = new Time(
+                                        f.timeOccuredOn.getYear(),
+                                        f.timeOccuredOn.getMonth(),
+                                        f.timeOccuredOn.getDay(),
+                                        16,  // T3 starts at 16:00
+                                        0
+                                    );
+                                    break;
+                                case T2:  // 08:00-16:00
+                                    // Available in T1 of next day
+                                    reincorporationTime = new Time(
+                                        f.timeOccuredOn.getYear(),
+                                        f.timeOccuredOn.getMonth(),
+                                        f.timeOccuredOn.getDay() + 1,
+                                        0,  // T1 starts at 00:00
+                                        0
+                                    );
+                                    break;
+                                case T3:  // 16:00-24:00
+                                    // Available in T2 of next day
+                                    reincorporationTime = new Time(
+                                        f.timeOccuredOn.getYear(),
+                                        f.timeOccuredOn.getMonth(),
+                                        f.timeOccuredOn.getDay() + 1,
+                                        8,  // T2 starts at 08:00
+                                        0
+                                    );
+                                    break;
+                                default:
+                                    throw new RuntimeException("Invalid shift");
+                            }
+                            break;
+                        case Ti3:
+                            reincorporationTime = new Time(
+                                f.timeOccuredOn.getYear(),
+                                f.timeOccuredOn.getMonth(),
+                                f.timeOccuredOn.getDay() + 2,
+                                0,
+                                0
+                            );
+                            break;
+                        }
+                        failureState = currTime.isAfterOrAt(f.timeOccuredOn) & reincorporationTime.isAfterOrAt(currTime) ? "EN CURSO" 
+                        : currTime.isBefore(f.timeOccuredOn) ? "INMINENTE" : "RESUELTA";
+                // } else {
+                //     failureState = "INMINENTE";
+                // }
+			}
+			else{
+				failureState = "INMINENTE";
+			}
+            incidencias.add(new Incidencia(
+                f.id,
+                f.timeOccuredOn != null ? f.timeOccuredOn.toString() : "",
+                reincorporationTime != null ? reincorporationTime.toString() : "",
+                f.shiftOccurredOn != null ? f.shiftOccurredOn.toString() : "",
+                f.type != null ? f.type.toString() : "",
+                f.vehiclePlaque,
+                failureState
+            ));
+		}
         return incidencias;
     }
 

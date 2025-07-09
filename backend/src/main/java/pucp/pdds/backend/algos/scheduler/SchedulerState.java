@@ -225,7 +225,7 @@ public class SchedulerState {
                     throw new RuntimeException("No main warehouse found");
                 }
                 List<Position> path = PathBuilder.buildPath(plannerVehicle.position, mainWarehouse.position, getActiveBlockages());
-
+                Time reincorporationTime;
                 switch (plannerVehicle.currentFailure.type) {
                     case Ti1:
                         plannerVehicle.state = PlannerVehicle.VehicleState.IDLE;
@@ -233,12 +233,19 @@ public class SchedulerState {
                         if (shouldLog) {
                             debugPrint("Vehicle " + plannerVehicle.id + " has recovered from failure of type Ti1");
                         }
+                        reincorporationTime = new Time(
+                            plannerVehicle.currentFailure.timeOccuredOn.getYear(),
+                            plannerVehicle.currentFailure.timeOccuredOn.getMonth(),
+                            plannerVehicle.currentFailure.timeOccuredOn.getDay(),
+                            plannerVehicle.currentFailure.timeOccuredOn.getHour(),
+                            plannerVehicle.currentFailure.timeOccuredOn.getMinute()
+                        ).addMinutes(120);
+
+                        plannerVehicle.reincorporationTime = reincorporationTime;
                         break;
                     case Ti2:
                         plannerVehicle.state = PlannerVehicle.VehicleState.RETURNING_TO_BASE;
                         Time failureTime = plannerVehicle.currentFailure.timeOccuredOn;
-                        Time reincorporationTime;
-                        
                         // Determine reincorporation time based on the shift
                         switch (plannerVehicle.currentFailure.shiftOccurredOn) {
                             case T1:  // 00:00-08:00
