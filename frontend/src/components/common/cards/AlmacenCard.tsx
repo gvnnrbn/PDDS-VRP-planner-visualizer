@@ -25,7 +25,14 @@ export const AlmacenCard = ({ almacen, onFocus, vehiculos = {}, highlighted = fa
     >
       <Flex align="center" justify="space-between" mb={1}>
         <Text fontWeight={600} fontSize={18} color="purple.700">
-          Almacén {almacen.idAlmacen} {almacen.isMain && <Badge colorScheme="purple">Principal</Badge>}
+          {almacen.isMain
+            ? 'Almacén Principal'
+            : almacen.posicion?.posX === 42 && almacen.posicion?.posY === 42
+            ? 'Almacén Norte'
+            : almacen.posicion?.posX === 63 && almacen.posicion?.posY === 3
+            ? 'Almacén Este'
+            : 'Almacén Intermedio'}
+          {/* {almacen.isMain && <Badge colorScheme="purple" ml={2}>Principal</Badge>} */}
         </Text>
         <Button size="sm" colorScheme="purple" variant="solid" onClick={onFocus}>
           Enfocar

@@ -233,7 +233,6 @@ const PedidosSection = () => {
     return (
       <Box>
         <VStack spacing={4} align="stretch">
-          {/* <PanelSearchBar onSubmit={() => console.log('searching...')} /> */}
           {/* Modal para crear avería */}
           {/* <ModalInsertAveria
             isOpen={isOpen}
@@ -270,7 +269,6 @@ const PedidosSection = () => {
     return (
       <Box>
         <VStack spacing={4} align="stretch">
-          <PanelSearchBar onSubmit={() => console.log('searching...')} />
           {currentMinuteData?.mantenimientos?.map((m) => (
             <MantenimientoCard key={m.idMantenimiento} mantenimiento={m} onClick={()=>console.log('enfocando...')}/>
           ))}
