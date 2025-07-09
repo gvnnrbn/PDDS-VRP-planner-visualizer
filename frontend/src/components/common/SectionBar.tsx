@@ -22,7 +22,8 @@ export const SectionBar = ({
 }: SectionBarProps) => {
   const selectedColor = useColorModeValue('#E5E5E5', '#1a1a1a')
   const notSelectedColor = useColorModeValue('#BDBDBD', '#BDBDBD')
-  
+  const currentIndex = sections.findIndex((section) => section.title === currentSection);
+
   return (
     <Flex
       position="absolute"
@@ -41,7 +42,7 @@ export const SectionBar = ({
         variant='enclosed' 
         orientation='vertical' 
         h='full' 
-
+        index={currentIndex}
       >
         <TabList 
           aria-orientation='vertical'
@@ -64,7 +65,8 @@ export const SectionBar = ({
                 }
               }
             }}
-            bg={currentSection === section.title ? selectedColor : notSelectedColor}
+            bg={currentSection === section.title && !isCollapsed ? selectedColor : notSelectedColor}
+            fontWeight={currentSection === section.title && !isCollapsed ? 'bold' : 'normal'}
             borderTopRightRadius='10px'
             borderBottomRightRadius='10px'
             borderTopLeftRadius='0'
