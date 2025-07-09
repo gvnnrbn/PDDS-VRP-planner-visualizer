@@ -162,7 +162,7 @@ public class WeeklyScheduler implements Runnable {
                 state.initializeVehicles();
                 stateLock.unlock();
 
-                for (int iteration = 0; iteration < state.minutesToSimulate && isRunning && !Thread.currentThread().isInterrupted(); iteration++) {
+                for (int iteration = 0; iteration < state.minutesToSimulate && state.getCurrTime().isBefore(endSimulationTime) && isRunning && !Thread.currentThread().isInterrupted(); iteration++) {
                     stateLock.lock();
                     state.advance(sol, true);
                     onAfterExecution(iteration, sol);

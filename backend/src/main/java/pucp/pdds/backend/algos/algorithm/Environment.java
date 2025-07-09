@@ -131,25 +131,40 @@ public class Environment {
         int totalGLPToRefill = totalGLP - totalGLPInVehicles;
         int totalAssignableGLP = (int) (totalGLPToRefill * 2);
 
-        // Round robin to assign GLP from the warehouses
-        int currentWarehouseIndex = 0;
+        // Separate non-main and main warehouses
+        List<PlannerWarehouse> nonMainWarehouses = warehousesCopy.stream()
+            .filter(w -> !w.isMain)
+            .collect(Collectors.toList());
+        List<PlannerWarehouse> mainWarehouses = warehousesCopy.stream()
+            .filter(w -> w.isMain)
+            .collect(Collectors.toList());
 
-        while (totalAssignableGLP > 0) {
-            PlannerWarehouse currentWarehouse = warehousesCopy.get(currentWarehouseIndex);
-            int warehouseGLP = currentWarehouse.currentGLP;
-
-            if (warehouseGLP > 0) {
-                int assignableGLP = Math.min(warehouseGLP, ProductRefillNode.chunkSize);
+        // First, exhaust all secondary warehouses
+        for (PlannerWarehouse warehouse : nonMainWarehouses) {
+            while (totalAssignableGLP > 0 && warehouse.currentGLP > 0) {
+                int assignableGLP = Math.min(warehouse.currentGLP, ProductRefillNode.chunkSize);
                 assignableGLP = Math.min(assignableGLP, totalAssignableGLP);
 
                 // Create refill nodes in smaller chunks to allow for more frequent refueling
                 int refillChunkSize = Math.min(assignableGLP, ProductRefillNode.chunkSize);
-                nodes.add(new ProductRefillNode(nodeSerial++, currentWarehouse, refillChunkSize));
-                warehouseGLP -= refillChunkSize;
+                nodes.add(new ProductRefillNode(nodeSerial++, warehouse, refillChunkSize));
+                warehouse.currentGLP -= refillChunkSize;
                 totalAssignableGLP -= refillChunkSize;
             }
+        }
 
-            currentWarehouseIndex = (currentWarehouseIndex + 1) % warehousesCopy.size();
+        // Only then, use main warehouses if secondary warehouses are exhausted
+        for (PlannerWarehouse warehouse : mainWarehouses) {
+            while (totalAssignableGLP > 0 && warehouse.currentGLP > 0) {
+                int assignableGLP = Math.min(warehouse.currentGLP, ProductRefillNode.chunkSize);
+                assignableGLP = Math.min(assignableGLP, totalAssignableGLP);
+
+                // Create refill nodes in smaller chunks to allow for more frequent refueling
+                int refillChunkSize = Math.min(assignableGLP, ProductRefillNode.chunkSize);
+                nodes.add(new ProductRefillNode(nodeSerial++, warehouse, refillChunkSize));
+                warehouse.currentGLP -= refillChunkSize;
+                totalAssignableGLP -= refillChunkSize;
+            }
         }
 
         // Add final nodes
@@ -201,13 +216,39 @@ public class Environment {
             solution.routes.get(vehicle.id).add(initialPositionNode);
         }
 
-        // Randomly assign nodes to vehicles
+        // Separate order nodes from refill nodes
+        List<Node> orderNodes = nodesPool.stream()
+            .filter(node -> node instanceof OrderDeliverNode)
+            .collect(Collectors.toCollection(ArrayList::new));
+        
+        List<Node> refillNodes = nodesPool.stream()
+            .filter(node -> node instanceof ProductRefillNode)
+            .collect(Collectors.toCollection(ArrayList::new));
+
+        // Assign order nodes to their nearest vehicles
         Random random = new Random();
-        while (nodesPool.size() > 0) {
+        for (Node orderNode : orderNodes) {
+            // Calculate distances from order position to all vehicle initial positions
+            List<PlannerVehicle> sortedVehicles = this.vehicles.stream()
+                .sorted((v1, v2) -> {
+                    double dist1 = this.getDistances().get(orderNode.getPosition()).get(v1.initialPosition);
+                    double dist2 = this.getDistances().get(orderNode.getPosition()).get(v2.initialPosition);
+                    return Double.compare(dist1, dist2);
+                })
+                .collect(Collectors.toList());
+
+            // Select from top 3-4-5 nearest vehicles (randomly choose how many to consider)
+            int topK = 3 + (int)(Math.random() * 3); // Randomly choose 3, 4, or 5
+            int selectedVehicleIndex = random.nextInt(Math.min(topK, sortedVehicles.size()));
+            PlannerVehicle selectedVehicle = sortedVehicles.get(selectedVehicleIndex);
+            
+            solution.routes.get(selectedVehicle.id).add(orderNode);
+        }
+
+        // Randomly assign refill nodes to vehicles
+        for (Node refillNode : refillNodes) {
             PlannerVehicle vehicle = this.vehicles.get(random.nextInt(this.vehicles.size()));
-            Node node = nodesPool.get(random.nextInt(nodesPool.size()));
-            solution.routes.get(vehicle.id).add(node);
-            nodesPool.remove(node);
+            solution.routes.get(vehicle.id).add(refillNode);
         }
 
         // Add final nodes to each route
