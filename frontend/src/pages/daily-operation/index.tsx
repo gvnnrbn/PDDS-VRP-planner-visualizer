@@ -167,39 +167,38 @@ const PedidosSection = () => {
 
 export default function DailyOperation() {
   const bgColor = useColorModeValue('white', '#1a1a1a')
-  const [currentSection, setCurrentSection] = useState('Pedidos')
   const [isCollapsed, setIsCollapsed] = useState(false)
   /*
      * HANDLE PANEL SECTIONS
      */
-    const FlotaSection = () => {
-      const { operationData } = useOperacion();
-  
-      return (
-        <Box>
-          <VStack spacing={4} align="stretch">
-            {/* <PanelSearchBar onSubmit={() => console.log('searching...')} /> */}
-            {operationData?.vehiculos?.map((v) => (
-              <FlotaCard key={v.idVehiculo} vehiculo={v} onClick={()=>console.log('enfocando...')}/>
-            ))}
-          </VStack>
-        </Box>
-      );
-    };
-  
-    const AveriaSection = () => {
-      const { operationData } = useOperacion();
-      const { onClose } = useDisclosure();
-      const incidenciaService = new IncidenciaService();
-      const toast = useToast();
-      // const inputRef = useRef<HTMLInputElement>(null); // unused
-  
-      return (
-        <Box>
-          <VStack spacing={4} align="stretch">
-            {/* <PanelSearchBar onSubmit={() => console.log('searching...')} /> */}
-            {/* Modal para crear avería */}
-            {/* <ModalInsertAveria
+  const FlotaSection = () => {
+    const { operationData } = useOperacion();
+
+    return (
+      <Box>
+        <VStack spacing={4} align="stretch">
+          {/* <PanelSearchBar onSubmit={() => console.log('searching...')} /> */}
+          {operationData?.vehiculos?.map((v) => (
+            <FlotaCard key={v.idVehiculo} vehiculo={v} onClick={() => console.log('enfocando...')} />
+          ))}
+        </VStack>
+      </Box>
+    );
+  };
+
+  const AveriaSection = () => {
+    const { operationData } = useOperacion();
+    const { onClose } = useDisclosure();
+    const incidenciaService = new IncidenciaService();
+    const toast = useToast();
+    // const inputRef = useRef<HTMLInputElement>(null); // unused
+
+    return (
+      <Box>
+        <VStack spacing={4} align="stretch">
+          {/* <PanelSearchBar onSubmit={() => console.log('searching...')} /> */}
+          {/* Modal para crear avería */}
+          {/* <ModalInsertAveria
               isOpen={isOpen}
               onClose={onClose}
               handleSubmit={handleRegister}
@@ -220,84 +219,84 @@ export default function DailyOperation() {
                 </MenuItem>
               </MenuList>
             </Menu> */}
-            {operationData?.incidencias?.map((i) => (
-              <IncidenciaCard key={i.idIncidencia} incidencia={i} onClick={()=>console.log('enfocando...')}/>
-            ))}
-          </VStack>
-        </Box>
-      );
+          {operationData?.incidencias?.map((i) => (
+            <IncidenciaCard key={i.idIncidencia} incidencia={i} onClick={() => console.log('enfocando...')} />
+          ))}
+        </VStack>
+      </Box>
+    );
+  };
+
+  const MantenimientoSection = () => {
+    const { operationData } = useOperacion();
+
+    return (
+      <Box>
+        <VStack spacing={4} align="stretch">
+          <PanelSearchBar onSubmit={() => console.log('searching...')} />
+          {operationData?.mantenimientos?.map((m) => (
+            <MantenimientoCard key={m.idMantenimiento} mantenimiento={m} onClick={() => console.log('enfocando...')} />
+          ))}
+        </VStack>
+      </Box>
+    );
+  };
+
+  const [vehiculosPorAlmacen, setVehiculosPorAlmacen] = useState<Record<number, Record<string, number>>>({});
+
+  const [highlightedAlmacenId, setHighlightedAlmacenId] = useState<number | null>(null);
+  const almacenSectionRef = useRef<HTMLDivElement>(null);
+
+  // Permitir que desde fuera se pueda enfocar una card de almacén
+  useEffect(() => {
+    (window as any).focusAlmacenCard = (idAlmacen: number) => {
+      setSection('Almacén');
+      setHighlightedAlmacenId(idAlmacen);
+      setTimeout(() => setHighlightedAlmacenId(null), 2000);
+      // Scroll a la card si es posible
+      setTimeout(() => {
+        const card = document.getElementById(`almacen-card-${idAlmacen}`);
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }, 100);
     };
-  
-    const MantenimientoSection = () => {
-      const { operationData } = useOperacion();
-  
-      return (
-        <Box>
-          <VStack spacing={4} align="stretch">
-            <PanelSearchBar onSubmit={() => console.log('searching...')} />
-            {operationData?.mantenimientos?.map((m) => (
-              <MantenimientoCard key={m.idMantenimiento} mantenimiento={m} onClick={()=>console.log('enfocando...')}/>
-            ))}
-          </VStack>
-        </Box>
-      );
+  }, []);
+
+  const AlmacenSection = () => {
+    const { operationData } = useOperacion();
+    const focusOnAlmacen = (almacen: any) => {
+      (window as any).highlightedWarehouseId = almacen.idAlmacen;
+      setTimeout(() => {
+        (window as any).highlightedWarehouseId = undefined;
+      }, 3000);
     };
-  
-    const [vehiculosPorAlmacen, setVehiculosPorAlmacen] = useState<Record<number, Record<string, number>>>({});
-  
-    const [highlightedAlmacenId, setHighlightedAlmacenId] = useState<number | null>(null);
-    const almacenSectionRef = useRef<HTMLDivElement>(null);
-  
-    // Permitir que desde fuera se pueda enfocar una card de almacén
-    useEffect(() => {
-      (window as any).focusAlmacenCard = (idAlmacen: number) => {
-        setSection('Almacén');
-        setHighlightedAlmacenId(idAlmacen);
-        setTimeout(() => setHighlightedAlmacenId(null), 2000);
-        // Scroll a la card si es posible
-        setTimeout(() => {
-          const card = document.getElementById(`almacen-card-${idAlmacen}`);
-          if (card) {
-            card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-          }
-        }, 100);
-      };
-    }, []);
-  
-    const AlmacenSection = () => {
-      const { operationData } = useOperacion();
-      const focusOnAlmacen = (almacen: any) => {
-        (window as any).highlightedWarehouseId = almacen.idAlmacen;
-        setTimeout(() => {
-          (window as any).highlightedWarehouseId = undefined;
-        }, 3000);
-      };
-      return (
-        <Box ref={almacenSectionRef}>
-          <VStack spacing={4} align="stretch">
-            {operationData?.almacenes?.map((almacen) => {
-              const vehiculos = vehiculosPorAlmacen[almacen.idAlmacen] || {};
-              return (
-                <AlmacenCard
-                  key={almacen.idAlmacen}
-                  almacen={almacen}
-                  onFocus={() => focusOnAlmacen(almacen)}
-                  vehiculos={vehiculos}
-                  highlighted={highlightedAlmacenId === almacen.idAlmacen}
-                  id={`almacen-card-${almacen.idAlmacen}`}
-                />
-              );
-            })}
-          </VStack>
-        </Box>
-      );
-    };
-  
+    return (
+      <Box ref={almacenSectionRef}>
+        <VStack spacing={4} align="stretch">
+          {operationData?.almacenes?.map((almacen) => {
+            const vehiculos = vehiculosPorAlmacen[almacen.idAlmacen] || {};
+            return (
+              <AlmacenCard
+                key={almacen.idAlmacen}
+                almacen={almacen}
+                onFocus={() => focusOnAlmacen(almacen)}
+                vehiculos={vehiculos}
+                highlighted={highlightedAlmacenId === almacen.idAlmacen}
+                id={`almacen-card-${almacen.idAlmacen}`}
+              />
+            );
+          })}
+        </VStack>
+      </Box>
+    );
+  };
+
   const IndicadoresSection = () => {
     const { operationData } = useOperacion();
     const [indicadoresVisibles, setIndicadoresVisibles] = useState(operationData?.indicadores);
     const lastSetTimeRef = useRef<number>(0);
-  
+
     useEffect(() => {
       const now = Date.now();
       if (
@@ -309,7 +308,7 @@ export default function DailyOperation() {
       }
       // Si no han pasado 5 segundos, no actualiza el estado y por lo tanto no re-renderiza
     }, [operationData?.indicadores]);
-  
+
     const staticIndicadores: IndicadoresSimulado = {
       fuelCounterTA: 1200,
       fuelCounterTB: 95.45,
@@ -324,7 +323,7 @@ export default function DailyOperation() {
       completedOrders: 38,
       totalOrders: 45,
     };
-  
+
     return (
       <Box>
         <VStack spacing={4} align="stretch">
@@ -338,34 +337,34 @@ export default function DailyOperation() {
       </Box>
     );
   };
-  
-    const sections = [
+
+  const sections = [
     {
       title: 'Pedidos',
-      content: <PedidosSection/>
+      content: <PedidosSection />
     },
     {
       title: 'Flota',
-      content: <FlotaSection/>
+      content: <FlotaSection />
     },
     {
       title: 'Averias',
-      content: <AveriaSection/>
+      content: <AveriaSection />
     },
     {
       title: 'Mantenimiento',
-      content: <MantenimientoSection/>
+      content: <MantenimientoSection />
     },
     {
       title: 'Almacén',
-      content: <AlmacenSection/>
+      content: <AlmacenSection />
     },
     {
       title: 'Indicadores',
-      content: <IndicadoresSection/>
+      content: <IndicadoresSection />
     },
-    ];
-  
+  ];
+
   const [section, setSection] = useState(sections[0].title);
   const { operationData, setOperationData } = useOperacion();
   const handleSectionChange = (section: string) => {
@@ -373,16 +372,15 @@ export default function DailyOperation() {
   }
 
   useEffect(() => {
-      if(isCollapsed){
-        setSection('')
-      }
-    }, [isCollapsed]);
+    if (isCollapsed) {
+      setSection('')
+    }
+  }, [isCollapsed]);
 
   return (
-    <OperacionProvider>
       <Flex height="100%" width="100%" overflowY="hidden" position="relative">
         <Box flex={1} p={0} bg={bgColor} h="full">
-            <DailyOperationControlPanel data={operationData} setData={setOperationData} />
+          <DailyOperationControlPanel data={operationData} setData={setOperationData} />
         </Box>
         <SectionBar
           sections={sections}
@@ -393,6 +391,5 @@ export default function DailyOperation() {
         />
         <LegendPanel isSidebarCollapsed={isCollapsed} />
       </Flex>
-    </OperacionProvider>
   )
 }

@@ -8,12 +8,13 @@ import type { ReactNode } from "react";
 import type { PedidoSimulado } from "../../core/types/pedido";
 import type { VehiculoSimuladoV2 } from "../../core/types/vehiculo";
 import type { IndicadoresSimulado } from "../../core/types/indicadores";
+import type { AlmacenSimulado } from "../../core/types/almacen";
 
 export interface MinutoOperacion {
   minuto: string;
   vehiculos: VehiculoSimuladoV2[];
   pedidos?: PedidoSimulado[];
-  almacenes: any[];
+  almacenes: AlmacenSimulado[];
   incidencias: any[];
   mantenimientos: any[];
   indicadores: IndicadoresSimulado
