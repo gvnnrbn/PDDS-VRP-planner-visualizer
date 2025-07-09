@@ -18,7 +18,6 @@ export const AlmacenCard = ({ almacen, onFocus, vehiculos = {}, highlighted = fa
       borderRadius="10px"
       py={3}
       px={4}
-      boxShadow="md"
       mb={2}
       border={highlighted ? '3px solid #805ad5' : '1px solid #e2e8f0'}
       transition="border 0.3s, box-shadow 0.3s"
