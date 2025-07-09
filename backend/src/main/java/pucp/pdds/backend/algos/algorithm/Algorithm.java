@@ -6,9 +6,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import pucp.pdds.backend.algos.utils.SimulationProperties;
+
 public class Algorithm {
     // Hyperparameters
-    private static int maxTimeMs = 20 * 1000;
+    private static int maxTimeMs = SimulationProperties.maxTimeMs;
     private static int maxNoImprovement = 10;
     private static int maxNoImprovementFeasible = 10; 
     private static int neighborsPerOperator = 30;

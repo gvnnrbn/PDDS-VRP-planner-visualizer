@@ -24,6 +24,7 @@ import pucp.pdds.backend.algos.algorithm.Solution;
 import pucp.pdds.backend.algos.data.DataChunk;
 import pucp.pdds.backend.algos.entities.PlannerFailure;
 import pucp.pdds.backend.algos.entities.PlannerOrder;
+import pucp.pdds.backend.algos.utils.SimulationProperties;
 import pucp.pdds.backend.algos.utils.Time;
 import pucp.pdds.backend.dto.SimulationResponse;
 import pucp.pdds.backend.dto.SimulationSummaryDTO;
@@ -180,7 +181,7 @@ public class WeeklyScheduler implements Runnable {
                     stateLock.unlock();
 
                     try {
-                        Thread.sleep(250);
+                        Thread.sleep(SimulationProperties.msPerMinute);
                     } catch (InterruptedException e) {
                         isRunning = false;
                         Thread.currentThread().interrupt();
