@@ -264,41 +264,40 @@ public class Pathing {
     }
 
     public static void CaseG() {
-        // Narrow corridor scenario
-        Position start = new Position(10, 20);
-        Position end = new Position(40, 20);
+        // Vertex-to-vertex movement scenario
+        Position start = new Position(10, 10);
+        Position end = new Position(30, 30);
 
         List<PlannerBlockage> blockages = new ArrayList<>();
         
-        // Create parallel walls forming a narrow corridor
+        // Create a pattern where the optimal path should use blockage vertices
         blockages.add(new PlannerBlockage(0, startTime, endTime,
             new ArrayList<>(Arrays.asList(
-                new Position(20, 15),
-                new Position(30, 15)
+                new Position(20, 10),
+                new Position(20, 20)
             ))
         ));
         
         blockages.add(new PlannerBlockage(1, startTime, endTime,
             new ArrayList<>(Arrays.asList(
-                new Position(20, 25),
-                new Position(30, 25)
+                new Position(20, 20),
+                new Position(30, 20)
             ))
         ));
         
-        // Add some obstacles in the corridor
         blockages.add(new PlannerBlockage(2, startTime, endTime,
             new ArrayList<>(Arrays.asList(
-                new Position(25, 15),
-                new Position(25, 19)
+                new Position(30, 20),
+                new Position(30, 30)
             ))
         ));
 
         List<Position> path = PathBuilder.buildPath(start, end, blockages);
-        printPathInfo("Case G - Narrow Corridor Navigation", start, end, path);
+        printPathInfo("Case G - Vertex-to-Vertex Path", start, end, path);
 
         // Add to collage instead of individual visualization
         List<Position> visualPath = (path != null) ? path : new ArrayList<>();
-        PathVisualizer.addCaseToCollage("Case G - Corridor", start, end, visualPath, blockages);
+        PathVisualizer.addCaseToCollage("Case G - Vertex Path", start, end, visualPath, blockages);
         
         System.out.println("Ended Case G Simulation");
     }
@@ -306,7 +305,7 @@ public class Pathing {
     public static void CaseH() {
         // Vertex-to-vertex movement scenario
         Position start = new Position(10, 10);
-        Position end = new Position(30, 30);
+        Position end = new Position(30, 25);
 
         List<PlannerBlockage> blockages = new ArrayList<>();
         

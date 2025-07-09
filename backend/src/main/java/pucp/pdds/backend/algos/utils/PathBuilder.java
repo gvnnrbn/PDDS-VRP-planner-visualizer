@@ -103,48 +103,26 @@ public class PathBuilder {
         // Try Manhattan path first with integer positions
         List<Position> mainPath = buildManhattanPath(fromPos, toPos, blockages);
         if (mainPath != null) {
-            // Verify the path doesn't cross any blockages
-            if (isPathValid(mainPath, blockages)) {
-                path.addAll(mainPath);
-                // Add final non-integer position if needed
-                if (!to.isInteger()) {
-                    path.add(to);
-                }
-                return compressPath(path);
+            path.addAll(mainPath);
+            // Add final non-integer position if needed
+            if (!to.isInteger()) {
+                path.add(to);
             }
+            return compressPath(path);
         }
 
         // Try A* as a fallback with integer positions
         mainPath = buildAstarPath(fromPos, toPos, blockages);
         if (mainPath != null) {
-            // Verify the path doesn't cross any blockages
-            if (isPathValid(mainPath, blockages)) {
-                path.addAll(mainPath);
-                // Add final non-integer position if needed
-                if (!to.isInteger()) {
-                    path.add(to);
-                }
-                return compressPath(path);
+            path.addAll(mainPath);
+            // Add final non-integer position if needed
+            if (!to.isInteger()) {
+                path.add(to);
             }
+            return compressPath(path);
         }
 
         return null;
-    }
-
-    private static boolean isPathValid(List<Position> path, List<PlannerBlockage> blockages) {
-        if (path == null || path.size() < 2) return true;
-        
-        // Check each segment of the path
-        for (int i = 0; i < path.size() - 1; i++) {
-            Position current = path.get(i);
-            Position next = path.get(i + 1);
-            
-            // Check if this segment is blocked
-            if (isPathBlocked(current, next, blockages)) {
-                return false;
-            }
-        }
-        return true;
     }
 
     private static boolean isInsideBlockage(Position pos, List<PlannerBlockage> blockages) {
