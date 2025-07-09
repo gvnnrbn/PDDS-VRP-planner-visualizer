@@ -55,21 +55,21 @@ class AStarPathfinder {
             return null;
         }
 
-        // Check if start or end is inside a blockage line (not at endpoints)
-        for (PlannerBlockage blockage : blockages) {
-            for (int i = 0; i < blockage.vertices.size() - 1; i++) {
-                Position v1 = blockage.vertices.get(i);
-                Position v2 = blockage.vertices.get(i + 1);
+        // // Check if start or end is inside a blockage line (not at endpoints)
+        // for (PlannerBlockage blockage : blockages) {
+        //     for (int i = 0; i < blockage.vertices.size() - 1; i++) {
+        //         Position v1 = blockage.vertices.get(i);
+        //         Position v2 = blockage.vertices.get(i + 1);
                 
-                // If point is on blockage line but not at endpoints, path is impossible
-                if (isPointOnLine(start, v1, v2) && !isPointEqual(start, v1) && !isPointEqual(start, v2)) {
-                    return null;
-                }
-                if (isPointOnLine(end, v1, v2) && !isPointEqual(end, v1) && !isPointEqual(end, v2)) {
-                    return null;
-                }
-            }
-        }
+        //         // If point is on blockage line but not at endpoints, path is impossible
+        //         if (isPointOnLine(start, v1, v2) && !isPointEqual(start, v1) && !isPointEqual(start, v2)) {
+        //             return null;
+        //         }
+        //         if (isPointOnLine(end, v1, v2) && !isPointEqual(end, v1) && !isPointEqual(end, v2)) {
+        //             return null;
+        //         }
+        //     }
+        // }
 
         if (Math.abs(start.x - end.x) < EPSILON && Math.abs(start.y - end.y) < EPSILON) {
             return new ArrayList<>();
@@ -93,18 +93,18 @@ class AStarPathfinder {
             
             closedSet.add(current);
             
-            boolean currentIsBlocked = isInsideBlockage(current.pos, blockages);
+            // boolean currentIsBlocked = isInsideBlockage(current.pos, blockages);
             // Generate neighbors
             for (Position neighborPos : getNeighbors(current.pos)) {
                 // Skip if this move would cross a blockage or move along it
-                if (isBlocked(current.pos, neighborPos, blockages)) continue;
+                if (isBlocked(current.pos, neighborPos, blockages) && !isPointEqual(neighborPos, end)) continue;
                 
                 // If current is inside blockage, only allow moving to parent
-                if (currentIsBlocked) {
-                    if (current.parent == null || !isPointEqual(neighborPos, current.parent.pos)) {
-                        continue;
-                    }
-                }
+                // if (currentIsBlocked) {
+                //     if (current.parent == null || !isPointEqual(neighborPos, current.parent.pos)) {
+                //         continue;
+                //     }
+                // }
                 // Do NOT skip if neighbor is inside blockage (vehicles can enter blocked nodes)
                 // Node neighbor = new Node(...)
                 Node neighbor = new Node(
@@ -125,7 +125,6 @@ class AStarPathfinder {
             }
         }
         
-        // No path found
         return null;
     }
     
@@ -292,6 +291,74 @@ class AStarPathfinder {
                 
                 // Check if the point lies on the blockage line (but not at endpoints)
                 if (isPointOnLine(pos, v1, v2) && !isPointEqual(pos, v1) && !isPointEqual(pos, v2)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static void drawGrid(Position start, Position end, List<PlannerBlockage> blockages, Position current, String status) {
+        System.out.println("\n" + "=".repeat(60));
+        System.out.println("ASCII GRID - " + status);
+        System.out.println("=".repeat(60));
+        
+        // Determine grid bounds (focus on area around start/end with some padding)
+        int minX = Math.max(0, (int)Math.min(start.x, end.x) - 5);
+        int maxX = Math.min((int)SimulationProperties.gridLength, (int)Math.max(start.x, end.x) + 5);
+        int minY = Math.max(0, (int)Math.min(start.y, end.y) - 5);
+        int maxY = Math.min((int)SimulationProperties.gridWidth, (int)Math.max(start.y, end.y) + 5);
+        
+        // Print Y coordinates header
+        System.out.print("    ");
+        for (int x = minX; x <= maxX; x++) {
+            System.out.print(String.format("%2d", x % 100));
+        }
+        System.out.println();
+        
+        // Draw grid
+        for (int y = maxY; y >= minY; y--) {
+            System.out.print(String.format("%2d ", y));
+            for (int x = minX; x <= maxX; x++) {
+                Position pos = new Position(x, y);
+                char symbol = '.';
+                
+                // Check if position is a blockage
+                if (isPositionOnBlockage(pos, blockages)) {
+                    symbol = '#';
+                }
+                
+                // Check if position is start
+                if (Math.abs(pos.x - start.x) < EPSILON && Math.abs(pos.y - start.y) < EPSILON) {
+                    symbol = 'S';
+                }
+                
+                // Check if position is end
+                if (Math.abs(pos.x - end.x) < EPSILON && Math.abs(pos.y - end.y) < EPSILON) {
+                    symbol = 'E';
+                }
+                
+                // Check if position is current
+                if (current != null && Math.abs(pos.x - current.x) < EPSILON && Math.abs(pos.y - current.y) < EPSILON) {
+                    symbol = 'C';
+                }
+                
+                System.out.print(" " + symbol);
+            }
+            System.out.println();
+        }
+        
+        System.out.println("Legend: S=Start, E=End, C=Current, #=Blockage, .=Empty");
+        System.out.println("=".repeat(60));
+    }
+    
+    private static boolean isPositionOnBlockage(Position pos, List<PlannerBlockage> blockages) {
+        for (PlannerBlockage blockage : blockages) {
+            for (int i = 0; i < blockage.vertices.size() - 1; i++) {
+                Position v1 = blockage.vertices.get(i);
+                Position v2 = blockage.vertices.get(i + 1);
+                
+                if (isPointOnLine(pos, v1, v2)) {
                     return true;
                 }
             }

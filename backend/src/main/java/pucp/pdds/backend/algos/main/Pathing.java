@@ -46,21 +46,37 @@ public class Pathing {
         
         // Run all cases and add to collage
         CaseA();
+        System.out.println("--------------------------------");
         CaseB();
+        System.out.println("--------------------------------");
         CaseC();
+        System.out.println("--------------------------------");
         CaseD();
+        System.out.println("--------------------------------");
         CaseE();
+        System.out.println("--------------------------------");
         CaseF();
+        System.out.println("--------------------------------");
         CaseG();
+        System.out.println("--------------------------------");
         CaseH();
+        System.out.println("--------------------------------");
         CaseI();
+        System.out.println("--------------------------------");
         CaseJ();
+        System.out.println("--------------------------------");
         CaseK();
+        System.out.println("--------------------------------");
         CaseL();
+        System.out.println("--------------------------------");
         CaseM();
+        System.out.println("--------------------------------");
         CaseN();
+        System.out.println("--------------------------------");
         CaseO();
+        System.out.println("--------------------------------");
         CaseP();
+        System.out.println("--------------------------------");
     }
 
     private static void printPathInfo(String caseName, Position start, Position end, List<Position> path) {
