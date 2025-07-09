@@ -35,7 +35,8 @@ const PedidosSection = () => {
   const { currentMinuteData, focusOnPedido } = useSimulation();
   const [searchValue, setSearchValue] = useState('');
   const [statusFilter, setStatusFilter] = useState<'todos' | 'pendiente' | 'completado'>('todos');
-  const [orderBy, setOrderBy] = useState(ORDER_OPTIONS_PEDIDOS[0].value);
+  // orderBy null significa "pendiente primero, luego completado, ambos por fechaLimite asc"
+  const [orderBy, setOrderBy] = useState<string | null>(null);
 
   // Filtrado por estado
   let pedidosFiltrados = (currentMinuteData?.pedidos || [])
@@ -53,6 +54,13 @@ const PedidosSection = () => {
 
   // Ordenado
   pedidosFiltrados = [...pedidosFiltrados].sort((a, b) => {
+    if (!orderBy) {
+      // Pendientes primero, luego completados, ambos por fechaLimite ascendente
+      const estadoA = a.estado.toLowerCase() === 'completado' ? 1 : 0;
+      const estadoB = b.estado.toLowerCase() === 'completado' ? 1 : 0;
+      if (estadoA !== estadoB) return estadoA - estadoB;
+      return new Date(a.fechaLimite).getTime() - new Date(b.fechaLimite).getTime();
+    }
     switch (orderBy) {
       case 'fechaLimite-asc':
         return new Date(a.fechaLimite).getTime() - new Date(b.fechaLimite).getTime();
@@ -88,6 +96,14 @@ const PedidosSection = () => {
               Ordenar
             </MenuButton>
             <MenuList>
+              <MenuItem
+                key="default"
+                onClick={() => setOrderBy(null)}
+                color={orderBy === null ? 'purple.600' : undefined}
+                fontWeight={orderBy === null ? 'bold' : 'normal'}
+              >
+                Pendiente primero
+              </MenuItem>
               {ORDER_OPTIONS_PEDIDOS.map(opt => (
                 <MenuItem
                   key={opt.value}
