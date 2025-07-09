@@ -26,6 +26,11 @@ public class PathVisualizer {
     private static JButton prevButton;
     private static JButton nextButton;
 
+    // New fields for collage visualization
+    private static List<CollageCase> collageCases = new ArrayList<>();
+    private static JFrame collageFrame;
+    private static CollagePanel collagePanel;
+
     private static class VisualizationPanel extends JPanel {
         private final int gridLength;
         private final int gridWidth;
@@ -218,6 +223,170 @@ public class PathVisualizer {
         if (prevButton != null && nextButton != null) {
             prevButton.setEnabled(currentStateIndex > 0);
             nextButton.setEnabled(currentStateIndex < visualizationStates.size() - 1);
+        }
+    }
+
+    private static class CollageCase {
+        String name;
+        Position start;
+        Position end;
+        List<Position> path;
+        List<PlannerBlockage> blockages;
+
+        CollageCase(String name, Position start, Position end, List<Position> path, List<PlannerBlockage> blockages) {
+            this.name = name;
+            this.start = start;
+            this.end = end;
+            this.path = new ArrayList<>(path);
+            this.blockages = blockages;
+        }
+    }
+
+    private static class CollagePanel extends JPanel {
+        private final int gridLength;
+        private final int gridWidth;
+        private final int cols = 4; // 4 columns
+        private final int rows = 4; // 4 rows for 16 cases
+
+        public CollagePanel(int gridLength, int gridWidth) {
+            this.gridLength = gridLength;
+            this.gridWidth = gridWidth;
+            setPreferredSize(new Dimension(1600, 1200)); // Larger window for collage
+            setBackground(BACKGROUND_COLOR);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            if (collageCases.isEmpty()) return;
+            
+            Graphics2D g2d = (Graphics2D) g;
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int panelWidth = getWidth();
+            int panelHeight = getHeight();
+            int cellWidth = panelWidth / cols;
+            int cellHeight = panelHeight / rows;
+
+            for (int i = 0; i < collageCases.size(); i++) {
+                CollageCase c = collageCases.get(i);
+                int row = i / cols;
+                int col = i % cols;
+                
+                int x = col * cellWidth;
+                int y = row * cellHeight;
+                
+                // Draw case border
+                g2d.setColor(Color.BLACK);
+                g2d.setStroke(new BasicStroke(2));
+                g2d.drawRect(x, y, cellWidth, cellHeight);
+                
+                // Draw case name
+                g2d.setColor(Color.BLACK);
+                g2d.setFont(new Font("Arial", Font.BOLD, 10));
+                String displayName = c.name.length() > 20 ? c.name.substring(0, 17) + "..." : c.name;
+                g2d.drawString(displayName, x + 5, y + 15);
+                
+                // Calculate scaling for this cell
+                double scaleX = (double) (cellWidth - 20) / gridLength;
+                double scaleY = (double) (cellHeight - 40) / gridWidth;
+
+                // Draw path if it exists
+                if (c.path != null && !c.path.isEmpty()) {
+                    g2d.setColor(PATH_COLOR);
+                    g2d.setStroke(new BasicStroke(2));
+                    for (int j = 0; j < c.path.size() - 1; j++) {
+                        Position current = c.path.get(j);
+                        Position next = c.path.get(j + 1);
+                        int x1 = x + 10 + (int) (current.x * scaleX);
+                        int y1 = y + 20 + (int) (current.y * scaleY);
+                        int x2 = x + 10 + (int) (next.x * scaleX);
+                        int y2 = y + 20 + (int) (next.y * scaleY);
+                        g2d.drawLine(x1, y1, x2, y2);
+                    }
+
+                    // Draw points along the path (smaller)
+                    for (Position pos : c.path) {
+                        int px = x + 10 + (int) (pos.x * scaleX) - 2;
+                        int py = y + 20 + (int) (pos.y * scaleY) - 2;
+                        g2d.fillOval(px, py, 4, 4);
+                    }
+                }
+
+                // Draw start and end points (smaller)
+                g2d.setColor(START_COLOR);
+                int startX = x + 10 + (int) (c.start.x * scaleX) - 3;
+                int startY = y + 20 + (int) (c.start.y * scaleY) - 3;
+                g2d.fillOval(startX, startY, 6, 6);
+
+                g2d.setColor(END_COLOR);
+                int endX = x + 10 + (int) (c.end.x * scaleX) - 3;
+                int endY = y + 20 + (int) (c.end.y * scaleY) - 3;
+                g2d.fillOval(endX, endY, 6, 6);
+
+                // Draw blockages (thinner)
+                g2d.setColor(BLOCKAGE_COLOR);
+                g2d.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                for (PlannerBlockage blockage : c.blockages) {
+                    List<Position> vertices = blockage.vertices;
+                    for (int j = 0; j < vertices.size() - 1; j++) {
+                        Position v1 = vertices.get(j);
+                        Position v2 = vertices.get(j + 1);
+                        int x1 = x + 10 + (int) (v1.x * scaleX);
+                        int y1 = y + 20 + (int) (v1.y * scaleY);
+                        int x2 = x + 10 + (int) (v2.x * scaleX);
+                        int y2 = y + 20 + (int) (v2.y * scaleY);
+                        g2d.drawLine(x1, y1, x2, y2);
+                    }
+                }
+            }
+        }
+    }
+
+    public static void createCollageVisualization() {
+        SwingUtilities.invokeLater(() -> {
+            if (collageFrame == null) {
+                collageFrame = new JFrame("Path Cases Collage");
+                collageFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+                collageFrame.addWindowListener(new WindowAdapter() {
+                    @Override
+                    public void windowClosing(WindowEvent e) {
+                        collageFrame = null;
+                        collagePanel = null;
+                        collageCases.clear();
+                    }
+                });
+                
+                collagePanel = new CollagePanel(SimulationProperties.gridLength, SimulationProperties.gridWidth);
+                
+                collageFrame.add(collagePanel);
+                collageFrame.pack();
+                collageFrame.setLocationRelativeTo(null);
+                collageFrame.setVisible(true);
+            } else {
+                collagePanel.repaint();
+            }
+        });
+    }
+
+    public static void addCaseToCollage(String caseName, Position start, Position end, List<Position> path, List<PlannerBlockage> blockages) {
+        CollageCase c = new CollageCase(caseName, start, end, path, blockages);
+        collageCases.add(c);
+        
+        // If this is the first case, create the collage window
+        if (collageCases.size() == 1) {
+            createCollageVisualization();
+        } else if (collagePanel != null) {
+            collagePanel.repaint();
+        }
+    }
+
+    public static void clearCollage() {
+        collageCases.clear();
+        if (collageFrame != null) {
+            collageFrame.dispose();
+            collageFrame = null;
+            collagePanel = null;
         }
     }
 } 
