@@ -19,18 +19,23 @@ import { faFilter, faSort } from '@fortawesome/free-solid-svg-icons'
 import { AlmacenCard } from '../../components/common/cards/AlmacenCard'
 import type { IndicadoresSimulado } from '../../core/types/indicadores'
 
-const ORDER_OPTIONS = [
+const ORDER_OPTIONS_PEDIDOS = [
   { label: 'Tiempo de llegada más cercano', value: 'fechaLimite-asc' },
   { label: 'Tiempo de llegada más lejano', value: 'fechaLimite-desc' },
   { label: 'Mayor cantidad de GLP', value: 'glp-desc' },
   { label: 'Menor cantidad de GLP', value: 'glp-asc' },
 ];
-
+const ORDER_OPTIONS_VEHICULOS = [
+  { label: 'Menor cantidad de combustible', value: 'combustible-asc' },
+  { label: 'Mayor cantidad de combustible', value: 'combustible-desc' },
+  { label: 'Mayor cantidad de GLP', value: 'glp-desc' },
+  { label: 'Menor cantidad de GLP', value: 'glp-asc' },
+];
 const PedidosSection = () => {
   const { currentMinuteData, focusOnPedido } = useSimulation();
   const [searchValue, setSearchValue] = useState('');
   const [statusFilter, setStatusFilter] = useState<'todos' | 'pendiente' | 'completado'>('todos');
-  const [orderBy, setOrderBy] = useState(ORDER_OPTIONS[0].value);
+  const [orderBy, setOrderBy] = useState(ORDER_OPTIONS_PEDIDOS[0].value);
 
   // Filtrado por estado
   let pedidosFiltrados = (currentMinuteData?.pedidos || [])
@@ -66,7 +71,7 @@ const PedidosSection = () => {
     <Box>
       <VStack spacing={2} align="stretch" bg="#e6e6ea" p={2} borderRadius="md">
         <Input
-          placeholder="Buscar pedido..."
+          placeholder="Buscar pedido por código..."
           value={searchValue}
           onChange={e => setSearchValue(e.target.value)}
           borderRadius="md"
@@ -83,7 +88,7 @@ const PedidosSection = () => {
               Ordenar
             </MenuButton>
             <MenuList>
-              {ORDER_OPTIONS.map(opt => (
+              {ORDER_OPTIONS_PEDIDOS.map(opt => (
                 <MenuItem
                   key={opt.value}
                   onClick={() => setOrderBy(opt.value)}
@@ -119,68 +124,100 @@ const PedidosSection = () => {
   );
 };
 
-export default function WeeklySimulation() {
-  const [isCollapsed, setIsCollapsed] = useState(true)
-  const [isSimulationLoading, setIsSimulationLoading] = useState(false);
-  const [selectedDateCount, setSelectedDateCount] = useState(() => {
-    return localStorage.getItem('vrp_sim_start_date') || '';
-  });
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  // const [ speedMs, setSpeedMs ] = useState(1000); // unused
-  
 
-  const [dateValue, setDateValue] = useState<string>(() => {
-    const now = new Date();
-    return now.toISOString().split('T')[0];
-  });
-  const [hourValue, setHourValue] = useState<number>(new Date().getHours());
-  const [minuteValue, setMinuteValue] = useState<number>(new Date().getMinutes());
-
-  /**
-   * HANDLE DATE
-   */
-  const formatDateTime = () => {
-    const [year, month, day] = dateValue.split('-');
-    const formattedDate = `${year}-${month}-${day}T${String(hourValue).padStart(2, '0')}:${String(minuteValue).padStart(2, '0')}`;
-    setSelectedDateCount(formattedDate);
-  };
-
-  useEffect(() => {
-    formatDateTime();
-  }, [dateValue, hourValue, minuteValue]);
-
-  /**
-   * START SIMULATION
-  */
-
-  // const [pendingStart, setPendingStart] = useState(false); // unused
-
-  const handleSubmit = () => {
-    // Usa el valor ISO del input tipo date o datetime-local
-    // dateValue es yyyy-MM-dd, hourValue y minuteValue son números
-    const formattedStartDate = `${dateValue}T${String(hourValue).padStart(2, '0')}:${String(minuteValue).padStart(2, '0')}:00`;
-    localStorage.setItem('vrp_sim_start_date', formattedStartDate);
-    setSelectedDateCount(formattedStartDate);
-
-    setIsModalOpen(false);
-    setIsSimulationLoading(true);
-    // ⏳ esperar conexión
-  };
- 
-
-  /*
-   * HANDLE PANEL SECTIONS
-   */
   const FlotaSection = () => {
     const { currentMinuteData } = useSimulation();
+    const [searchValue, setSearchValue] = useState('');
+    const [statusFilter, setStatusFilter] = useState<'todos' | 'enruta' | 'averiado' | 'sinprogramacion' | 'mantenimiento'>('todos');
+    const [orderBy, setOrderBy] = useState(ORDER_OPTIONS_VEHICULOS[0].value);
+
+    // Filtrado por estado
+    let vehiculosFiltrados = (currentMinuteData?.vehiculos || [])
+      .filter((v) => {
+        if (statusFilter === 'todos') return true;
+        if (statusFilter === 'enruta') return v.estado.toLowerCase() === 'ontheway';
+        if (statusFilter === 'sinprogramacion') return v.estado.toLowerCase() === 'idle' || v.estado.toLowerCase() === 'finished';
+        if (statusFilter === 'averiado') return v.estado.toLowerCase() === 'stuck' || v.estado.toLowerCase() === 'repair';
+        if (statusFilter === 'mantenimiento') return v.estado.toLowerCase() === 'maintenance';
+        return true;
+      })
+      .filter((v) => {
+        if (!searchValue) return true;
+        const codigo = `${v.tipo}${v.idVehiculo.toString().padStart(3, '0')}`;
+        return codigo.toLowerCase().includes(searchValue.toLowerCase());
+      });
+
+    // Ordenado
+    vehiculosFiltrados = [...vehiculosFiltrados].sort((a, b) => {
+      switch (orderBy) {
+        case 'combustible-asc':
+          return a.combustible - b.combustible;
+        case 'combustible-desc':
+          return b.combustible - a.combustible;
+        case 'glp-asc':
+          return a.currGLP - b.currGLP;
+        case 'glp-desc':
+          return b.currGLP - a.currGLP;
+        default:
+          return 0;
+      }
+    });
 
     return (
       <Box>
-        <VStack spacing={4} align="stretch">
-          {/* <PanelSearchBar onSubmit={() => console.log('searching...')} /> */}
-          {currentMinuteData?.vehiculos?.map((v) => (
-            <FlotaCard key={v.idVehiculo} vehiculo={v} onClick={()=>console.log('enfocando...')}/>
-          ))}
+      <VStack spacing={2} align="stretch" bg="#e6e6ea" p={2} borderRadius="md">
+        <Input
+          placeholder="Buscar vehículo por placa..."
+          value={searchValue}
+          onChange={e => setSearchValue(e.target.value)}
+          borderRadius="md"
+          bg="white"
+          fontSize="lg"
+          height="44px"
+          mb={1}
+          maxW="100%"
+          _focus={{ borderColor: 'purple.400', boxShadow: '0 0 0 1px #805ad5' }}
+        />
+        <HStack spacing={2} mb={2}>
+          <Menu>
+            <MenuButton as={Button} leftIcon={<FontAwesomeIcon icon={faSort} />} colorScheme="purple" variant="solid" fontSize="md" height="40px" borderRadius="md">
+              Ordenar
+            </MenuButton>
+            <MenuList>
+              {ORDER_OPTIONS_VEHICULOS.map(opt => (
+                <MenuItem
+                  key={opt.value}
+                  onClick={() => setOrderBy(opt.value)}
+                  color={orderBy === opt.value ? 'purple.600' : undefined}
+                  fontWeight={orderBy === opt.value ? 'bold' : 'normal'}
+                >
+                  {opt.label}
+                </MenuItem>
+              ))}
+            </MenuList>
+          </Menu>
+          <Menu>
+            <MenuButton as={Button} leftIcon={<FontAwesomeIcon icon={faFilter} />} colorScheme="purple" variant="solid" fontSize="md" height="40px" borderRadius="md">
+              Filtrar
+            </MenuButton>
+            <MenuList>
+              <MenuItem onClick={() => setStatusFilter('todos')} fontWeight={statusFilter === 'todos' ? 'bold' : 'normal'} color={statusFilter === 'todos' ? 'purple.600' : undefined}>Todos</MenuItem>
+              <MenuItem onClick={() => setStatusFilter('sinprogramacion')} fontWeight={statusFilter === 'sinprogramacion' ? 'bold' : 'normal'} color={statusFilter === 'sinprogramacion' ? 'purple.600' : undefined}>Sin Programación</MenuItem>
+              <MenuItem onClick={() => setStatusFilter('enruta')} fontWeight={statusFilter === 'enruta' ? 'bold' : 'normal'} color={statusFilter === 'enruta' ? 'purple.600' : undefined}>En Ruta</MenuItem>
+              <MenuItem onClick={() => setStatusFilter('averiado')} fontWeight={statusFilter === 'averiado' ? 'bold' : 'normal'} color={statusFilter === 'averiado' ? 'purple.600' : undefined}>Averiado</MenuItem>
+              <MenuItem onClick={() => setStatusFilter('mantenimiento')} fontWeight={statusFilter === 'mantenimiento' ? 'bold' : 'normal'} color={statusFilter === 'mantenimiento' ? 'purple.600' : undefined}>En Mantenimiento</MenuItem>
+            </MenuList>
+          </Menu>
+            </HStack>
+          <VStack spacing={4} align="stretch">
+            {/* <PanelSearchBar onSubmit={() => console.log('searching...')} /> */}
+            {vehiculosFiltrados.length === 0 && (
+              <Box color="gray.500" textAlign="center" py={6}>No hay vehículos para mostrar.</Box>
+            )}
+            {vehiculosFiltrados.map((v) => (
+              <FlotaCard key={v.idVehiculo} vehiculo={v} onClick={()=>console.log('enfocando...')}/>
+            ))}
+          </VStack>
         </VStack>
       </Box>
     );
@@ -242,6 +279,56 @@ export default function WeeklySimulation() {
     );
   };
 
+
+
+export default function WeeklySimulation() {
+  const [isCollapsed, setIsCollapsed] = useState(true)
+  const [isSimulationLoading, setIsSimulationLoading] = useState(false);
+  const [selectedDateCount, setSelectedDateCount] = useState(() => {
+    return localStorage.getItem('vrp_sim_start_date') || '';
+  });
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  // const [ speedMs, setSpeedMs ] = useState(1000); // unused
+  
+
+  const [dateValue, setDateValue] = useState<string>(() => {
+    const now = new Date();
+    return now.toISOString().split('T')[0];
+  });
+  const [hourValue, setHourValue] = useState<number>(new Date().getHours());
+  const [minuteValue, setMinuteValue] = useState<number>(new Date().getMinutes());
+
+  /**
+   * HANDLE DATE
+   */
+  const formatDateTime = () => {
+    const [year, month, day] = dateValue.split('-');
+    const formattedDate = `${year}-${month}-${day}T${String(hourValue).padStart(2, '0')}:${String(minuteValue).padStart(2, '0')}`;
+    setSelectedDateCount(formattedDate);
+  };
+
+  useEffect(() => {
+    formatDateTime();
+  }, [dateValue, hourValue, minuteValue]);
+
+  /**
+   * START SIMULATION
+  */
+
+  // const [pendingStart, setPendingStart] = useState(false); // unused
+
+  const handleSubmit = () => {
+    // Usa el valor ISO del input tipo date o datetime-local
+    // dateValue es yyyy-MM-dd, hourValue y minuteValue son números
+    const formattedStartDate = `${dateValue}T${String(hourValue).padStart(2, '0')}:${String(minuteValue).padStart(2, '0')}:00`;
+    localStorage.setItem('vrp_sim_start_date', formattedStartDate);
+    setSelectedDateCount(formattedStartDate);
+
+    setIsModalOpen(false);
+    setIsSimulationLoading(true);
+    // ⏳ esperar conexión
+  };
+ 
   const [vehiculosPorAlmacen, setVehiculosPorAlmacen] = useState<Record<number, Record<string, number>>>({});
 
   const [highlightedAlmacenId, setHighlightedAlmacenId] = useState<number | null>(null);

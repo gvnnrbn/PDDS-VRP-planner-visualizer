@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type { VehiculoSimulado, VehiculoSimuladoV2 } from "../../../core/types/vehiculo";
 
 interface FlotaCardProps {
-    vehiculo: VehiculoSimuladoV2,
+    vehiculo: VehiculoSimulado,
     onClick: () => void,
 }
 export const FlotaCard = ({
@@ -28,6 +28,11 @@ export const FlotaCard = ({
 
     switch(estado.toUpperCase()){
         case 'STUCK': 
+            cardColor = '#FFCFCF';
+            isBroken = true;
+            estadoText = 'Averiado';
+        break;
+        case 'REPAIR': 
             cardColor = '#FFCFCF';
             isBroken = true;
             estadoText = 'Averiado';

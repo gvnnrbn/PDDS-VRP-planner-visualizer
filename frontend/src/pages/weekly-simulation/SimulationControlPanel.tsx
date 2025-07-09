@@ -309,10 +309,10 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
         continue;
       }
       let color = '#444'; // Color por defecto
-      if (v.estado === 'STUCK') color = '#ff0000';
+      if (v.estado === 'STUCK' || v.estado === 'REPAIR') color = '#ff0000';
       else if (v.estado === 'MAINTENANCE') color = '#ffa500';
       else if (v.estado === 'En Ruta' || v.estado === 'MOVIENDOSE' || v.estado === 'RETURNING_TO_BASE') color = '#00c800'; // Color para vehículos en movimiento
-      else if (v.estado === 'IDLE') color = '#ffc800'; // Color si está inactivo
+      else if (v.estado === 'IDLE') color = '#666565'; // Color si está inactivo
 
 
       const vx = margin + v.posicionX * scaleX;
