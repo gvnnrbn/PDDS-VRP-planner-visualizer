@@ -7,6 +7,8 @@ import { FaTruck, FaWarehouse, FaMapMarkerAlt, FaIndustry } from 'react-icons/fa
 import { renderToStaticMarkup } from 'react-dom/server';
 import { format, parseISO, differenceInSeconds, parse } from 'date-fns';
 import BottomLeftControls from '../../components/common/MapActions';
+import SimulationCompleteModal from '../../components/common/SimulationCompletionModal';
+import SimulationCollapsedModal from './CollapseModalFinal';
 
 const backend_url = import.meta.env.VITE_ENV_BACKEND_URL;
 
@@ -393,6 +395,9 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
 
   // Para el resumen de simulación
   const [simulationSummary, setSimulationSummary] = useState<any>(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [collapseStart, setCollapseStart] = useState<string | null>(null);
+  const [collapseEnd, setCollapseEnd] = useState<string | null>(null);
 
   useEffect(() => {
     if (!connected) {
@@ -482,9 +487,13 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
           logMessage('✅ ' + typedResponse.data);
           setIsSimulating(true);
           return;
-        case 'SIMULATION_ERROR':
+        case 'COLLAPSE_SIMULATION_ERROR':
           logMessage('❌ ' + typedResponse.data);
           setIsSimulating(false);
+          console.log(`Simulasión colapsada papu`);
+          setCollapseStart(data?.minuto); // o usar la variable de inicio si la guardas
+          setCollapseEnd(new Date().toISOString());
+          setIsCollapsed(true);
           return;
         case 'STATE_UPDATED':
           logMessage('🔄 ' + typedResponse.data);
@@ -868,6 +877,31 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
             </ModalFooter>
           </ModalContent>
         </Modal>
+        <SimulationCompleteModal
+          isOpen={isSummaryOpen}
+          onClose={() => {
+            setIsSummaryOpen(false);
+            resetSimulationState();
+          }}
+          {...resumenData}
+        />
+        <SimulationCollapsedModal
+          isOpen={isCollapsed}
+          onClose={() => {
+            setIsCollapsed(false);
+            setCollapseStart(null);
+            setCollapseEnd(null);
+          }}
+          fechaInicio={collapseStart ?? ''}
+          fechaFin={collapseEnd ?? ''}
+          duracion={collapseStart && collapseEnd
+            ? `${Math.floor((new Date(collapseEnd).getTime() - new Date(collapseStart).getTime()) / 60000 / 60)
+              .toString()
+              .padStart(2, '0')}:${Math.floor(((new Date(collapseEnd).getTime() - new Date(collapseStart).getTime()) / 60000) % 60)
+              .toString()
+              .padStart(2, '0')}`
+            : '00:00'}
+        />
       </VStack>
     </Box>
   );
