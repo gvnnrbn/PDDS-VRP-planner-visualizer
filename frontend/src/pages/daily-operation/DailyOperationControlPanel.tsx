@@ -7,6 +7,7 @@ import { FaTruck, FaWarehouse, FaMapMarkerAlt, FaIndustry } from 'react-icons/fa
 import { renderToStaticMarkup } from 'react-dom/server';
 import BottomLeftControls from '../../components/common/MapActions';
 import { ModalInsertAveria } from '../../components/common/modals/ModalInsertAveria';
+import AlmacenModal from '../../components/common/modals/ModalAlmacen';
 
 function panelStyles({ left, top }: { left: number; top: number }) {
   return {
@@ -488,136 +489,182 @@ const DailyOperationControlPanel: React.FC<DailyOperationControlPanelProps> = ({
   }, []); // Se ejecuta solo una vez al montar  
 
   //ZOOM Y PAN
-    useEffect(() => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-  
-      const resizeCanvas = () => {
-        const parent = canvas.parentElement;
-        if (parent) {
-          canvas.width = parent.offsetWidth;
-          canvas.height = parent.offsetHeight;
-          redrawCanvas();
-        }
-      };
-  
-      resizeCanvas();
-      window.addEventListener('resize', resizeCanvas);
-  
-      let isDragging = false;
-      let lastX = 0;
-      let lastY = 0;
-  
-      const handleWheel = (e: WheelEvent) => {
-        e.preventDefault();
-        const scaleAmount = 1.1;
-        const rect = canvas.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-  
-        const worldX = (mouseX - panX) / zoomScale;
-        const worldY = (mouseY - panY) / zoomScale;
-  
-        const newZoomScale = e.deltaY < 0 ? zoomScale * scaleAmount : zoomScale / scaleAmount;
-        setZoom(Math.min(Math.max(0.25, newZoomScale), 4));
-  
-        const newPanX = mouseX - worldX * zoomScale;
-        const newPanY = mouseY - worldY * zoomScale;
-        setPan(newPanX, newPanY);
-  
-        redrawCanvas();
-      };
-  
-      const handleMouseDown = (e: MouseEvent) => {
-        isDragging = true;
-        lastX = e.clientX;
-        lastY = e.clientY;
-      };
-  
-      const handleMouseMove = (e: MouseEvent) => {
-        if (!isDragging) return;
-        const dx = e.clientX - lastX;
-        const dy = e.clientY - lastY;
-        setPan(panX + dx, panY + dy);
-        lastX = e.clientX;
-        lastY = e.clientY;
-        redrawCanvas();
-      };
-  
-      const handleMouseUp = () => {
-        isDragging = false;
-      };
-  
-      canvas.addEventListener('wheel', handleWheel);
-      canvas.addEventListener('mousedown', handleMouseDown);
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-  
-      return () => {
-        canvas.removeEventListener('wheel', handleWheel);
-        canvas.removeEventListener('mousedown', handleMouseDown);
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
-        window.removeEventListener('resize', resizeCanvas);
-      };
-    }, [redrawCanvas]); // Ahora depende de redrawCanvas
-  
-    //AUXILIAR
-    useEffect(() => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-  
-      // Solo una vez al montar
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-    }, []);
-
-
-  // Vehicle panel logic (copied, but can be refactored later)
-  const [selectedVehicle, setSelectedVehicle] = useState<any | null>(null);
-  const [vehiclePanelPos, setVehiclePanelPos] = useState<{ left: number; top: number } | null>(null);
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    const resizeCanvas = () => {
+      const parent = canvas.parentElement;
+      if (parent) {
+        canvas.width = parent.offsetWidth;
+        canvas.height = parent.offsetHeight;
+        redrawCanvas();
+      }
+    };
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    let isDragging = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const scaleAmount = 1.1;
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      const worldX = (mouseX - panX) / zoomScale;
+      const worldY = (mouseY - panY) / zoomScale;
+
+      const newZoomScale = e.deltaY < 0 ? zoomScale * scaleAmount : zoomScale / scaleAmount;
+      setZoom(Math.min(Math.max(0.25, newZoomScale), 4));
+
+      const newPanX = mouseX - worldX * zoomScale;
+      const newPanY = mouseY - worldY * zoomScale;
+      setPan(newPanX, newPanY);
+
+      redrawCanvas();
+    };
+
+    const handleMouseDown = (e: MouseEvent) => {
+      isDragging = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      setPan(panX + dx, panY + dy);
+      lastX = e.clientX;
+      lastY = e.clientY;
+      redrawCanvas();
+    };
+
+    const handleMouseUp = () => {
+      isDragging = false;
+    };
+
+    canvas.addEventListener('wheel', handleWheel);
+    canvas.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      canvas.removeEventListener('wheel', handleWheel);
+      canvas.removeEventListener('mousedown', handleMouseDown);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('resize', resizeCanvas);
+    };
+  }, [redrawCanvas]); // Ahora depende de redrawCanvas
+
+  //AUXILIAR
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    // Solo una vez al montar
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
   }, []);
+
+
+  //CLICK VEHICULO
+  const [selectedVehicle, setSelectedVehicle] = useState<any | null>(null);
+  const [vehiclePanelPos, setVehiclePanelPos] = useState<{ left: number; top: number } | null>(null);
+  const [selectedWarehouse, setSelectedWarehouse] = useState<any | null>(null);
+  const [warehousePanelPos, setWarehousePanelPos] = useState<{ left: number; top: number } | null>(null);
+
+  const [selectedPedido, setSelectedPedido] = useState<any | null>(null);
+  const [pedidoPanelPos, setPedidoPanelPos] = useState<{ left: number; top: number } | null>(null);
+
+  const clearAllSelections = () => {
+    setSelectedVehicle(null);
+    setVehiclePanelPos(null);
+    setSelectedWarehouse(null);
+    setWarehousePanelPos(null);
+    setSelectedPedido(null);
+    setPedidoPanelPos(null);
+  };
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
     const handleClick = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
-      const scaleXcss = canvas.width / rect.width;
-      const scaleYcss = canvas.height / rect.height;
-      const rawX = (e.clientX - rect.left) * scaleXcss;
-      const rawY = (e.clientY - rect.top) * scaleYcss;
-      const canvasX = (rawX - panX) / zoomScale;
-      const canvasY = (rawY - panY) / zoomScale;
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      const canvasX = (clickX - panX) / zoomScale;
+      const canvasY = (clickY - panY) / zoomScale;
+
+      const screenPos = (box: { x: number; y: number; size: number }) => ({
+        left: (box.x * zoomScale) + panX + rect.left + (box.size / 2) * zoomScale,
+        top: (box.y * zoomScale) + panY + rect.top + (box.size / 2) * zoomScale,
+      });
+
+      // Vehículos
       for (const box of vehicleHitboxes) {
         if (
-          canvasX >= box.x &&
-          canvasX <= box.x + box.size &&
-          canvasY >= box.y &&
-          canvasY <= box.y + box.size
+          canvasX >= box.x && canvasX <= box.x + box.size &&
+          canvasY >= box.y && canvasY <= box.y + box.size
         ) {
           setSelectedVehicle(box.vehiculo);
-          const { margin, scaleX, scaleY } = scale;
-          const vx = margin + box.vehiculo.posicionX * scaleX;
-          const vy = margin + box.vehiculo.posicionY * scaleY;
-          const screenX = (vx + panX) * zoomScale + rect.left;
-          const screenY = (vy + panY) * zoomScale + rect.top;
-          setVehiclePanelPos({ left: screenX, top: screenY });
+          setVehiclePanelPos(screenPos(box));
+          setSelectedWarehouse(null);
+          setSelectedPedido(null);
           return;
         }
       }
-      setSelectedVehicle(null);
-      setVehiclePanelPos(null);
+
+      // Almacenes
+      for (const box of warehouseHitboxes) {
+        if (
+          canvasX >= box.x && canvasX <= box.x + box.size &&
+          canvasY >= box.y && canvasY <= box.y + box.size
+        ) {
+          setSelectedWarehouse(box.almacen);
+          setWarehousePanelPos(screenPos(box));
+          setSelectedVehicle(null);
+          setSelectedPedido(null);
+          return;
+        }
+      }
+
+      // Pedidos
+      for (const box of pedidoHitboxes) {
+        if (
+          canvasX >= box.x && canvasX <= box.x + box.size &&
+          canvasY >= box.y && canvasY <= box.y + box.size
+        ) {
+          setSelectedPedido(box.pedido);
+          setPedidoPanelPos(screenPos(box));
+          setSelectedVehicle(null);
+          setSelectedWarehouse(null);
+          return;
+        }
+      }
+
+      clearAllSelections(); // Clic fuera
     };
+
     canvas.addEventListener('click', handleClick);
     return () => {
       canvas.removeEventListener('click', handleClick);
     };
-  }, [canvasRef, data, scale]);
+  }, [canvasRef, data, panX, panY, zoomScale]);
+
+  //Modal almacén
+  const { isOpen: isOpenAlmacenRutas, onOpen: onOpenAlmacenRutas, onClose: onCloseAlmacenRutas } = useDisclosure();
+
+
+
   // Modal averia (UI only, no network)
   const { isOpen: isOpenAveria, onOpen: onOpenAveria, onClose: onCloseAveria } = useDisclosure();
   const [estadoVehiculo, setEstadoVehiculo] = useState('');
@@ -628,7 +675,7 @@ const DailyOperationControlPanel: React.FC<DailyOperationControlPanelProps> = ({
   });
   useEffect(() => {
     if (selectedVehicle) {
-      switch(selectedVehicle.estado) {
+      switch (selectedVehicle.estado) {
         case 'STUCK':
           setEstadoVehiculo('Inmovilizado');
           break;
@@ -657,6 +704,8 @@ const DailyOperationControlPanel: React.FC<DailyOperationControlPanelProps> = ({
       });
     }
   }, [selectedVehicle]);
+
+
   // --- Render ---
   return (
     <Box borderWidth="1px" borderRadius="md" p={0} mb={0} height="100vh">
@@ -704,6 +753,65 @@ const DailyOperationControlPanel: React.FC<DailyOperationControlPanelProps> = ({
             }
           </Box>
         )}
+        {selectedWarehouse && warehousePanelPos && (
+          <Box style={panelStyles(warehousePanelPos)}>
+            <Flex justify="space-between" align="center" mb={2}>
+              <Text fontWeight="bold">Almacén</Text>
+              <Button
+                size="xs"
+                onClick={() => setSelectedWarehouse(null)}
+                variant="ghost"
+                colorScheme="red"
+              >
+                ✕
+              </Button>
+            </Flex>
+            <Text>ID: {selectedWarehouse.idAlmacen}</Text>
+            {selectedWarehouse.isMain ? (
+              <>
+                <Text fontStyle="italic">Almacén Principal</Text>
+                <Text>Capacidad: Infinita</Text>
+              </>
+            ) : (
+              <>
+                <Text>GLP Actual: {selectedWarehouse.currentGLP}</Text>
+                <Text>Capacidad Máx: {selectedWarehouse.maxGLP}</Text>
+              </>
+            )}
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                (window as any).focusAlmacenCard(selectedWarehouse.idAlmacen);
+                setSelectedWarehouse(null);
+              }}
+              mt={2}
+            >
+              Rutas de Almacén
+            </Button>
+          </Box>
+        )}
+        <AlmacenModal
+          isOpen={isOpenAlmacenRutas}
+          onClose={onCloseAlmacenRutas}
+          almacen={selectedWarehouse}
+          onOpenRutas={() => selectedWarehouse && (window as any).focusAlmacenCard(selectedWarehouse.idAlmacen)}
+        />
+
+        {selectedPedido && pedidoPanelPos && (
+          <Box style={panelStyles(pedidoPanelPos)}>
+            <Flex justify="space-between" align="center" mb={2}>
+              <Text fontWeight="bold">Pedido</Text>
+              <Button size="xs" onClick={() => setSelectedPedido(null)} variant="ghost" colorScheme="red">
+                ✕
+              </Button>
+            </Flex>
+            <Text>ID Pedido: {selectedPedido.idPedido}</Text>
+            <Text>Estado: {selectedPedido.estado}</Text>
+            <Text>GLP: {selectedPedido.glp}</Text>
+          </Box>
+        )}
+
         <ModalInsertAveria
           isOpen={isOpenAveria}
           onClose={onCloseAveria}
