@@ -66,16 +66,16 @@ public class PathBuilder {
 
     // Returns null if no path is found, empty list if from == to, otherwise returns the path
     public static List<Position> buildPath(Position from, Position to, List<PlannerBlockage> blockages) {
-        System.out.println("=== PATHFINDING START ===");
-        System.out.println("From: " + from + " (integer: " + from.isInteger() + ")");
-        System.out.println("To: " + to + " (integer: " + to.isInteger() + ")");
-        System.out.println("Blockages count: " + (blockages != null ? blockages.size() : "null"));
+        // System.out.println("=== PATHFINDING START ===");
+        // System.out.println("From: " + from + " (integer: " + from.isInteger() + ")");
+        // System.out.println("To: " + to + " (integer: " + to.isInteger() + ")");
+        // System.out.println("Blockages count: " + (blockages != null ? blockages.size() : "null"));
         
         // Check if either point is inside a blockage (not at endpoints)
-        boolean fromInsideBlockage = isInsideBlockage(from, blockages);
-        boolean toInsideBlockage = isInsideBlockage(to, blockages);
-        System.out.println("From inside blockage: " + fromInsideBlockage);
-        System.out.println("To inside blockage: " + toInsideBlockage);
+        // boolean fromInsideBlockage = isInsideBlockage(from, blockages);
+        // boolean toInsideBlockage = isInsideBlockage(to, blockages);
+        // System.out.println("From inside blockage: " + fromInsideBlockage);
+        // System.out.println("To inside blockage: " + toInsideBlockage);
         
         // if (fromInsideBlockage || toInsideBlockage) {
         //     System.out.println("❌ PATH REJECTED: Start or end position is inside a blockage");
@@ -84,8 +84,8 @@ public class PathBuilder {
         // }
 
         if (from.equals(to)) {
-            System.out.println("✅ PATH FOUND: Start and end positions are the same");
-            System.out.println("=== PATHFINDING END (EMPTY) ===");
+            // System.out.println("✅ PATH FOUND: Start and end positions are the same");
+            // System.out.println("=== PATHFINDING END (EMPTY) ===");
             return new ArrayList<>();
         }
 
@@ -95,89 +95,89 @@ public class PathBuilder {
 
         // Handle non-integer start position
         if (!from.isInteger()) {
-            System.out.println("🔄 Processing non-integer start position...");
+            // System.out.println("🔄 Processing non-integer start position...");
             Position roundedFrom = from.round();
-            System.out.println("Rounded from: " + roundedFrom);
+            // System.out.println("Rounded from: " + roundedFrom);
             
             // Check if direct path to rounded position is blocked
             boolean pathToRoundedBlocked = isPathBlocked(from, roundedFrom, blockages);
-            System.out.println("Direct path to rounded position blocked: " + pathToRoundedBlocked);
+            // System.out.println("Direct path to rounded position blocked: " + pathToRoundedBlocked);
             
             if (pathToRoundedBlocked) {
-                System.out.println("❌ PATH REJECTED: Cannot reach rounded start position");
-                System.out.println("=== PATHFINDING END (NULL) ===");
+                // System.out.println("❌ PATH REJECTED: Cannot reach rounded start position");
+                // System.out.println("=== PATHFINDING END (NULL) ===");
                 return null;
             }
             path.add(from);
             fromPos = roundedFrom;
-            System.out.println("✅ Added original start position to path, using rounded for main pathfinding");
+            // System.out.println("✅ Added original start position to path, using rounded for main pathfinding");
         }
 
         // Handle non-integer end position
         if (!to.isInteger()) {
-            System.out.println("🔄 Processing non-integer end position...");
+            // System.out.println("🔄 Processing non-integer end position...");
             Position roundedTo = to.round();
-            System.out.println("Rounded to: " + roundedTo);
+            // System.out.println("Rounded to: " + roundedTo);
             
             // Check if direct path from rounded position is blocked
             boolean pathFromRoundedBlocked = isPathBlocked(roundedTo, to, blockages);
-            System.out.println("Direct path from rounded position blocked: " + pathFromRoundedBlocked);
+            // System.out.println("Direct path from rounded position blocked: " + pathFromRoundedBlocked);
             
             if (pathFromRoundedBlocked) {
-                System.out.println("❌ PATH REJECTED: Cannot reach final end position from rounded position");
-                System.out.println("=== PATHFINDING END (NULL) ===");
+                // System.out.println("❌ PATH REJECTED: Cannot reach final end position from rounded position");
+                // System.out.println("=== PATHFINDING END (NULL) ===");
                 return null;
             }
             toPos = roundedTo;
-            System.out.println("✅ Will add final position to path after main pathfinding");
+            // System.out.println("✅ Will add final position to path after main pathfinding");
         }
 
-        System.out.println("🎯 Main pathfinding between: " + fromPos + " -> " + toPos);
+        // System.out.println("🎯 Main pathfinding between: " + fromPos + " -> " + toPos);
 
         // Try Manhattan path first with integer positions
-        System.out.println("🔄 Attempting Manhattan path...");
+        // System.out.println("🔄 Attempting Manhattan path...");
         List<Position> mainPath = buildManhattanPath(fromPos, toPos, blockages);
         if (mainPath != null) {
-            System.out.println("✅ Manhattan path successful! Length: " + mainPath.size());
-            System.out.println("Manhattan path: " + mainPath);
+            // System.out.println("✅ Manhattan path successful! Length: " + mainPath.size());
+            // System.out.println("Manhattan path: " + mainPath);
             path.addAll(mainPath);
             // Add final non-integer position if needed
             if (!to.isInteger()) {
-                System.out.println("➕ Adding final non-integer position: " + to);
+                // System.out.println("➕ Adding final non-integer position: " + to);
                 path.add(to);
             }
             List<Position> compressedPath = compressPath(path);
-            System.out.println("📦 Compressed path length: " + compressedPath.size());
-            System.out.println("Final path: " + compressedPath);
-            System.out.println("=== PATHFINDING END (MANHATTAN SUCCESS) ===");
+            // System.out.println("📦 Compressed path length: " + compressedPath.size());
+            // System.out.println("Final path: " + compressedPath);
+            // System.out.println("=== PATHFINDING END (MANHATTAN SUCCESS) ===");
             return compressedPath;
         } else {
-            System.out.println("❌ Manhattan path failed, trying A*...");
+            // System.out.println("❌ Manhattan path failed, trying A*...");
         }
 
         // Try A* as a fallback with integer positions
-        System.out.println("🔄 Attempting A* path...");
+        // System.out.println("🔄 Attempting A* path...");
         mainPath = buildAstarPath(fromPos, toPos, blockages);
         if (mainPath != null) {
-            System.out.println("✅ A* path successful! Length: " + mainPath.size());
-            System.out.println("A* path: " + mainPath);
+            // System.out.println("✅ A* path successful! Length: " + mainPath.size());
+            // System.out.println("A* path: " + mainPath);
             path.addAll(mainPath);
             // Add final non-integer position if needed
             if (!to.isInteger()) {
-                System.out.println("➕ Adding final non-integer position: " + to);
+                // System.out.println("➕ Adding final non-integer position: " + to);
                 path.add(to);
             }
             List<Position> compressedPath = compressPath(path);
-            System.out.println("📦 Compressed path length: " + compressedPath.size());
-            System.out.println("Final path: " + compressedPath);
-            System.out.println("=== PATHFINDING END (A* SUCCESS) ===");
+            // System.out.println("📦 Compressed path length: " + compressedPath.size());
+            // System.out.println("Final path: " + compressedPath);
+            // System.out.println("=== PATHFINDING END (A* SUCCESS) ===");
             return compressedPath;
         } else {
-            System.out.println("❌ A* path also failed");
+            // System.out.println("❌ A* path also failed");
         }
 
-        System.out.println("❌ PATH REJECTED: Both Manhattan and A* pathfinding failed");
-        System.out.println("=== PATHFINDING END (NULL) ===");
+        // System.out.println("❌ PATH REJECTED: Both Manhattan and A* pathfinding failed");
+        // System.out.println("=== PATHFINDING END (NULL) ===");
         return null;
     }
 

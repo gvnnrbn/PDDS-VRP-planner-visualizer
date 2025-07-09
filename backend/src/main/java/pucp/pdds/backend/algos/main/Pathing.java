@@ -444,33 +444,40 @@ public class Pathing {
     }
 
     public static void CaseL() {
-        // Test case with decimal coordinates and multiple path options
-        Position start = new Position(3, 4.2); // Start with decimal y
-        Position end = new Position(25.8, 30); // End with decimal x
+        // Vertex-to-vertex movement scenario (swapped start/end)
+        Position start = new Position(30, 25);
+        Position end = new Position(10, 10);
 
         List<PlannerBlockage> blockages = new ArrayList<>();
         
-        // Create a more complex scenario with multiple possible paths
+        // Create a pattern where the optimal path should use blockage vertices
         blockages.add(new PlannerBlockage(0, startTime, endTime,
             new ArrayList<>(Arrays.asList(
-                new Position(15, 10),
-                new Position(15, 20)
+                new Position(20, 10),
+                new Position(20, 20)
             ))
         ));
         
         blockages.add(new PlannerBlockage(1, startTime, endTime,
             new ArrayList<>(Arrays.asList(
-                new Position(20, 15),
-                new Position(20, 25)
+                new Position(20, 20),
+                new Position(30, 20)
+            ))
+        ));
+        
+        blockages.add(new PlannerBlockage(2, startTime, endTime,
+            new ArrayList<>(Arrays.asList(
+                new Position(30, 20),
+                new Position(30, 30)
             ))
         ));
 
         List<Position> path = PathBuilder.buildPath(start, end, blockages);
-        printPathInfo("Case L - Complex Decimal Coordinate Path", start, end, path);
+        printPathInfo("Case L - Vertex-to-Vertex Path (Swapped)", start, end, path);
 
         // Add to collage instead of individual visualization
         List<Position> visualPath = (path != null) ? path : new ArrayList<>();
-        PathVisualizer.addCaseToCollage("Case L - Complex Decimal", start, end, visualPath, blockages);
+        PathVisualizer.addCaseToCollage("Case L - Vertex Path (Swapped)", start, end, visualPath, blockages);
         
         System.out.println("Ended Case L Simulation");
     }

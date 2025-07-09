@@ -85,6 +85,7 @@ class AStarPathfinder {
         
         while (!openSet.isEmpty()) {
             Node current = openSet.poll();
+            // drawGrid(start, end, blockages, current.pos, "GOAL");
             
             // Check if we reached the goal
             if (Math.abs(current.pos.x - end.x) < EPSILON && Math.abs(current.pos.y - end.y) < EPSILON) {
@@ -97,7 +98,7 @@ class AStarPathfinder {
             // Generate neighbors
             for (Position neighborPos : getNeighbors(current.pos)) {
                 // Skip if this move would cross a blockage or move along it
-                if (isBlocked(current.pos, neighborPos, blockages) && !isPointEqual(neighborPos, end)) continue;
+                if (isBlocked(current.pos, neighborPos, blockages) && !isPointEqual(neighborPos, end) && !isPointEqual(current.pos, start)) continue;
                 
                 // If current is inside blockage, only allow moving to parent
                 // if (currentIsBlocked) {
