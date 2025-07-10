@@ -20,6 +20,7 @@ public class PlannerVehicle implements Cloneable {
     public String type;
     public VehicleState state;
     public PlannerFailure currentFailure;
+    public boolean isAveriado; // inclute STUCK y REPAIR states
     public PlannerMaintenance currentMaintenance;
     public int waitTransition;
     public double weight;
@@ -39,7 +40,7 @@ public class PlannerVehicle implements Cloneable {
 
     public PlannerVehicle(int id, String plaque, String type, VehicleState state, 
                          double weight, int maxFuel, double currentFuel, 
-                         int maxGLP, int currentGLP, Position position) {
+                         int maxGLP, int currentGLP, Position position, boolean isAveriado) {
         this.id = id;
         this.plaque = plaque;
         this.type = type;
@@ -54,10 +55,12 @@ public class PlannerVehicle implements Cloneable {
         this.waitTransition = 0;
         this.currentPath = null;
         this.nextNodeIndex = 1;
+        this.isAveriado = isAveriado;
     }
 
     public static PlannerVehicle fromEntity(Vehiculo vehiculo) {
         VehicleState state = vehiculo.isDisponible() ? VehicleState.IDLE : VehicleState.REPAIR;
+        boolean isAveriado = vehiculo.isDisponible() ? false : true;
         Position position = new Position(vehiculo.getPosicionX(), vehiculo.getPosicionY());
         
         return new PlannerVehicle(
@@ -70,7 +73,8 @@ public class PlannerVehicle implements Cloneable {
             vehiculo.getCurrCombustible(),
             (int) vehiculo.getMaxGlp(),
             (int) vehiculo.getCurrGlp(),
-            position
+            position,
+            isAveriado
         );
     }
 
@@ -239,7 +243,8 @@ public class PlannerVehicle implements Cloneable {
                 this.currentFuel,
                 this.maxGLP,
                 this.currentGLP,
-                this.position.clone()
+                this.position.clone(),
+                this.isAveriado
             );
             
             // Clone mutable fields

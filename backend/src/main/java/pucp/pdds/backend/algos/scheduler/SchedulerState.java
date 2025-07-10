@@ -153,7 +153,7 @@ public class SchedulerState {
 
     public synchronized void advance(Solution sol, boolean shouldLog) {
         if (shouldLog) {
-            debugPrint("--- Time: " + currTime + " ---");
+            // debugPrint("--- Time: " + currTime + " ---");
         }
 
         if (currTime.getHour() == 0 && currTime.getMinute() == 0) {
@@ -194,9 +194,11 @@ public class SchedulerState {
                         (failure.shiftOccurredOn == PlannerFailure.Shift.T3 && currTimeCopy.getHour() >= 16 && currTimeCopy.getHour() < 24)
                     )
             ).findFirst().orElse(null);
+            // tampoco deberia poder averiarse si esta en REPAIR
             if (plannerVehicle.state != PlannerVehicle.VehicleState.STUCK &&
             plannerVehicle.state != PlannerVehicle.VehicleState.MAINTENANCE &&
                 plannerVehicle.currentFailure == null &&
+                // !plannerVehicle.isAveriado &&
                 matchingFailure != null) {
                 List<Node> route = sol.routes.get(plannerVehicle.id);
                 if (route != null && route.size() > 0) {
@@ -206,25 +208,27 @@ public class SchedulerState {
                         plannerVehicle.minutesUntilFailure = distance;
                         plannerVehicle.currentFailure = matchingFailure;
                         if (shouldLog) {
-                            debugPrint("Assigned failure to happen to vehicle " + plannerVehicle.id + " in " + plannerVehicle.minutesUntilFailure + " minutes");
+                            debugPrint("Assigned failure to happen to vehicle " + plannerVehicle.plaque + " in " + plannerVehicle.minutesUntilFailure + " minutes");
                         }
                     }
                 }
             }
-            // If vehicle should fail
+            // If vehicle should fail // tampoco deberia poder fallar si esta en REPAIR
             else if (plannerVehicle.minutesUntilFailure <= 0 &&
                 plannerVehicle.currentFailure != null &&
+                // plannerVehicle.isAveriado &&
                 plannerVehicle.state != PlannerVehicle.VehicleState.STUCK) {
                 plannerVehicle.state = PlannerVehicle.VehicleState.STUCK;
                 plannerVehicle.currentFailure.timeOccuredOn = currTime;
                 plannerVehicle.currentPath = null;
                 if (shouldLog) {
-                    debugPrint("Vehicle " + plannerVehicle.id + " has failed");
+                    debugPrint("Vehicle " + plannerVehicle.plaque + " has failed");
                 }
             } 
             // If vehicle stuck time has ended
             else if (plannerVehicle.state == PlannerVehicle.VehicleState.STUCK &&
                 plannerVehicle.currentFailure != null &&
+                // plannerVehicle.isAveriado &&
                 plannerVehicle.currentFailure.timeOccuredOn.addMinutes(plannerVehicle.currentFailure.type.getMinutesStuck()).isBefore(currTime)) {
                 PlannerWarehouse mainWarehouse = warehouses.stream().filter(warehouse -> warehouse.isMain).findFirst().orElse(null);
                 if (mainWarehouse == null) {
@@ -237,7 +241,7 @@ public class SchedulerState {
                         plannerVehicle.state = PlannerVehicle.VehicleState.IDLE;
                         plannerVehicle.currentFailure = null;
                         if (shouldLog) {
-                            debugPrint("Vehicle " + plannerVehicle.id + " has recovered from failure of type Ti1");
+                            debugPrint("Vehicle " + plannerVehicle.plaque + " has recovered from failure of type Ti1");
                         }
                         reincorporationTime = new Time(
                             plannerVehicle.currentFailure.timeOccuredOn.getYear(),
@@ -291,7 +295,7 @@ public class SchedulerState {
                         plannerVehicle.reincorporationTime = reincorporationTime;
                         plannerVehicle.currentFailure = null;
                         if (shouldLog) {
-                            debugPrint("Vehicle " + plannerVehicle.id + " has recovered from failure of type Ti2, will be available at " + reincorporationTime);
+                            debugPrint("Vehicle " + plannerVehicle.plaque + " has recovered from failure of type Ti2, will be available at " + reincorporationTime);
                         }
                         break;
                     case Ti3:
@@ -302,33 +306,70 @@ public class SchedulerState {
                             plannerVehicle.currentFailure.timeOccuredOn.getDay() + 2,
                             0,
                             0
-                        );
-                        plannerVehicle.currentFailure = null;
-                        if (shouldLog) {
-                            debugPrint("Vehicle " + plannerVehicle.id + " has recovered from failure of type Ti3");
-                        }
-                        break;
+                            );
+                            plannerVehicle.currentFailure = null;
+                            if (shouldLog) {
+                                debugPrint("Vehicle " + plannerVehicle.plaque + " has recovered from failure of type Ti3");
+                            }
+                            break;
                 }
                 plannerVehicle.currentPath = path;
             }
-
+            // Handle vehicles returning to base for repair
+            PlannerWarehouse mainWarehouse = warehouses.stream().filter(warehouse -> warehouse.isMain).findFirst().orElse(null);
             if (plannerVehicle.state == PlannerVehicle.VehicleState.RETURNING_TO_BASE &&
-            plannerVehicle.reincorporationTime.isSameDate(currTime)) {
-                plannerVehicle.state = PlannerVehicle.VehicleState.IDLE;
-                plannerVehicle.currentFailure = null;
-                if (shouldLog) {
-                    debugPrint("Vehicle " + plannerVehicle.id + " has finished repairing");
+                currTime.isBefore(plannerVehicle.reincorporationTime)) {
+                // Force return to main warehouse
+                if (plannerVehicle.currentPath == null || plannerVehicle.currentPath.isEmpty()) {
+                    plannerVehicle.currentPath = PathBuilder.buildPath(plannerVehicle.position, mainWarehouse.position, getActiveBlockages());
                 }
+                if (shouldLog) {
+                    debugPrint("Vehicle " + plannerVehicle.plaque + " IS RETURNING to base for repair");
+                }
+                // Check if vehicle has reached the main warehouse
+                if (Math.abs(plannerVehicle.position.x - mainWarehouse.position.x) <= 0.2 && 
+                    Math.abs(plannerVehicle.position.y - mainWarehouse.position.y) <= 0.2) {
+                    plannerVehicle.waitTransition = currTime.minutesUntil(plannerVehicle.reincorporationTime);
+                    plannerVehicle.currentPath = null;
+                    plannerVehicle.state = PlannerVehicle.VehicleState.REPAIR;
+                    if (shouldLog) {
+                        debugPrint("Vehicle " + plannerVehicle.plaque + " HAS RETURNED to base for repair, waiting until " + plannerVehicle.reincorporationTime);
+                    }
+                }
+            }
+
+            if (
+                // plannerVehicle.isAveriado &&
+                plannerVehicle.state == PlannerVehicle.VehicleState.REPAIR &&
+                plannerVehicle.reincorporationTime.isSameDateTime(currTime)) {
+                    plannerVehicle.state = PlannerVehicle.VehicleState.IDLE;
+                    plannerVehicle.currentFailure = null;
+                    // plannerVehicle.isAveriado = false; 
+                    if (shouldLog) {
+                        debugPrint("Vehicle " + plannerVehicle.plaque + " has finished repairing");
+                    }
             }
             
             if (plannerVehicle.minutesUntilFailure > 0) {
                 plannerVehicle.minutesUntilFailure--;
                 if (shouldLog) {
-                    debugPrint("Vehicle " + plannerVehicle.id + " has " + plannerVehicle.minutesUntilFailure + " minutes until failure");
+                    debugPrint("Vehicle " + plannerVehicle.plaque + " has " + plannerVehicle.minutesUntilFailure + " minutes until failure");
                 }
             }
 
-            if (!getActiveVehicles().contains(plannerVehicle)) {
+            // Handle path advancement for vehicles returning to base
+            if (plannerVehicle.state == PlannerVehicle.VehicleState.RETURNING_TO_BASE && 
+                plannerVehicle.currentPath != null && !plannerVehicle.currentPath.isEmpty()) {
+                plannerVehicle.advancePath(
+                    SimulationProperties.speed / 60.0,
+                    activeIndicators
+                );
+                continue;
+            }
+
+            // Skip normal processing for vehicles that are not active or are repairing
+            if (!getActiveVehicles().contains(plannerVehicle) || 
+                plannerVehicle.state == PlannerVehicle.VehicleState.REPAIR) {
                 continue;
             }
 
@@ -380,7 +421,9 @@ public class SchedulerState {
                     SimulationProperties.speed / 60.0,
                     activeIndicators
                 );
-                plannerVehicle.state = PlannerVehicle.VehicleState.ONTHEWAY;
+                if(plannerVehicle.state != PlannerVehicle.VehicleState.RETURNING_TO_BASE) {
+                    plannerVehicle.state = PlannerVehicle.VehicleState.ONTHEWAY;
+                }
             }
         }
 

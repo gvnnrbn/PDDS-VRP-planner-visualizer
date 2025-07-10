@@ -190,6 +190,10 @@ public class Time implements Comparable<Time>, Cloneable {
         return this.year == other.year && this.month == other.month && this.day == other.day;
     }
 
+    public boolean isSameDateTime(Time other) {
+        return this.year == other.year && this.month == other.month && this.day == other.day && this.hour == other.hour && this.min == other.min;
+    }
+
     @Override
     public Time clone() {
         try {
