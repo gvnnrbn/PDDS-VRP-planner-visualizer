@@ -29,9 +29,18 @@ function panelStyles({ left, top }: { left: number; top: number }) {
 // Cache global para imágenes de íconos
 const iconImageCache: Record<string, HTMLImageElement> = {};
 
+// Helper para obtener un identificador único del ícono
+function getIconIdentifier(IconComponent: React.ElementType): string {
+  // Intentar obtener displayName o name, si no existe usar el nombre de la función
+  return (IconComponent as any).displayName || 
+         (IconComponent as any).name || 
+         IconComponent.toString().split(' ')[1] || 
+         'unknown';
+}
+
 // Helper para convertir un ícono de react-icons a imagen para canvas, usando cache
 function iconToImage(IconComponent: React.ElementType, color: string, size = 32): Promise<HTMLImageElement> {
-  const cacheKey = `${IconComponent.displayName || IconComponent.name || ''}_${color}_${size}`;
+  const cacheKey = `${getIconIdentifier(IconComponent)}_${color}_${size}`;
   if (iconImageCache[cacheKey]) {
     return Promise.resolve(iconImageCache[cacheKey]);
   }
@@ -59,7 +68,7 @@ export async function preloadIcons(): Promise<void> {
     { icon: FaWarehouse, colors: ['#444', '#000'], sizes: [32] },
     { icon: FaIndustry, colors: ['#444', '#ff0000', '#00c800'], sizes: [32] },
     { icon: FaMapMarkerAlt, colors: ['#5459EA', '#FFD700'], sizes: [24, 32] }, // Añade los tamaños usados
-    { icon: FaTruck, colors: ['#ffc800', '#ff0000', '#ffa500', '#444'], sizes: [32] }, // Añade los colores usados
+    { icon: FaTruck, colors: ['#ffc800', '#ff0000', '#ffa500', '#444', '#00c800', '#666565'], sizes: [32] }, // Añade todos los colores usados
   ];
 
   const promises: Promise<HTMLImageElement>[] = [];
@@ -195,7 +204,7 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
       }
 
       // Obtener imagen del caché (ya precargada)
-      const cacheKey = `${icon.displayName || icon.name || ''}_${color}_${32}`;
+      const cacheKey = `${getIconIdentifier(icon)}_${color}_${32}`;
       const img = iconImageCache[cacheKey]; // Ahora no hay `await` aquí
 
       // Si este almacén está resaltado, dibujar un círculo/borde especial
@@ -294,7 +303,7 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
         vehiculo: v,
       });
 
-      const cacheKey = `${FaTruck.displayName || FaTruck.name || ''}_${color}_${32}`;
+      const cacheKey = `${getIconIdentifier(FaTruck)}_${color}_${32}`;
       const img = iconImageCache[cacheKey];
 
       if (img) {

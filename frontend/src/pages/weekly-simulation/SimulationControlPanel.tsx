@@ -18,7 +18,7 @@ import type { VehiculoSimulado, VehiculoSimuladoV2 } from '../../core/types/vehi
 import type { IndicadoresSimulado } from '../../core/types/indicadores';
 import AlmacenModal from '../../components/common/modals/ModalAlmacen';
 import { format, parseISO, differenceInSeconds, parse } from 'date-fns';
-import { selectCalculatedXAxisPadding } from 'recharts/types/state/selectors/axisSelectors';
+
 
 interface LogEntry {
   timestamp: string;
@@ -46,9 +46,18 @@ const backend_url = import.meta.env.VITE_ENV_BACKEND_URL;
 // Cache global para imágenes de íconos
 const iconImageCache: Record<string, HTMLImageElement> = {};
 
+// Helper para obtener un identificador único del ícono
+function getIconIdentifier(IconComponent: React.ElementType): string {
+  // Intentar obtener displayName o name, si no existe usar el nombre de la función
+  return (IconComponent as any).displayName || 
+         (IconComponent as any).name || 
+         IconComponent.toString().split(' ')[1] || 
+         'unknown';
+}
+
 // Helper para convertir un ícono de react-icons a imagen para canvas, usando cache
 function iconToImage(IconComponent: React.ElementType, color: string, size = 32): Promise<HTMLImageElement> {
-  const cacheKey = `${IconComponent.displayName || IconComponent.name || ''}_${color}_${size}`;
+  const cacheKey = `${getIconIdentifier(IconComponent)}_${color}_${size}`;
   if (iconImageCache[cacheKey]) {
     return Promise.resolve(iconImageCache[cacheKey]);
   }
@@ -76,7 +85,7 @@ export async function preloadIcons(): Promise<void> {
     { icon: FaWarehouse, colors: ['#444', '#000'], sizes: [32] },
     { icon: FaIndustry, colors: ['#444', '#ff0000', '#00c800'], sizes: [32] },
     { icon: FaMapMarkerAlt, colors: ['#5459EA', '#FFD700'], sizes: [24, 32] }, // Añade los tamaños usados
-    { icon: FaTruck, colors: ['#ffc800', '#ff0000', '#ffa500', '#444'], sizes: [32] }, // Añade los colores usados
+    { icon: FaTruck, colors: ['#ffc800', '#ff0000', '#ffa500', '#444', '#00c800', '#666565'], sizes: [32] }, // Añade todos los colores usados
   ];
 
   const promises: Promise<HTMLImageElement>[] = [];
@@ -227,7 +236,7 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
       }
 
       // Obtener imagen del caché (ya precargada)
-      const cacheKey = `${icon.displayName || icon.name || ''}_${color}_${32}`;
+      const cacheKey = `${getIconIdentifier(icon)}_${color}_${32}`;
       const img = iconImageCache[cacheKey]; // Ahora no hay `await` aquí
 
       // Si este almacén está resaltado, dibujar un círculo/borde especial
@@ -280,7 +289,7 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
       const iconColor = isHighlighted ? '#FFD700' : '#5459EA';
       const iconSize = isHighlighted ? 32 : 24;
 
-      const cacheKey = `${FaMapMarkerAlt.displayName || FaMapMarkerAlt.name || ''}_${iconColor}_${iconSize}`;
+      const cacheKey = `${getIconIdentifier(FaMapMarkerAlt)}_${iconColor}_${iconSize}`;
       const img = iconImageCache[cacheKey]; // No await
 
       if (img) {
@@ -310,11 +319,10 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
         continue;
       }
       let color = '#444'; // Color por defecto
-      if (v.estado === 'STUCK' || v.estado === 'REPAIR') color = '#ff0000';
+      if (v.estado === 'STUCK' || v.estado === 'REPAIR' || v.estado === 'RETURNING_TO_BASE') color = '#ff0000';
       else if (v.estado === 'MAINTENANCE') color = '#ffa500';
-      else if (v.estado === 'En Ruta' || v.estado === 'MOVIENDOSE' || v.estado === 'RETURNING_TO_BASE') color = '#00c800'; // Color para vehículos en movimiento
-      else if (v.estado === 'IDLE') color = '#666565'; // Color si está inactivo
-
+      else if (v.estado === 'ONTHEWAY' ) color = '#444'; // Color para vehículos en movimiento
+      else if (v.estado === 'IDLE') color = '#444'; // Color si está inactivo
 
       const vx = margin + v.posicionX * scaleX;
       const vy = margin + v.posicionY * scaleY;
@@ -340,7 +348,7 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
         ctx.restore();
       }
 
-      const cacheKey = `${FaTruck.displayName || FaTruck.name || ''}_${color}_${32}`;
+      const cacheKey = `${getIconIdentifier(FaTruck)}_${color}_${32}`;
       const img = iconImageCache[cacheKey];
 
       if (img) {
