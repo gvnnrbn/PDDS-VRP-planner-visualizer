@@ -25,6 +25,7 @@ interface SimulationContextType {
   currentMinuteData: MinutoSimulacion | undefined;
   setCurrentMinuteData: (data: MinutoSimulacion) => void;
   focusOnPedido: (pedido: PedidoSimulado) => void;
+  focusOnVehiculo: (vehiculo: VehiculoSimuladoV2) => void;
   highlightedPedidoId: number | null;
 }
 
@@ -91,12 +92,48 @@ export const SimulationProvider = ({
     }, 3000);
   };
 
+  const focusOnVehiculo = (vehiculo: VehiculoSimuladoV2) => {
+    // Centrar el mapa en la posición del vehículo
+    const margin = 40;
+    const canvasWidth = 1720;
+    const canvasHeight = 1080;
+    const gridLength = 70;
+    const gridWidth = 50;
+    const scaleX = (canvasWidth - 2 * margin) / gridLength;
+    const scaleY = (canvasHeight - 2 * margin) / gridWidth;
+    
+    // Calcular la posición del vehículo en el canvas
+    const vehiculoX = margin + vehiculo.posicionX * scaleX;
+    const vehiculoY = margin + vehiculo.posicionY * scaleY;
+    
+    // Centrar el mapa en esa posición
+    const centerX = canvasWidth / 2;
+    const centerY = canvasHeight / 2;
+    
+    // Calcular el pan necesario para centrar
+    const newPanX = centerX - vehiculoX;
+    const newPanY = centerY - vehiculoY;
+    
+    // Actualizar las variables globales de pan de forma no bloqueante
+    (window as any).globalPanX = newPanX;
+    (window as any).globalPanY = newPanY;
+    
+    // Resaltar el vehículo temporalmente
+    (window as any).highlightedVehicleId = vehiculo.idVehiculo;
+    
+    // Remover el resaltado después de 3 segundos
+    setTimeout(() => {
+      (window as any).highlightedVehicleId = null;
+    }, 3000);
+  };
+
   return (
     <SimulationContext.Provider
       value={{ 
         currentMinuteData, 
         setCurrentMinuteData, 
         focusOnPedido,
+        focusOnVehiculo,
         highlightedPedidoId
       }}
     >

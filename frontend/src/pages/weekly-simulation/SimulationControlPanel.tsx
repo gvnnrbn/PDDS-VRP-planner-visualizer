@@ -127,6 +127,7 @@ export function setZoom(scale: number) {
 (window as any).panX = panX;
 (window as any).panY = panY;
 (window as any).highlightedPedidoId = null;
+(window as any).highlightedVehicleId = null;
 
 
 // Dibuja el estado de la simulación en el canvas usando íconos
@@ -324,6 +325,20 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
         size: 32,
         vehiculo: v,
       });
+
+      // Si este vehículo está resaltado, dibujar un círculo/borde especial
+      if (typeof window !== 'undefined' && (window as any).highlightedVehicleId === v.idVehiculo) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(vx, vy, 24, 0, 2 * Math.PI);
+        ctx.strokeStyle = '#805ad5';
+        ctx.lineWidth = 5;
+        ctx.shadowColor = '#805ad5';
+        ctx.shadowBlur = 12;
+        ctx.setLineDash([]); // Asegurar línea sólida
+        ctx.stroke();
+        ctx.restore();
+      }
 
       const cacheKey = `${FaTruck.displayName || FaTruck.name || ''}_${color}_${32}`;
       const img = iconImageCache[cacheKey];

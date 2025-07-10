@@ -142,7 +142,7 @@ const PedidosSection = () => {
 
 
   const FlotaSection = () => {
-    const { currentMinuteData } = useSimulation();
+    const { currentMinuteData, focusOnVehiculo } = useSimulation();
     const [searchValue, setSearchValue] = useState('');
     const [statusFilter, setStatusFilter] = useState<'todos' | 'enruta' | 'averiado' | 'sinprogramacion' | 'mantenimiento'>('todos');
     const [orderBy, setOrderBy] = useState(ORDER_OPTIONS_VEHICULOS[0].value);
@@ -231,7 +231,7 @@ const PedidosSection = () => {
               <Box color="gray.500" textAlign="center" py={6}>No hay vehículos para mostrar.</Box>
             )}
             {vehiculosFiltrados.map((v) => (
-              <FlotaCard key={v.idVehiculo} vehiculo={v} onClick={()=>console.log('enfocando...')}/>
+              <FlotaCard key={v.idVehiculo} vehiculo={v} onClick={() => focusOnVehiculo(v)}/>
             ))}
           </VStack>
         </VStack>
