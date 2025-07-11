@@ -239,7 +239,6 @@ public class SchedulerState {
                 switch (plannerVehicle.currentFailure.type) {
                     case Ti1:
                         plannerVehicle.state = PlannerVehicle.VehicleState.IDLE;
-                        plannerVehicle.currentFailure = null;
                         if (shouldLog) {
                             debugPrint("Vehicle " + plannerVehicle.plaque + " has recovered from failure of type Ti1");
                         }
@@ -249,8 +248,8 @@ public class SchedulerState {
                             plannerVehicle.currentFailure.timeOccuredOn.getDay(),
                             plannerVehicle.currentFailure.timeOccuredOn.getHour(),
                             plannerVehicle.currentFailure.timeOccuredOn.getMinute()
-                        ).addMinutes(120);
-
+                            ).addMinutes(120);
+                            
                         plannerVehicle.reincorporationTime = reincorporationTime;
                         break;
                     case Ti2:
@@ -293,7 +292,6 @@ public class SchedulerState {
                         }
                         
                         plannerVehicle.reincorporationTime = reincorporationTime;
-                        plannerVehicle.currentFailure = null;
                         if (shouldLog) {
                             debugPrint("Vehicle " + plannerVehicle.plaque + " has recovered from failure of type Ti2, will be available at " + reincorporationTime);
                         }
@@ -307,12 +305,12 @@ public class SchedulerState {
                             0,
                             0
                             );
-                            plannerVehicle.currentFailure = null;
                             if (shouldLog) {
                                 debugPrint("Vehicle " + plannerVehicle.plaque + " has recovered from failure of type Ti3");
                             }
                             break;
                 }
+                plannerVehicle.currentFailure = null;
                 plannerVehicle.currentPath = path;
             }
             // Handle vehicles returning to base for repair
