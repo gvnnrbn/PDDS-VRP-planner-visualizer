@@ -1360,8 +1360,18 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps & { onVehicul
           onViewDetails={() => {
             setIsSummaryOpen(false);
             resetSimulationState();
-            navigate('/weekly-simulation/details', { 
-              state: { simulationData: simulationSummary } 
+            // --- Lógica híbrida para tamaño ---
+            const json = JSON.stringify(simulationSummary);
+            const sizeInMB = json.length / (1024 * 1024);
+            let dataToSend;
+            if (sizeInMB < 2) {
+              dataToSend = simulationSummary;
+            } else {
+              const { simulacionCompleta, ...resumenSinDetalle } = simulationSummary || {};
+              dataToSend = { ...resumenSinDetalle, historialReducido: true };
+            }
+            navigate('/weekly-simulation/details', {
+              state: { simulationData: dataToSend }
             });
           }}
           {...resumenData}
