@@ -19,7 +19,7 @@ interface SimulationCompleteModalProps {
   fechaFin: string;
   duracion: string;
   pedidosEntregados?: number;
-  consumoPetroleo?: number;
+  consumoPetroleo?: number | string;
   tiempoPlanificacion?: string;
 }
 
@@ -48,7 +48,7 @@ const SimulationCompleteModal: React.FC<SimulationCompleteModalProps> = ({
       <ModalContent bg="white" textAlign="center" p={8}>
         <ModalHeader>
           <Text fontSize="2xl" fontWeight="extrabold">
-            ✅ Simulación completada
+            Simulación completada
           </Text>
         </ModalHeader>
         <hr />
@@ -69,9 +69,9 @@ const SimulationCompleteModal: React.FC<SimulationCompleteModalProps> = ({
             <Text>
               <strong>Consumo en petróleo:</strong> {consumoPetroleo}
             </Text>
-            <Text>
+            {/* <Text>
               <strong>Tiempo de planificación:</strong> {tiempoPlanificacion}
-            </Text>
+            </Text> */}
           </VStack>
 
           <Flex justify="space-between" mt={6}>

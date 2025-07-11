@@ -466,23 +466,23 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps & { onVehicul
 
   // Estado para guardar el primer valor de fecha/hora de la simulación
   const [simStartDate, setSimStartDate] = useState('');
+  const [simEndDate, setSimEndDate] = useState('');
 
-  // Sincroniza isSimulating y simStartDate con el primer data?.minuto recibido
+  // Sincroniza isSimulating con el primer data?.minuto recibido
+  // simStartDate se establece con initialTime cuando se inicia la simulación
   useEffect(() => {
     if (data?.minuto) {
-      if (!simStartDate) {
-        setSimStartDate(data.minuto);
-      }
       if (!isSimulating) {
         setIsSimulating(true);
       }
     }
-  }, [data?.minuto, simStartDate, isSimulating]);
+  }, [data?.minuto, isSimulating]);
 
   // Cuando se detiene la simulación, limpia el valor
   useEffect(() => {
     if (!isSimulating) {
       setSimStartDate('');
+      setSimEndDate(''); // También limpiar la fecha final
     }
   }, [isSimulating]);
 
@@ -585,7 +585,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps & { onVehicul
           return;
         case 'SIMULATION_SUMMARY':
           console.log('SimulationControlPanel - Summary data received:', typedResponse.data);
-          setSimulationSummary(typedResponse.data);
+          setSimEndDate(data?.minuto || ''); // Guardar la fecha final antes de detener
           setIsSimulating(false);
           setIsSummaryOpen(true);
           return;
@@ -625,6 +625,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps & { onVehicul
       destination: '/app/init',
       body: JSON.stringify({ initialTime: timeObj }),
     });
+    setSimStartDate(initialTime); // Establecer la fecha de inicio real
     setIsSimulating(true);
     onClose();
   };
@@ -936,44 +937,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps & { onVehicul
   //Modal final
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
 
-  //Falta ver como se saca la info
-  // Calcula la duración entre initialTime (ISO) y data.minuto ("dd/mm/yyyy hh:mm")
-  //   if (!initialTime || !fin) return "00:00:00";
-  //   // initialTime: "2024-06-07T08:00"
-  //   // fin: "07/06/2024 08:10"
-  //   try {
-  //     const [fecha, hora] = fin.split(" ");
-  //     const [day, month, year] = fecha.split("/").map(Number);
-  //     const [h, m] = hora.split(":").map(Number);
-  //     const fechaFin = new Date(year, month - 1, day, h, m);
-  //     const fechaInicio = new Date(initialTime);
 
-  //     let diff = Math.max(0, fechaFin.getTime() - fechaInicio.getTime());
-  //     const dias = Math.floor(diff / (1000 * 60 * 60 * 24));
-  //     diff -= dias * (1000 * 60 * 60 * 24);
-  //     const horas = Math.floor(diff / (1000 * 60 * 60));
-  //     diff -= horas * (1000 * 60 * 60);
-  //     const minutos = Math.floor(diff / (1000 * 60));
-  //     return `${dias > 0 ? dias + "d " : ""}${String(horas).padStart(2, "0")}:${String(minutos).padStart(2, "0")}`;
-  //   } catch {
-  //     return "00:00:00";
-  //   }
-  // }
-  // const resumenData = {
-  //   fechaInicio: initialTime,
-  //   fechaFin: data.minuto,
-  //   duracion: calcularDuracion(initialTime, data.minuto),
-  //   pedidosEntregados: 124,
-  //   consumoPetroleo: 763.2,
-  // };
-  // Usar datos reales del resumen de simulación
-  const resumenData = simulationSummary || {
-    fechaFin: new Date().toISOString().slice(0, 16),
-    duracion: "00:10:00",
-    pedidosEntregados: 124,
-    consumoPetroleo: 763.2,
-    tiempoPlanificacion: "00:00:15",
-  };
   const handleStopAndShowSummary = () => {
     stopSimulation(); // sigue deteniendo la simulación
   };
@@ -1007,6 +971,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps & { onVehicul
   function resetSimulationState() {
     setIsSimulating(false);
     setSimStartDate('');
+    setSimEndDate('');
     setData(undefined as any); // o el valor inicial vacío según tu tipo
     if (canvasRef.current) {
       const ctx = canvasRef.current.getContext('2d');
@@ -1060,20 +1025,41 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps & { onVehicul
     }
   }, [isSimulating, simStartDate]);
 
-  // Calcular duración
+  // Función para calcular duración entre dos fechas
+  const calcularDuracion = (fechaInicio: string, fechaFin: string): string => {
+    if (!fechaInicio || !fechaFin) return '--:--:--';
+    
+    try {
+      let inicio = safeParse(fechaInicio);
+      let actual = safeParse(fechaFin);
+      let diff = Math.max(0, actual.getTime() - inicio.getTime());
+      const dias = Math.floor(diff / (1000 * 60 * 60 * 24));
+      diff -= dias * (1000 * 60 * 60 * 24);
+      const horas = Math.floor(diff / (1000 * 60 * 60));
+      diff -= horas * (1000 * 60 * 60);
+      const minutos = Math.floor(diff / (1000 * 60));
+      return `${dias > 0 ? dias + 'd ' : ''}${String(horas).padStart(2, '0')}h${String(minutos).padStart(2, '0')}m`;
+    } catch (error) {
+      return '--:--:--';
+    }
+  };
+
+  // Calcular duración para mostrar en tiempo real
   let duracionStr = '--:--:--';
-  if (simStartDate && data?.minuto) {
-    // simStartDate y data.minuto pueden ser ISO o string tipo dd/MM/yyyy HH:mm
-    let inicio = safeParse(simStartDate);
-    let actual = safeParse(data.minuto);
-    let diff = Math.max(0, actual.getTime() - inicio.getTime());
-    const dias = Math.floor(diff / (1000 * 60 * 60 * 24));
-    diff -= dias * (1000 * 60 * 60 * 24);
-    const horas = Math.floor(diff / (1000 * 60 * 60));
-    diff -= horas * (1000 * 60 * 60);
-    const minutos = Math.floor(diff / (1000 * 60));
-    duracionStr = `${dias > 0 ? dias + 'd ' : ''}${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}`;
+  const fechaFin = simEndDate || data?.minuto; 
+  if (simStartDate && fechaFin) {
+    duracionStr = calcularDuracion(simStartDate, fechaFin);
   }
+
+  // Usar datos reales del resumen de simulación desde el estado global data
+  const resumenData = {
+    fechaInicio: simStartDate || initialTime,
+    fechaFin: simEndDate || data?.minuto || new Date().toISOString().slice(0, 16),
+    duracion: calcularDuracion(simStartDate || initialTime, simEndDate || data?.minuto || ''),
+    pedidosEntregados: Math.max(0, data?.indicadores?.completedOrders || 0),
+    consumoPetroleo: Number((data?.indicadores?.fuelCounterTotal || 0).toFixed(2)),
+    tiempoPlanificacion: "00:00:15", 
+  };
 
   // Estado para la posición de la tarjeta de pedido (draggable)
   const [pedidoCardPos, setPedidoCardPos] = useState<{ x: number; y: number } | null>(null);
