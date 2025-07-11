@@ -118,10 +118,10 @@ const SimulationDetails: React.FC<SimulationDetailsProps> = ({ simulationData })
     y += 18;
     doc.setFontSize(11);
     doc.setTextColor('#222');
-    doc.text(`• Consumo de Petróleo: `, margen, y);
-    doc.setTextColor(naranjaConsumo);
-    doc.text(`${data.consumoPetroleo} L`, margen + 140, y);
-    doc.setTextColor('#222');
+    // doc.text(`• Consumo de Petróleo: `, margen, y);
+    // doc.setTextColor(naranjaConsumo);
+    // doc.text(`${data.consumoPetroleo} L`, margen + 140, y);
+    // doc.setTextColor('#222');
     doc.text(`• Vehículos Totales: ${data.estadisticas?.totalVehiculos ?? '-'}`, margen + 240, y);
     y += 16;
     doc.text(`• Máx. Vehículos Activos en un Minuto: `, margen, y);
@@ -328,62 +328,50 @@ const SimulationDetails: React.FC<SimulationDetailsProps> = ({ simulationData })
               <Heading size="md" textAlign="center">Estadísticas</Heading>
             </CardHeader>
             <CardBody>
-              <Grid templateColumns="repeat(auto-fit, minmax(180px, 1fr))" gap={3} justifyContent="center">
-                <GridItem>
-                  <Stat>
-                    <StatLabel>Consumo de Petróleo</StatLabel>
-                    <StatNumber color="orange.500">{data.consumoPetroleo} L</StatNumber>
-                  </Stat>
-                </GridItem>
-                <GridItem>
-                  <Stat>
-                    <StatLabel>Vehículos Totales</StatLabel>
-                    <StatNumber>{data.estadisticas.totalVehiculos}</StatNumber>
-                  </Stat>
-                </GridItem>
-                <GridItem>
-                  <Stat>
-                    <StatLabel>Máx. Vehículos Activos en un Minuto</StatLabel>
-                    <StatNumber color="blue.500">{data.estadisticas.maxVehiculosActivosEnUnMinuto}</StatNumber>
-                  </Stat>
-                </GridItem>
-                <GridItem>
-                  <Stat>
-                    <StatLabel>Vehículos Activos Únicos</StatLabel>
-                    <StatNumber color="purple.500">{data.estadisticas.vehiculosActivosUnicos}</StatNumber>
-                  </Stat>
-                </GridItem>
-                <GridItem>
-                  <Stat>
-                    <StatLabel>Minutos Simulados</StatLabel>
-                    <StatNumber>{data.estadisticas.minutosSimulados}</StatNumber>
-                  </Stat>
-                </GridItem>
-                <GridItem>
-                  <Stat>
-                    <StatLabel>Pedidos Entregados</StatLabel>
-                    <StatNumber color="green.600">{typeof data.pedidosEntregados !== 'undefined' ? data.pedidosEntregados : (
-                      (() => {
-                        // Calcular desde el resumen de pedidos si no está en data
-                        if (data.simulacionCompleta) {
-                          const minutos = data.simulacionCompleta;
-                          const resumen: Record<string, { estadoFinal: string }> = {};
-                          minutos.forEach((minutoSnap: any) => {
-                            minutoSnap.pedidos.forEach((pedido: any) => {
-                              if (!resumen[pedido.idPedido]) {
-                                resumen[pedido.idPedido] = { estadoFinal: pedido.estado };
-                              }
-                              resumen[pedido.idPedido].estadoFinal = pedido.estado;
-                            });
+              <StatGroup justifyContent="center" gap={6}>
+                {/* <Stat>
+                  <StatLabel>Consumo de Petróleo</StatLabel>
+                  <StatNumber color="orange.500">{data.consumoPetroleo} L</StatNumber>
+                </Stat> */}
+                <Stat>
+                  <StatLabel>Vehículos Totales</StatLabel>
+                  <StatNumber>{data.estadisticas?.totalVehiculos ?? '-'}</StatNumber>
+                </Stat>
+                <Stat>
+                  <StatLabel>Máx. Vehículos Activos en un Minuto</StatLabel>
+                  <StatNumber color="blue.600">{data.estadisticas?.maxVehiculosActivosEnUnMinuto ?? '-'}</StatNumber>
+                </Stat>
+                <Stat>
+                  <StatLabel>Vehículos Activos Únicos</StatLabel>
+                  <StatNumber color="purple.600">{data.estadisticas?.vehiculosActivosUnicos ?? '-'}</StatNumber>
+                </Stat>
+                <Stat>
+                  <StatLabel>Minutos Simulados</StatLabel>
+                  <StatNumber>{data.estadisticas?.minutosSimulados ?? '-'}</StatNumber>
+                </Stat>
+                <Stat>
+                  <StatLabel>Pedidos Entregados</StatLabel>
+                  <StatNumber color="green.600">{typeof data.pedidosEntregados !== 'undefined' ? data.pedidosEntregados : (
+                    (() => {
+                      // Calcular desde el resumen de pedidos si no está en data
+                      if (data.simulacionCompleta) {
+                        const minutos = data.simulacionCompleta;
+                        const resumen: Record<string, { estadoFinal: string }> = {};
+                        minutos.forEach((minutoSnap: any) => {
+                          minutoSnap.pedidos.forEach((pedido: any) => {
+                            if (!resumen[pedido.idPedido]) {
+                              resumen[pedido.idPedido] = { estadoFinal: pedido.estado };
+                            }
+                            resumen[pedido.idPedido].estadoFinal = pedido.estado;
                           });
-                          return Object.values(resumen).filter((p) => p.estadoFinal === 'COMPLETADO').length;
-                        }
-                        return 0;
-                      })()
-                    )}</StatNumber>
-                  </Stat>
-                </GridItem>
-              </Grid>
+                        });
+                        return Object.values(resumen).filter((p) => p.estadoFinal === 'COMPLETADO').length;
+                      }
+                      return 0;
+                    })()
+                  )}</StatNumber>
+                </Stat>
+              </StatGroup>
             </CardBody>
           </Card>
         )}

@@ -19,7 +19,6 @@ interface SimulationCompleteModalProps {
   fechaFin: string;
   duracion: string;
   pedidosEntregados?: number;
-  consumoPetroleo?: number;
   tiempoPlanificacion?: string;
 }
 
@@ -31,7 +30,6 @@ const SimulationCompleteModal: React.FC<SimulationCompleteModalProps> = ({
   fechaFin,
   duracion,
   pedidosEntregados = 0,
-  consumoPetroleo = 0,
   tiempoPlanificacion = "00:00:00"
 }) => {
   // Formatea fechas a dd/MM/yyyy HH:mm
@@ -65,9 +63,6 @@ const SimulationCompleteModal: React.FC<SimulationCompleteModalProps> = ({
             </Text>
             <Text>
               <strong>Pedidos entregados:</strong> {pedidosEntregados}
-            </Text>
-            <Text>
-              <strong>Consumo en petróleo:</strong> {consumoPetroleo}
             </Text>
             <Text>
               <strong>Tiempo de planificación:</strong> {tiempoPlanificacion}
