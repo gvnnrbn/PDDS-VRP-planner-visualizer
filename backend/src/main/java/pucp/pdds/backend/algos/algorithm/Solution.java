@@ -17,6 +17,7 @@ public class Solution implements Cloneable {
     // These constants must be tuned for the specific problem characteristics.
     private static final double V_BASE_GLP_DELIVERED = 10.0; // Base value per unit of GLP delivered on time
     private static final double V_EARLINESS_BONUS = 5.0;     // Bonus multiplier for early deliveries
+    private static final double V_URGENCY_RATIO_MULTIPLIER = 3.0; // Multiplier for urgency ratio (ETA/deadline)
 
     private static final double W_TARDINESS = 25.0;          // Penalty per minute of delay per unit of GLP
     private static final double W_UNDELIVERED_GLP = 100.0;     // Penalty per unit of undelivered GLP
@@ -132,21 +133,33 @@ public class Solution implements Cloneable {
                     vehicle.currentGLP -= GLPToDeliver;
                     order.amountGLP -= GLPToDeliver;
 
-                    // --- Tardiness Penalty vs. Earliness Bonus ---
+                    // --- Calculate urgency ratio (ETA/deadline) ---
+                    // ETA is the time from simulation start to delivery
+                    long etaMinutes = currentTime.minutesSince(environment.currentTime);
+                    long deadlineMinutes = order.deadline.minutesSince(environment.currentTime);
+                    double urgencyRatio = deadlineMinutes > 0 ? (double) etaMinutes / deadlineMinutes : 1.0;
+                    
+                    // --- Tardiness Penalty vs. Earliness Bonus with Urgency Consideration ---
                     if (currentTime.isAfter(order.deadline)) {
                         long minutesLate = currentTime.minutesSince(order.deadline);
                         double tardinessPenalty = W_TARDINESS * minutesLate * GLPToDeliver;
+                        
+                        // Apply urgency ratio penalty - higher ratio means higher penalty
+                        tardinessPenalty *= urgencyRatio;
                         
                         // Apply scaling factor for timesForgiven orders
                         double scalingFactor = Math.pow(2, order.timesForgiven);
                         tardinessPenalty *= scalingFactor;
                         
                         totalPenalty += tardinessPenalty;
-                        errors.add("Order " + order.id + " delivered " + minutesLate + " minutes late. (Scaling: x" + String.format("%.1f", scalingFactor) + ")");
+                        errors.add("Order " + order.id + " delivered " + minutesLate + " minutes late. (Urgency ratio: " + String.format("%.2f", urgencyRatio) + ", Scaling: x" + String.format("%.1f", scalingFactor) + ")");
                     } else {
                         double timeHorizon = environment.minutesToSimulate; // Normalization factor
                         long minutesEarly = order.deadline.minutesSince(currentTime);
                         double deliveryValue = GLPToDeliver * (V_BASE_GLP_DELIVERED + V_EARLINESS_BONUS * (minutesEarly / timeHorizon));
+                        
+                        // Apply urgency ratio bonus - higher ratio means higher bonus for early delivery
+                        deliveryValue *= (1.0 + V_URGENCY_RATIO_MULTIPLIER * urgencyRatio);
                         
                         // Apply scaling factor for timesForgiven orders
                         double scalingFactor = Math.pow(2, order.timesForgiven);
@@ -175,17 +188,26 @@ public class Solution implements Cloneable {
 
         // --- Post-simulation Penalties ---
 
-        // Penalty for undelivered GLP
+        // Penalty for undelivered GLP with urgency consideration
         for (PlannerOrder order : orderMap.values()) {
             if (order.amountGLP > 0) {
                 double undeliveredPenalty = W_UNDELIVERED_GLP * order.amountGLP;
+                
+                // Calculate urgency ratio for undelivered orders
+                // For undelivered orders, we consider the worst case: ETA = simulation time
+                long simulationTimeMinutes = environment.minutesToSimulate;
+                long deadlineMinutes = order.deadline.minutesSince(environment.currentTime);
+                double urgencyRatio = deadlineMinutes > 0 ? (double) simulationTimeMinutes / deadlineMinutes : 1.0;
+                
+                // Apply urgency ratio penalty - higher ratio means higher penalty for undelivered
+                undeliveredPenalty *= urgencyRatio;
                 
                 // Apply scaling factor for timesForgiven orders
                 double scalingFactor = Math.pow(2, order.timesForgiven);
                 undeliveredPenalty *= scalingFactor;
                 
                 totalPenalty += undeliveredPenalty;
-                errors.add("Order " + order.id + " has undelivered GLP: " + order.amountGLP + " (Scaling: x" + String.format("%.1f", scalingFactor) + ")");
+                errors.add("Order " + order.id + " has undelivered GLP: " + order.amountGLP + " (Urgency ratio: " + String.format("%.2f", urgencyRatio) + ", Scaling: x" + String.format("%.1f", scalingFactor) + ")");
             }
         }
 
