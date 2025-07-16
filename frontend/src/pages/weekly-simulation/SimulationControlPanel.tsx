@@ -1038,7 +1038,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps & { onVehicul
       const horas = Math.floor(diff / (1000 * 60 * 60));
       diff -= horas * (1000 * 60 * 60);
       const minutos = Math.floor(diff / (1000 * 60));
-      return `${dias > 0 ? dias + 'd ' : ''}${String(horas).padStart(2, '0')}h${String(minutos).padStart(2, '0')}m`;
+      return `${dias > 0 ? dias + 'd' : ''}${String(horas).padStart(2, '0')}h${String(minutos).padStart(2, '0')}m`;
     } catch (error) {
       return '--:--:--';
     }

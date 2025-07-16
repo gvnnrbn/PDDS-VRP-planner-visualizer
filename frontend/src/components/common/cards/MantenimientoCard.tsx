@@ -41,11 +41,11 @@ export const MantenimientoCard = ({
             </Box>
             <Box>
             {!isFocus 
-                ? 
-                <Button disabled={isFocus} size='sm' gap={1} variant='primary' onClick={onClick}>
-                Enfocar
-                <FontAwesomeIcon icon={faArrowsToDot} />
-                </Button>
+                ? <></>
+                // <Button disabled={isFocus} size='sm' gap={1} variant='primary' onClick={onClick}>
+                // Enfocar
+                // <FontAwesomeIcon icon={faArrowsToDot} />
+                // </Button>
                 :
                 <></>}
             </Box>
