@@ -28,6 +28,8 @@ public class DailyService {
     private final Object simulationLock = new Object();
     private boolean isSimulationActive = false;
 
+    Time startTime;
+
     public void isSimulationActive() {
         sendResponse("SIMULATION_STATE", isSimulationActive);
     }
@@ -64,10 +66,12 @@ public class DailyService {
                 maintenances.stream().map(m -> m.clone()).toList(),
                 new Time(fechaInicio.getYear(), fechaInicio.getMonthValue(), 
                 fechaInicio.getDayOfMonth(), fechaInicio.getHour(), fechaInicio.getMinute()),
-               10,
+               1,
                new Time(fechaInicio.getYear(), fechaInicio.getMonthValue(),
                 fechaInicio.getDayOfMonth(), fechaInicio.getHour(), fechaInicio.getMinute())
             );
+
+            startTime = new Time(fechaInicio.getYear(), fechaInicio.getMonthValue(), fechaInicio.getDayOfMonth(), fechaInicio.getHour(), fechaInicio.getMinute());
 
             currentSimulation = new DailyScheduler(messagingTemplate, dataProvider);
             currentSimulation.setState(schedulerState);
@@ -86,11 +90,19 @@ public class DailyService {
     public void refetchData() {
         synchronized (simulationLock) {
             try {
-                currentSimulation.refetchData();
+                currentSimulation.refetchData(startTime);
                 sendResponse("SIMULATION_UPDATED", "Simulation updated successfully");
             } catch (Exception e) {
                 sendResponse("ERROR", "Failed to update simulation: " + e.getMessage());
             }
+        }
+    }
+
+    public void fetchData() {
+        try {
+            currentSimulation.fetchData();
+        } catch (Exception e) {
+            sendResponse("ERROR", "Failed to fetch data: " + e.getMessage());
         }
     }
 

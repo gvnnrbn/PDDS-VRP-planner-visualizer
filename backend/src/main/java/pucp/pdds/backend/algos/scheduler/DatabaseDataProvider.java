@@ -85,8 +85,11 @@ public class DatabaseDataProvider implements DataProvider {
     }
 
     @Override
-    public void refetchData(SchedulerState state) {
-        state.setOrders(pedidoRepository.findCurrent(state.getCurrTime().toLocalDateTime()).stream().map(PlannerOrder::fromEntity).collect(Collectors.toList()));
+    public void refetchData(SchedulerState state, Time startTime) {
+        System.out.println("Refetching data");
+        state.setOrders(pedidoRepository.findByFechaRegistroBetween(startTime.toLocalDateTime(), state.getCurrTime().toLocalDateTime()).stream().map(PlannerOrder::fromEntity).collect(Collectors.toList()));
+
+        state.setVehicles(vehiculoRepository.findAll().stream().map(PlannerVehicle::fromEntity).collect(Collectors.toList()));
 
         state.setBlockages(bloqueoRepository.findCurrent(state.getCurrTime().toLocalDateTime()).stream().map(PlannerBlockage::fromEntity).collect(Collectors.toList()));
 
@@ -99,6 +102,7 @@ public class DatabaseDataProvider implements DataProvider {
 
     @Override
     public void pushChanges(SchedulerState state) {
+        System.out.println("Pushing changes");
         // Update vehicles
         state.getVehicles().forEach(plannerVehicle -> {
             vehiculoRepository.findById(Long.valueOf(plannerVehicle.id)).ifPresent(vehicleModel -> {

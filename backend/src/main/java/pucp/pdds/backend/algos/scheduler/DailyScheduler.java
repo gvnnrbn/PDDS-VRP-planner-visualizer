@@ -1,5 +1,6 @@
 package pucp.pdds.backend.algos.scheduler;
 
+import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import pucp.pdds.backend.algos.algorithm.Algorithm;
 import pucp.pdds.backend.algos.algorithm.Solution;
+import pucp.pdds.backend.algos.algorithm.Environment;
 import pucp.pdds.backend.algos.data.DataChunk;
 import pucp.pdds.backend.algos.utils.Time;
 import pucp.pdds.backend.dto.SimulationResponse;
@@ -25,6 +27,10 @@ public class DailyScheduler implements Runnable {
     private static final DateTimeFormatter SIM_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private final DataProvider dataProvider;
 
+    private final int algorithmTimeout = 10 * 1000;
+
+    private Map<String, Object> lastResponse = null;
+
     public void setState(SchedulerState state) {
         this.state = state;
     }
@@ -38,12 +44,13 @@ public class DailyScheduler implements Runnable {
 
     @Override
     public void run() {
+        Time startTime = state.getCurrTime();
         while(isRunning && !Thread.currentThread().isInterrupted()) {
             try {
-                refetchData();
+                refetchData(startTime);
                 stateLock.lock();
                 // PLAN LOGIC
-                pucp.pdds.backend.algos.algorithm.Environment environment = new pucp.pdds.backend.algos.algorithm.Environment(
+                Environment environment = new Environment(
                     state.getActiveVehicles(), 
                     state.getActiveOrders(), 
                     state.getWarehouses(), 
@@ -55,36 +62,39 @@ public class DailyScheduler implements Runnable {
                 );
                 debugPrint("Planning interval " + state.getCurrTime() + " started at " + state.getCurrTime() + " with " + state.getActiveVehicles().size() + " vehicles and " + state.getActiveOrders().size() + " orders");
                 stateLock.unlock();
-                Algorithm algorithm = new Algorithm(true);
+                Algorithm algorithm = new Algorithm(true, algorithmTimeout);
                 Solution sol = algorithm.run(environment, state.minutesToSimulate);
                 debugPrint(sol.toString());
                 // PLAN LOGIC
 
+                stateLock.lock();
                 state.initializeVehicles();
+                stateLock.unlock();
 
-                for (int iteration = 0; iteration < state.minutesToSimulate && isRunning && !Thread.currentThread().isInterrupted(); iteration++) {
-                    stateLock.lock();
-                    state.advance(sol, true);
-                    onAfterExecution(iteration, sol);
-                    stateLock.unlock();
+                stateLock.lock();
+                state.advance(sol, true);
+                onAfterExecution(sol);
+                stateLock.unlock();
 
-                    stateLock.lock();
-                    pushChanges();
-                    stateLock.unlock();
+                stateLock.lock();
+                pushChanges();
+                stateLock.unlock();
 
-                    LocalDateTime realTime = state.getCurrTime().toLocalDateTime();
-                    long sleepMillis = Duration.between(LocalDateTime.now(), realTime).toMillis();
+                LocalDateTime realTime = state.getCurrTime().toLocalDateTime();
+                long sleepMillis = Duration.between(LocalDateTime.now(), realTime).toMillis();
+                // sleepMillis -= 60 * 1000; // It was 1 minute ahead previously
+                sleepMillis += 60 * 1000;
+                sleepMillis -= algorithmTimeout;
 
-                    try {
-                        if (sleepMillis > 0) {
-                            Thread.sleep(sleepMillis);
-                        }
-                    } catch (InterruptedException e) {
-                        isRunning = false;
-                        Thread.currentThread().interrupt();
-                        sendResponse("SIMULATION_STOPPED", "Simulation stopped by user");
-                        return;
+                try {
+                    if (sleepMillis > 0) {
+                        Thread.sleep(sleepMillis);
                     }
+                } catch (InterruptedException e) {
+                    isRunning = false;
+                    Thread.currentThread().interrupt();
+                    sendResponse("SIMULATION_STOPPED", "Simulation stopped by user");
+                    return;
                 }
 
                 if (!isRunning || Thread.currentThread().isInterrupted()) {
@@ -107,10 +117,16 @@ public class DailyScheduler implements Runnable {
         isRunning = false;
     }
 
-    public void refetchData() {
+    public void fetchData() {
+        if (lastResponse != null) {
+            sendResponse("SIMULATION_UPDATE", lastResponse);
+        }
+    }
+
+    public void refetchData(Time startTime) {
         stateLock.lock();
         try {
-            dataProvider.refetchData(state);
+            dataProvider.refetchData(state, startTime);
         } finally {
             stateLock.unlock();
         }
@@ -129,11 +145,10 @@ public class DailyScheduler implements Runnable {
         System.out.println(state.getCurrTime() + " | " + message);
     }
 
-    private void onAfterExecution(int iteration, Solution sol) {
+    private void onAfterExecution(Solution sol) {
         java.util.Map<String, Object> response = buildSimulationUpdateResponse(state, sol);
+        lastResponse = response;
         sendResponse("SIMULATION_UPDATE", response);
-
-            // SimulationVisualizer.draw(state.getActiveVehicles(), state.getActiveBlockages(), state.getCurrTime(), state.minutesToSimulate, state.getWarehouses(), sol);
     }
 
     private java.util.Map<String, Object> buildSimulationUpdateResponse(SchedulerState state, Solution sol) {

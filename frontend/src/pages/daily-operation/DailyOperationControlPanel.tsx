@@ -424,6 +424,10 @@ const DailyOperationControlPanel: React.FC<DailyOperationControlPanelProps> = ({
             }
           }
         });
+
+        client.publish({
+          destination: '/app/daily/fetch'
+        });
       },
       onStompError: (frame) => {
         setConnected(false);

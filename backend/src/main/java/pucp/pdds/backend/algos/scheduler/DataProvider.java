@@ -21,6 +21,6 @@ public interface DataProvider {
     List<PlannerFailure> getFailures();
     List<PlannerMaintenance> getMaintenances();
     Time getInitialTime();
-    void refetchData(SchedulerState state);
+    void refetchData(SchedulerState state, Time startTime);
     void pushChanges(SchedulerState state);
 }
