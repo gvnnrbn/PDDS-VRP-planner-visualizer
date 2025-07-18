@@ -309,27 +309,29 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
         // Lógica de rotación: usa v.rutaActual[0] para el punto actual
         // y v.rutaActual[1] para el siguiente punto en la ruta.
         if (v.rutaActual?.length > 1) {
-          const next = v.rutaActual[1]; // El siguiente punto en la ruta
-          const dx = next.posX - v.posicionX; // Diferencia con el punto actual del vehículo
+          const next = v.rutaActual[1];
+          const dx = next.posX - v.posicionX;
           const dy = next.posY - v.posicionY;
 
           if (Math.abs(dx) > Math.abs(dy)) {
-            // Movimiento horizontal
             if (dx < 0) {
-              ctx.scale(-1, 1); // Flip horizontal para izquierda
+              ctx.scale(-1, 1);
+              ctx.drawImage(img, -16, -16, 32, 32); // flip horizontal
+            } else {
+              ctx.drawImage(img, -16, -16, 32, 32); // right
             }
-            // Si va a la derecha, no hacemos nada (rotación base)
           } else {
-            // Movimiento vertical
             if (dy < 0) {
-              ctx.rotate(-Math.PI / 2); // Rotar 90 grados a la izquierda para arriba
+              ctx.rotate(-Math.PI / 2);
             } else if (dy > 0) {
-              ctx.rotate(Math.PI / 2); // Rotar 90 grados a la derecha para abajo
+              ctx.rotate(Math.PI / 2);
             }
+            ctx.drawImage(img, -16, -16, 32, 32); // up or down
           }
+        } else {
+          ctx.drawImage(img, -16, -16, 32, 32); // no route, default
         }
 
-        ctx.drawImage(img, -16, -16, 32, 32);
         ctx.restore();
       } else {
         console.warn(`Icono de camión no encontrado en caché para ${cacheKey}`);
