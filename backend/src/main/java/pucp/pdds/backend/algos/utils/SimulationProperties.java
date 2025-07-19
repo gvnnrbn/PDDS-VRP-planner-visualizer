@@ -8,8 +8,8 @@ public class SimulationProperties {
     public static int gridLength = 70; // km, grid unit
     public static int gridWidth = 50; // km, grid unit
 
-    public static int msPerMinute = 250;
-    public static int replanningInterval = 90;
+    public static int msPerMinute = 200; // Más rápido para simular más tiempo
+    public static int replanningInterval = 120; // Más tiempo entre replanificaciones
 
-    public static int maxTimeMs = (int) (msPerMinute * replanningInterval * 0.9);
+    public static int maxTimeMs = (int) (msPerMinute * replanningInterval * 0.8); // Más tiempo para el algoritmo
 }

@@ -9,11 +9,11 @@ import java.util.Random;
 import pucp.pdds.backend.algos.utils.SimulationProperties;
 
 public class Algorithm {
-    // Hyperparameters
+    // Hyperparameters optimizados para mejor rendimiento
     private static int maxTimeMs = SimulationProperties.maxTimeMs;
-    private static int maxNoImprovement = 250;
-    private static int maxNoImprovementFeasible = 250; 
-    private static int neighborsPerOperator = 50;
+    private static int maxNoImprovement = 500; // Más iteraciones sin mejora
+    private static int maxNoImprovementFeasible = 500; 
+    private static int neighborsPerOperator = 100; // Más vecinos por operador
 
     private boolean isDebug;
     private static final Random random = new Random();

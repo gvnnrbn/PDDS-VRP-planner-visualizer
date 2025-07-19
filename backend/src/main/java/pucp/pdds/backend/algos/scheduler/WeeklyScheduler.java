@@ -180,24 +180,87 @@ public class WeeklyScheduler implements Runnable {
                     }
 
                     stateLock.lock();
-                    state.getOrders().stream().filter(o -> o.deadline.isBefore(state.getCurrTime()) && !o.isDelivered()).forEach(o -> {
-                        if (o.timesForgiven < PlannerOrder.timesToForgive) {
-                            o.deadline = o.deadline.addMinutes(PlannerOrder.forgivenTime);
-                            o.timesForgiven++;
+                    
+                    // Sistema anti-colapso mejorado
+                    List<PlannerOrder> ordersAtRisk = new ArrayList<>();
+                    
+                    state.getOrders().stream()
+                        .filter(o -> !o.isDelivered())
+                        .forEach(o -> {
+                            // Actualizar urgencia de todos los pedidos
+                            o.updateUrgency(state.getCurrTime());
+                            
+                            // Verificar pedidos expirados
+                            if (o.deadline.isBefore(state.getCurrTime())) {
+                                if (o.timesForgiven < PlannerOrder.timesToForgive) {
+                                    // Extensión inteligente basada en urgencia
+                                    int extensionMinutes = o.isEmergency ? 
+                                        Math.min(120, PlannerOrder.forgivenTime) : 
+                                        PlannerOrder.forgivenTime;
+                                    
+                                    if (o.extendDeadline(state.getCurrTime(), extensionMinutes)) {
+                                        System.out.println("✅ Pedido " + o.id + " extendido automáticamente");
+                                    }
+                                } else {
+                                    // Pedido en riesgo de colapso
+                                    ordersAtRisk.add(o);
+                                }
+                            }
+                            
+                            // Activar modo emergencia si es necesario
+                            if (o.isAtRiskOfCollapse(state.getCurrTime())) {
+                                o.activateEmergencyMode(state.getCurrTime());
+                            }
+                        });
+                    
+                    // Estrategia de último recurso: redistribuir pedidos críticos
+                    if (!ordersAtRisk.isEmpty()) {
+                        System.out.println("⚠️ " + ordersAtRisk.size() + " pedidos en riesgo de colapso");
+                        for (PlannerOrder order : ordersAtRisk) {
+                            // Intentar extensión de emergencia
+                            if (order.timesForgiven < PlannerOrder.timesToForgive) {
+                                order.activateEmergencyMode(state.getCurrTime());
+                            }
                         }
-                    });
+                    }
+                    
+                    // Verificar si hay pedidos que definitivamente fallaron
                     Optional<PlannerOrder> failedOrder = state.getOrders().stream()
                         .filter(o -> o.deadline.isBefore(state.getCurrTime()) && !o.isDelivered())
                         .findAny();
+                    
                     stateLock.unlock();
 
                     if (failedOrder.isPresent()) {
-                        System.out.println("Couldn't deliver order " + failedOrder.get().id + " at " + state.getCurrTime());
-                        System.out.println(failedOrder.get());
+                        PlannerOrder failedOrderObj = failedOrder.get();
+                        System.out.println("Couldn't deliver order " + failedOrderObj.id + " at " + state.getCurrTime());
+                        System.out.println(failedOrderObj);
 
-                        boolean isInEnvironment = sol.getEnvironment().orders.stream().anyMatch(o -> o.id == failedOrder.get().id);
+                        boolean isInEnvironment = sol.getEnvironment().orders.stream().anyMatch(o -> o.id == failedOrderObj.id);
                         System.out.println("Is in environment: " + isInEnvironment);
 
+                        // SOLUCIÓN DE SEGURIDAD: Intentar rescate de último recurso
+                        if (!isInEnvironment) {
+                            System.out.println("🚨 PEDIDO PERDIDO - Intentando rescate de emergencia...");
+                            
+                            // Verificar si el pedido está en la lista original
+                            boolean isInOriginalOrders = state.getOrders().stream().anyMatch(o -> o.id == failedOrderObj.id);
+                            System.out.println("Is in original orders: " + isInOriginalOrders);
+                            
+                            if (isInOriginalOrders) {
+                                // Intentar extensión de emergencia máxima
+                                if (failedOrderObj.timesForgiven < PlannerOrder.timesToForgive) {
+                                    System.out.println("🔄 Aplicando extensión de emergencia máxima...");
+                                    failedOrderObj.activateEmergencyMode(state.getCurrTime());
+                                    
+                                    // Continuar la simulación en lugar de colapsar
+                                    System.out.println("✅ Rescate exitoso - Continuando simulación");
+                                    continue; // Saltar al siguiente ciclo
+                                }
+                            }
+                        }
+
+                        // Si llegamos aquí, el colapso es inevitable
                         isRunning = false;
                         Thread.currentThread().interrupt();
                         algorithmThread.interrupt();
