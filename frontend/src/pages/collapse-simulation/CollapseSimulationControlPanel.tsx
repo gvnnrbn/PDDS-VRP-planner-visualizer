@@ -9,6 +9,8 @@ import { format, parseISO, differenceInSeconds, parse } from 'date-fns';
 import BottomLeftControls from '../../components/common/MapActions';
 import SimulationCompleteModal from '../../components/common/SimulationCompletionModal';
 import SimulationCollapsedModal from './CollapseModalFinal';
+import type { PedidoSimulado } from '../../core/types/pedido';
+import AlmacenModal from '../../components/common/modals/ModalAlmacen';
 
 const backend_url = import.meta.env.VITE_ENV_BACKEND_URL;
 
@@ -52,7 +54,7 @@ function iconToImage(IconComponent: React.ElementType, color: string, size = 32)
 export async function preloadIcons(): Promise<void> {
   const iconSets = [
     { icon: FaWarehouse, colors: ['#444', '#000'], sizes: [32] },
-    { icon: FaIndustry, colors: ['#444', '#ff0000', '#00c800'], sizes: [32] },
+    { icon: FaIndustry, colors: ['#444', '#ff0000', '#00c800', '#ffae00'], sizes: [32] },
     { icon: FaMapMarkerAlt, colors: ['#5459EA', '#FFD700'], sizes: [24, 32] }, // Añade los tamaños usados
     { icon: FaTruck, colors: ['#ffc800', '#ff0000', '#ffa500', '#444', '#00c800', '#666565'], sizes: [32] }, // Añade todos los colores usados
   ];
@@ -196,7 +198,16 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
         mainWHx = wh.posicion.posX;
         mainWHy = wh.posicion.posY;
       } else {
-        color = (wh.currentGLP || 0) === 0 ? '#ff0000' : '#00c800';
+        const glp = wh.currentGLP || 0;
+        const perc = wh.maxGLP ? glp / wh.maxGLP : 1;
+
+        if (glp === 0) {
+          color = '#ff0000'; // rojo
+        } else if (perc <= 0.25) {
+          color = '#ffae00'; // ámbar
+        } else {
+          color = '#00c800'; // verde
+        }
       }
 
       // Obtener imagen del caché (ya precargada)
@@ -231,7 +242,13 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
         const perc = wh.currentGLP / wh.maxGLP;
         ctx.fillStyle = '#c8c8c8';
         ctx.fillRect(x + 2, y + 34, 28, 4);
-        ctx.fillStyle = '#00c800';
+
+        if (perc <= 0.25) {
+          ctx.fillStyle = '#ffae00'; // ámbar
+        } else {
+          ctx.fillStyle = '#00c800'; // verde
+        }
+
         ctx.fillRect(x + 2, y + 34, 28 * perc, 4);
       }
     }
@@ -253,7 +270,7 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
       const iconColor = isHighlighted ? '#FFD700' : '#5459EA';
       const iconSize = isHighlighted ? 32 : 24;
 
-      const cacheKey = `${FaMapMarkerAlt.displayName || FaMapMarkerAlt.name || ''}_${iconColor}_${iconSize}`;
+      const cacheKey = `${getIconIdentifier(FaMapMarkerAlt)}_${iconColor}_${iconSize}`;
       const img = iconImageCache[cacheKey]; // No await
 
       if (img) {
@@ -298,6 +315,20 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
         size: 32,
         vehiculo: v,
       });
+
+      // Si este vehículo está resaltado, dibujar un círculo/borde especial
+      if (typeof window !== 'undefined' && (window as any).highlightedVehicleId === v.idVehiculo) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(vx, vy, 24, 0, 2 * Math.PI);
+        ctx.strokeStyle = '#805ad5';
+        ctx.lineWidth = 5;
+        ctx.shadowColor = '#805ad5';
+        ctx.shadowBlur = 12;
+        ctx.setLineDash([]); // Asegurar línea sólida
+        ctx.stroke();
+        ctx.restore();
+      }
 
       const cacheKey = `${getIconIdentifier(FaTruck)}_${color}_${32}`;
       const img = iconImageCache[cacheKey];
@@ -400,8 +431,6 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
     scaleY: 1,
   });
   const scaleRef = useRef<{ margin: number; scaleX: number; scaleY: number }>({ margin: 40, scaleX: 1, scaleY: 1 });
-  const [selectedVehicle, setSelectedVehicle] = useState<any | null>(null);
-  const [vehiclePanelPos, setVehiclePanelPos] = useState<{ left: number; top: number } | null>(null);
   const [estadoVehiculo, setEstadoVehiculo] = useState('');
 
   // Para el resumen de simulación
@@ -817,46 +846,344 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
     duracionStr = `${dias > 0 ? dias + 'd ' : ''}${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}`;
   }
 
+  //CLICK VEHICULO
+  const [selectedVehicle, setSelectedVehicle] = useState<any | null>(null);
+  const [vehiclePanelPos, setVehiclePanelPos] = useState<{ left: number; top: number } | null>(null);
+  const [selectedWarehouse, setSelectedWarehouse] = useState<any | null>(null);
+  const [warehousePanelPos, setWarehousePanelPos] = useState<{ left: number; top: number } | null>(null);
 
+  const [selectedPedido, setSelectedPedido] = useState<PedidoSimulado | null>(null);
+  const [pedidoPanelPos, setPedidoPanelPos] = useState<{ left: number; top: number } | null>(null);
+
+  const clearAllSelections = () => {
+    setSelectedVehicle(null);
+    setVehiclePanelPos(null);
+    setSelectedWarehouse(null);
+    setWarehousePanelPos(null);
+    setSelectedPedido(null);
+    setPedidoPanelPos(null);
+  };
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleClick = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      const canvasX = (clickX - panX) / zoomScale;
+      const canvasY = (clickY - panY) / zoomScale;
+
+      const screenPos = (box: { x: number; y: number; size: number }) => ({
+        left: (box.x * zoomScale) + panX + rect.left + (box.size / 2) * zoomScale,
+        top: (box.y * zoomScale) + panY + rect.top + (box.size / 2) * zoomScale,
+      });
+
+      // Vehículos
+      for (const box of vehicleHitboxes) {
+        if (
+          canvasX >= box.x && canvasX <= box.x + box.size &&
+          canvasY >= box.y && canvasY <= box.y + box.size
+        ) {
+          setSelectedVehicle(box.vehiculo);
+          setVehiclePanelPos(screenPos(box));
+          setSelectedWarehouse(null);
+          setSelectedPedido(null);
+          return;
+        }
+      }
+
+      // Almacenes
+      for (const box of warehouseHitboxes) {
+        if (
+          canvasX >= box.x && canvasX <= box.x + box.size &&
+          canvasY >= box.y && canvasY <= box.y + box.size
+        ) {
+          setSelectedWarehouse(box.almacen);
+          setWarehousePanelPos(screenPos(box));
+          setSelectedVehicle(null);
+          setSelectedPedido(null);
+          return;
+        }
+      }
+
+      // Pedidos
+      for (const box of pedidoHitboxes) {
+        if (
+          canvasX >= box.x && canvasX <= box.x + box.size &&
+          canvasY >= box.y && canvasY <= box.y + box.size
+        ) {
+          setSelectedPedido(box.pedido);
+          setPedidoPanelPos(screenPos(box));
+          setSelectedVehicle(null);
+          setSelectedWarehouse(null);
+          return;
+        }
+      }
+
+      clearAllSelections(); // Clic fuera
+    };
+
+    canvas.addEventListener('click', handleClick);
+    return () => {
+      canvas.removeEventListener('click', handleClick);
+    };
+  }, [canvasRef, data, panX, panY, zoomScale]);
+
+  // Estado para la posición de la tarjeta de pedido (draggable)
+  const [pedidoCardPos, setPedidoCardPos] = useState<{ x: number; y: number } | null>(null);
+  const [draggingPedido, setDraggingPedido] = useState(false);
+  const dragOffset = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  // Cuando se selecciona un pedido, inicializa la posición en el centro o cerca de la posición original
+  useEffect(() => {
+    if (selectedPedido && pedidoPanelPos) {
+      setPedidoCardPos({ x: pedidoPanelPos.left, y: pedidoPanelPos.top });
+    }
+  }, [selectedPedido, pedidoPanelPos]);
+
+  // Handlers para drag
+  const handlePedidoMouseDown = (e: React.MouseEvent) => {
+    if (!pedidoCardPos) return;
+    setDraggingPedido(true);
+    dragOffset.current = {
+      x: e.clientX - pedidoCardPos.x,
+      y: e.clientY - pedidoCardPos.y,
+    };
+    e.preventDefault();
+  };
+
+  useEffect(() => {
+    if (!draggingPedido) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      setPedidoCardPos(pos => pos ? ({ x: e.clientX - dragOffset.current.x, y: e.clientY - dragOffset.current.y }) : pos);
+    };
+    const handleMouseUp = () => setDraggingPedido(false);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [draggingPedido]);
+
+  // Estado para la posición de la tarjeta de vehículo (draggable)
+  const [vehicleCardPos, setVehicleCardPos] = useState<{ x: number; y: number } | null>(null);
+  const [draggingVehicle, setDraggingVehicle] = useState(false);
+  const dragOffsetVehicle = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (selectedVehicle && vehiclePanelPos) {
+      setVehicleCardPos({ x: vehiclePanelPos.left, y: vehiclePanelPos.top });
+    }
+  }, [selectedVehicle, vehiclePanelPos]);
+
+  const handleVehicleMouseDown = (e: React.MouseEvent) => {
+    if (!vehicleCardPos) return;
+    setDraggingVehicle(true);
+    dragOffsetVehicle.current = {
+      x: e.clientX - vehicleCardPos.x,
+      y: e.clientY - vehicleCardPos.y,
+    };
+    e.preventDefault();
+  };
+
+  useEffect(() => {
+    if (!draggingVehicle) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      setVehicleCardPos(pos => pos ? ({ x: e.clientX - dragOffsetVehicle.current.x, y: e.clientY - dragOffsetVehicle.current.y }) : pos);
+    };
+    const handleMouseUp = () => setDraggingVehicle(false);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [draggingVehicle]);
+
+  // Estado para la posición de la tarjeta de almacén (draggable)
+  const [warehouseCardPos, setWarehouseCardPos] = useState<{ x: number; y: number } | null>(null);
+  const [draggingWarehouse, setDraggingWarehouse] = useState(false);
+  const dragOffsetWarehouse = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (selectedWarehouse && warehousePanelPos) {
+      setWarehouseCardPos({ x: warehousePanelPos.left, y: warehousePanelPos.top });
+    }
+  }, [selectedWarehouse, warehousePanelPos]);
+
+  const handleWarehouseMouseDown = (e: React.MouseEvent) => {
+    if (!warehouseCardPos) return;
+    setDraggingWarehouse(true);
+    dragOffsetWarehouse.current = {
+      x: e.clientX - warehouseCardPos.x,
+      y: e.clientY - warehouseCardPos.y,
+    };
+    e.preventDefault();
+  };
+
+  useEffect(() => {
+    if (!draggingWarehouse) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      setWarehouseCardPos(pos => pos ? ({ x: e.clientX - dragOffsetWarehouse.current.x, y: e.clientY - dragOffsetWarehouse.current.y }) : pos);
+    };
+    const handleMouseUp = () => setDraggingWarehouse(false);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [draggingWarehouse]);
+
+  //Modal almacén
+  const { isOpen: isOpenAlmacenRutas, onOpen: onOpenAlmacenRutas, onClose: onCloseAlmacenRutas} = useDisclosure();
+  
 
   return (
     <Box borderWidth="1px" borderRadius="md" p={0} mb={0} height="100vh">
       <VStack align="start" spacing={3}>
         <Box position="relative" width="100%" height="100vh">
-         <canvas ref={canvasRef} width={1720} height={1080} 
+          <canvas ref={canvasRef} width={1720} height={1080}
             style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            border: '1px solid #ccc',
-            background: '#fff',
-            zIndex: 1,}} />
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              border: '1px solid #ccc',
+              background: '#fff',
+              zIndex: 1,
+            }} />
         </Box>
-        {selectedVehicle && vehiclePanelPos && (
+        {selectedVehicle && vehiclePanelPos && vehicleCardPos && (
           <Box
-            position="absolute"
-            left={vehiclePanelPos.left}
-            top={vehiclePanelPos.top}
-            transform="translate(-50%, -120%)"
-            bg="white"
-            p={3}
-            border="1px solid #ccc"
-            borderRadius="md"
-            boxShadow="lg"
-            zIndex={1000}
-            minW="200px"
+            style={{
+              position: 'absolute',
+              left: vehicleCardPos.x,
+              top: vehicleCardPos.y,
+              zIndex: 2000,
+              minWidth: 220,
+              background: 'white',
+              border: '1px solid #ccc',
+              borderRadius: 8,
+              boxShadow: '0 2px 12px rgba(0,0,0,0.18)',
+              cursor: draggingVehicle ? 'grabbing' : 'grab',
+              userSelect: 'none',
+            }}
           >
-            <Flex justify="space-between" align="center" mb={2}>
-              <Text fontWeight="bold">Vehículo</Text>
+            <Flex justify="space-between" align="center" mb={0} onMouseDown={handleVehicleMouseDown} style={{ cursor: 'grab', padding: 4, borderBottom: '1px solid #eee', borderTopLeftRadius: 8, borderTopRightRadius: 8, background: '#f7f7fa' }}>
+              <Text fontWeight="bold">Vehículo {selectedVehicle.placa}</Text>
               <Button size="xs" onClick={() => setSelectedVehicle(null)} variant="ghost" colorScheme="red">
                 ✕
               </Button>
             </Flex>
-            <Text>ID: {selectedVehicle.idVehiculo}</Text>
-            <Text>Placa: {selectedVehicle.placa}</Text>
-            <Text>Estado: {estadoVehiculo}</Text>
+            <Box p={3} pt={0}>
+              <Text color={'purple.100'}>{estadoVehiculo}</Text>
+              <Text>Combustible: {selectedVehicle.combustible} Gal.</Text>
+              <Text>GLP: {selectedVehicle.currGLP > 0 ? selectedVehicle.currGLP : 0} m3</Text>
+            </Box>
+          </Box>
+        )}
+        {selectedWarehouse && warehousePanelPos && warehouseCardPos && (
+          <Box
+            style={{
+              position: 'absolute',
+              left: warehouseCardPos.x,
+              top: warehouseCardPos.y,
+              zIndex: 2000,
+              minWidth: 220,
+              background: 'white',
+              border: '1px solid #ccc',
+              borderRadius: 8,
+              boxShadow: '0 2px 12px rgba(0,0,0,0.18)',
+              cursor: draggingWarehouse ? 'grabbing' : 'grab',
+              userSelect: 'none',
+            }}
+          >
+            <Flex justify="space-between" align="center" mb={0} onMouseDown={handleWarehouseMouseDown} style={{ cursor: 'grab', padding: 4, borderBottom: '1px solid #eee', borderTopLeftRadius: 8, borderTopRightRadius: 8, background: '#f7f7fa' }}>
+              {selectedWarehouse.isMain ? (
+                <Text fontWeight="bold">Almacén principal</Text>
+              ) : (
+                <Text fontWeight="bold">
+                  {selectedWarehouse.posicion.posX === 42 && selectedWarehouse.posicion.posY === 42
+                    ? 'Almacén Norte'
+                    : selectedWarehouse.posicion.posX === 63 && selectedWarehouse.posicion.posY === 3
+                      ? 'Almacén Este'
+                      : 'Almacén Intermedio'}
+                </Text>
+              )}
+              <Button
+                size="xs"
+                onClick={() => setSelectedWarehouse(null)}
+                variant="ghost"
+                colorScheme="red"
+                mt={2}
+              >
+                ✕
+              </Button>
+            </Flex>
+            <Box p={3} pt={0}>
+              {selectedWarehouse.isMain ? (
+                <Text>Capacidad: Infinita</Text>
+              ) : (
+                <Text>GLP: {selectedWarehouse.currentGLP > 0 ? selectedWarehouse.currentGLP : 0}/{selectedWarehouse.maxGLP}</Text>
+              )}
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  (window as any).focusAlmacenCard(selectedWarehouse.idAlmacen);
+                  setSelectedWarehouse(null);
+                }}
+                mt={2}
+              >
+                Rutas de Almacén
+              </Button>
+            </Box>
+          </Box>
+        )}
+        <AlmacenModal
+          isOpen={isOpenAlmacenRutas}
+          onClose={onCloseAlmacenRutas}
+          almacen={selectedWarehouse}
+          onOpenRutas={() => selectedWarehouse && (window as any).focusAlmacenCard(selectedWarehouse.idAlmacen)}
+        />
+
+        {selectedPedido && pedidoPanelPos && pedidoCardPos && (
+          <Box
+            style={{
+              position: 'absolute',
+              left: pedidoCardPos.x,
+              top: pedidoCardPos.y,
+              zIndex: 2000,
+              minWidth: 220,
+              background: 'white',
+              border: '1px solid #ccc',
+              borderRadius: 8,
+              boxShadow: '0 2px 12px rgba(0,0,0,0.18)',
+              cursor: draggingPedido ? 'grabbing' : 'grab',
+              userSelect: 'none',
+            }}
+          >
+            <Flex justify="space-between" align="center" mb={0} onMouseDown={handlePedidoMouseDown} style={{ cursor: 'grab', padding: 4, borderBottom: '1px solid #eee', borderTopLeftRadius: 8, borderTopRightRadius: 8, background: '#f7f7fa' }}>
+              {selectedPedido && (
+                <Text fontWeight="bold">
+                  Pedido {`PE${selectedPedido.idPedido.toString().padStart(3, '0')}`}
+                </Text>
+              )}
+              <Button size="xs" onClick={() => setSelectedPedido(null)} variant="ghost" colorScheme="red">
+                ✕
+              </Button>
+            </Flex>
+            <Box p={3} pt={0}>
+              <Text color={'purple.100'}>{selectedPedido.estado}</Text>
+              <Text>GLP: {selectedPedido.glp}</Text>
+              <Text>Entregar antes de: {selectedPedido.fechaLimite}</Text>
+            </Box>
           </Box>
         )}
         {/* Controles inferiores (Detener + Fecha) */}
