@@ -283,6 +283,50 @@ const MantenimientoSection = () => {
   );
 };
 
+const IndicadoresSection = () => {
+  const { operationData } = useOperacion();
+  const [indicadoresVisibles, setIndicadoresVisibles] = useState<IndicadoresSimulado | null>(null);
+  const lastSetTimeRef = useRef<number>(0);
+
+  const staticIndicadores: IndicadoresSimulado = {
+    fuelCounterTA: 1200,
+    fuelCounterTB: 95.45,
+    fuelCounterTC: 80.00,
+    fuelCounterTD: 60.32,
+    fuelCounterTotal: 3550,
+    glpFilledNorth: 10,
+    glpFilledEast: 210,
+    glpFilledMain: 401,
+    glpFilledTotal: 600,
+    meanDeliveryTime: 42,
+    completedOrders: 38,
+    totalOrders: 45,
+  };
+
+  useEffect(() => {
+    const now = Date.now();
+    const indicadores = operationData?.indicadores;
+
+    if (indicadores && (now - lastSetTimeRef.current >= 5000 || lastSetTimeRef.current === 0)) {
+      setIndicadoresVisibles(indicadores);
+      lastSetTimeRef.current = now;
+    } else if (!indicadores && !indicadoresVisibles) {
+      // Solo setea los estáticos si aún no hay nada mostrado
+      setIndicadoresVisibles(staticIndicadores);
+    }
+  }, [operationData?.indicadores]);
+
+  return (
+    <Box>
+      <VStack spacing={4} align="stretch">
+        {indicadoresVisibles && (
+          <IndicadoresCard key={'indicadores-default'} indicadores={indicadoresVisibles} />
+        )}
+      </VStack>
+    </Box>
+  );
+};
+
 export default function DailyOperation() {
   const bgColor = useColorModeValue('white', '#1a1a1a')
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -382,51 +426,6 @@ export default function DailyOperation() {
     );
   };
 
-  const IndicadoresSection = () => {
-    const { operationData } = useOperacion();
-    const [indicadoresVisibles, setIndicadoresVisibles] = useState(operationData?.indicadores);
-    const lastSetTimeRef = useRef<number>(0);
-
-    useEffect(() => {
-      const now = Date.now();
-      if (
-        operationData?.indicadores &&
-        (now - lastSetTimeRef.current >= 5000 || lastSetTimeRef.current === 0)
-      ) {
-        setIndicadoresVisibles(operationData.indicadores);
-        lastSetTimeRef.current = now;
-      }
-      // Si no han pasado 5 segundos, no actualiza el estado y por lo tanto no re-renderiza
-    }, [operationData?.indicadores]);
-
-    const staticIndicadores: IndicadoresSimulado = {
-      fuelCounterTA: 1200,
-      fuelCounterTB: 95.45,
-      fuelCounterTC: 80.00,
-      fuelCounterTD: 60.32,
-      fuelCounterTotal: 3550,
-      glpFilledNorth: 10,
-      glpFilledEast: 210,
-      glpFilledMain: 401,
-      glpFilledTotal: 600,
-      meanDeliveryTime: 42,
-      completedOrders: 38,
-      totalOrders: 45,
-    };
-
-    return (
-      <Box>
-        <VStack spacing={4} align="stretch">
-          {indicadoresVisibles && (
-            <IndicadoresCard key={'indicadores-default'} indicadores={indicadoresVisibles} />
-          )}
-          {/* {staticIndicadores && (
-            <IndicadoresCard key={'indicadores-default'} indicadores={staticIndicadores} />
-          )} */}
-        </VStack>
-      </Box>
-    );
-  };
 
   const sections = [
     {

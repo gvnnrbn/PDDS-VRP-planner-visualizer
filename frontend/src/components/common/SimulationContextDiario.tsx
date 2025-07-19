@@ -53,6 +53,7 @@ const setOperationData = (data: MinutoOperacion) => {
       _setOperationData(data);
     //   lastSetTimeRef.current = now;
     // }
+    //console.dir(data, { depth: null });
   };  
 
   const focusOnPedido = (pedido: PedidoSimulado) => {
