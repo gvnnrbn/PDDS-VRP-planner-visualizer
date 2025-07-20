@@ -169,47 +169,31 @@ public class Environment {
             .filter(w -> w.isMain)
             .collect(Collectors.toList());
 
-        // ESTRATEGIA INTELIGENTE: Distribuir reabastecimientos por proximidad
-        System.out.println("🏭 Generando reabastecimientos inteligentes...");
-        
-        // Calcular cuántos reabastecimientos necesitamos por almacén
-        int totalRefillsNeeded = (int) Math.ceil((double) totalAssignableGLP / ProductRefillNode.chunkSize);
-        int refillsPerWarehouse = Math.max(1, totalRefillsNeeded / warehouses.size());
-        
-        System.out.println("📊 Total GLP a reabastecer: " + totalAssignableGLP + "m³");
-        System.out.println("📦 Reabastecimientos por almacén: " + refillsPerWarehouse);
-        
-        // Distribuir reabastecimientos entre almacenes laterales primero
+        // First, exhaust all secondary warehouses
         for (PlannerWarehouse warehouse : nonMainWarehouses) {
-            int warehouseRefills = 0;
-            while (totalAssignableGLP > 0 && warehouse.currentGLP > 0 && warehouseRefills < refillsPerWarehouse) {
+            while (totalAssignableGLP > 0 && warehouse.currentGLP > 0) {
                 int assignableGLP = Math.min(warehouse.currentGLP, ProductRefillNode.chunkSize);
                 assignableGLP = Math.min(assignableGLP, totalAssignableGLP);
 
-                // Crear nodos de reabastecimiento optimizados
+                // Create refill nodes in smaller chunks to allow for more frequent refueling
                 int refillChunkSize = Math.min(assignableGLP, ProductRefillNode.chunkSize);
                 nodes.add(new ProductRefillNode(nodeSerial++, warehouse, refillChunkSize));
                 warehouse.currentGLP -= refillChunkSize;
                 totalAssignableGLP -= refillChunkSize;
-                warehouseRefills++;
-                
-                System.out.println("🏭 Almacén lateral " + warehouse.id + ": " + refillChunkSize + "m³");
             }
         }
 
-        // Usar almacenes principales solo si es necesario
+        // Only then, use main warehouses if secondary warehouses are exhausted
         for (PlannerWarehouse warehouse : mainWarehouses) {
             while (totalAssignableGLP > 0 && warehouse.currentGLP > 0) {
                 int assignableGLP = Math.min(warehouse.currentGLP, ProductRefillNode.chunkSize);
                 assignableGLP = Math.min(assignableGLP, totalAssignableGLP);
 
-                // Crear nodos de reabastecimiento del almacén principal
+                // Create refill nodes in smaller chunks to allow for more frequent refueling
                 int refillChunkSize = Math.min(assignableGLP, ProductRefillNode.chunkSize);
                 nodes.add(new ProductRefillNode(nodeSerial++, warehouse, refillChunkSize));
                 warehouse.currentGLP -= refillChunkSize;
                 totalAssignableGLP -= refillChunkSize;
-                
-                System.out.println("🏭 Almacén principal " + warehouse.id + ": " + refillChunkSize + "m³");
             }
         }
 
@@ -445,50 +429,20 @@ public class Environment {
         System.out.println("  🆓 Vehículos libres: " + freeVehicles);
         System.out.println("  📊 Utilización: " + String.format("%.1f", (double)usedVehicles/vehicleLoads.size()*100) + "%");
 
-        // HEURÍSTICA DE PROXIMIDAD: Asignar reabastecimientos por cercanía
-        System.out.println("⛽ Asignando " + refillNodes.size() + " reabastecimientos por proximidad...");
+        // HEURÍSTICA MEJORADA: Asignar reabastecimientos estratégicamente
+        System.out.println("⛽ Asignando " + refillNodes.size() + " reabastecimientos...");
         
-        // Agrupar reabastecimientos por almacén
-        Map<Integer, List<Node>> refillsByWarehouse = refillNodes.stream()
-            .collect(Collectors.groupingBy(node -> ((ProductRefillNode) node).warehouse.id));
-        
-        System.out.println("🏭 Reabastecimientos por almacén:");
-        for (Map.Entry<Integer, List<Node>> entry : refillsByWarehouse.entrySet()) {
-            PlannerWarehouse warehouse = this.warehouses.stream()
-                .filter(w -> w.id == entry.getKey())
-                .findFirst().orElse(null);
+        for (Node refillNode : refillNodes) {
+            ProductRefillNode refillNodeCast = (ProductRefillNode) refillNode;
             
-            String warehouseType = warehouse != null && warehouse.isMain ? "PRINCIPAL" : "LATERAL";
-            System.out.println("  🏭 Almacén " + entry.getKey() + " (" + warehouseType + "): " + entry.getValue().size() + " reabastecimientos");
-        }
-        
-        // Asignar reabastecimientos considerando proximidad
-        for (Map.Entry<Integer, List<Node>> entry : refillsByWarehouse.entrySet()) {
-            int warehouseId = entry.getKey();
-            List<Node> warehouseRefills = entry.getValue();
+            // Encontrar el vehículo que más necesita reabastecimiento
+            VehicleLoadInfo vehicleWithMostNeed = findVehicleWithMostRefillNeed(refillNodeCast, vehicleLoads, solution);
             
-            PlannerWarehouse warehouse = this.warehouses.stream()
-                .filter(w -> w.id == warehouseId)
-                .findFirst().orElse(null);
+            // Insertar reabastecimiento antes del primer pedido que necesite GLP
+            insertRefillBeforeFirstNeed(vehicleWithMostNeed.vehicle.id, refillNode, solution);
             
-            if (warehouse == null) continue;
-            
-            for (Node refillNode : warehouseRefills) {
-                ProductRefillNode refillNodeCast = (ProductRefillNode) refillNode;
-                
-                // Encontrar el vehículo más cercano que necesite reabastecimiento
-                VehicleLoadInfo closestVehicle = findClosestVehicleForRefill(refillNodeCast, vehicleLoads, solution);
-                
-                if (closestVehicle != null) {
-                    // Insertar reabastecimiento en la posición óptima
-                    insertRefillInOptimalPosition(closestVehicle.vehicle.id, refillNode, solution);
-                    
-                    String warehouseType = warehouse.isMain ? "PRINCIPAL" : "LATERAL";
-                    System.out.println("⛽ Reabastecimiento " + warehouseType + " asignado a " + closestVehicle.vehicle.plaque + 
-                                     " (GLP: " + refillNodeCast.amountGLP + ", Distancia: " + 
-                                     String.format("%.1f", calculateDistanceToWarehouse(closestVehicle.vehicle, warehouse)) + ")");
-                }
-            }
+            System.out.println("⛽ Reabastecimiento asignado a " + vehicleWithMostNeed.vehicle.plaque + 
+                             " (GLP: " + refillNodeCast.amountGLP + ")");
         }
 
         // Add final nodes to each route
@@ -771,46 +725,6 @@ public class Environment {
         
         double averageDistance = totalDistance / connections;
         return -averageDistance; // Distancia promedio negativa para maximizar
-    }
-
-    /**
-     * Encuentra el vehículo más cercano que necesite reabastecimiento
-     */
-    private VehicleLoadInfo findClosestVehicleForRefill(ProductRefillNode refillNode, List<VehicleLoadInfo> vehicleLoads, Solution solution) {
-        VehicleLoadInfo bestVehicle = null;
-        double bestScore = Double.NEGATIVE_INFINITY;
-
-        for (VehicleLoadInfo vehicleInfo : vehicleLoads) {
-            PlannerVehicle vehicle = vehicleInfo.vehicle;
-            
-            // Calcular necesidad de reabastecimiento
-            double glpNeed = Math.max(0, vehicle.maxGLP - vehicle.currentGLP);
-            double fuelNeed = Math.max(0, vehicle.maxFuel - vehicle.currentFuel);
-            
-            // Calcular distancia al almacén
-            double distanceToWarehouse = calculateDistanceToWarehouse(vehicle, refillNode.warehouse);
-            
-            // Score basado en necesidad y proximidad (proximidad tiene más peso)
-            double needScore = glpNeed + fuelNeed * 0.5;
-            double proximityScore = -distanceToWarehouse * 10; // Distancia negativa para maximizar
-            
-            // Score total: 70% proximidad, 30% necesidad
-            double totalScore = proximityScore * 0.7 + needScore * 0.3;
-            
-            if (totalScore > bestScore) {
-                bestScore = totalScore;
-                bestVehicle = vehicleInfo;
-            }
-        }
-
-        return bestVehicle != null ? bestVehicle : vehicleLoads.get(0);
-    }
-
-    /**
-     * Calcula la distancia de un vehículo a un almacén
-     */
-    private double calculateDistanceToWarehouse(PlannerVehicle vehicle, PlannerWarehouse warehouse) {
-        return this.getDistances().get(vehicle.initialPosition).get(warehouse.position);
     }
 
     /**
