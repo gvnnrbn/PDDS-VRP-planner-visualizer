@@ -1,7 +1,7 @@
-import { Box,  Button,  HStack,  Input,  Menu,  MenuButton,  MenuItem,  MenuList,  useColorModeValue, useDisclosure, useToast, VStack } from '@chakra-ui/react'
+import { Box,  Button,  HStack,  Input,  Menu,  MenuButton,  MenuItem,  MenuList,  useColorModeValue, useDisclosure, useToast, VStack, Text } from '@chakra-ui/react'
 import { Route, Routes } from 'react-router-dom'
 import { SectionBar } from '../../components/common/SectionBar'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Flex } from '@chakra-ui/react'
 import LegendPanel from '../../components/common/Legend'
 import LoadingOverlay from '../../components/common/LoadingOverlay'
@@ -17,6 +17,9 @@ import { CollapseSimulationProvider, useCollapseSimulation } from './CollapseSim
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faFilter, faSort } from '@fortawesome/free-solid-svg-icons'
 import { IncidenciaService } from '../../core/services/IncidenciaService'
+import AlmacenCard from '../../components/common/cards/AlmacenCard'
+import type { IndicadoresSimulado } from '../../core/types/indicadores'
+import { IndicadoresCard } from '../../components/common/cards/IndicadoresCard'
 
 export default function CollapseSimulation() {
   return (
@@ -248,12 +251,25 @@ const FlotaSection = () => {
 const MantenimientoSection = () => {
   const { currentMinuteData } = useCollapseSimulation();
 
+  const noData =
+    !currentMinuteData?.mantenimientos || currentMinuteData.mantenimientos.length === 0;
+
   return (
     <Box>
       <VStack spacing={4} align="stretch">
-        {currentMinuteData?.mantenimientos?.map((m) => (
-          <MantenimientoCard key={m.idMantenimiento} mantenimiento={m} onClick={() => console.log('enfocando...')} />
-        ))}
+        {noData ? (
+          <Text color="gray.500" fontStyle="italic">
+            No hay mantenimientos registrados en este momento.
+          </Text>
+        ) : (
+          currentMinuteData.mantenimientos.map((m) => (
+            <MantenimientoCard
+              key={m.idMantenimiento}
+              mantenimiento={m}
+              onClick={() => console.log('enfocando...')}
+            />
+          ))
+        )}
       </VStack>
     </Box>
   );
@@ -282,11 +298,92 @@ function CollapseSimulationInner() {
     }
   }, [isCollapsed]);
 
+  //Almacenes
+  const [vehiculosPorAlmacen, setVehiculosPorAlmacen] = useState<Record<number, Record<string, number>>>({});
+  const [highlightedAlmacenId, setHighlightedAlmacenId] = useState<number | null>(null);
+  const almacenSectionRef = useRef<HTMLDivElement>(null);
+
+  const AlmacenSection = () => {
+    const { currentMinuteData } = useCollapseSimulation();
+    const focusOnAlmacen = (almacen: any) => {
+      (window as any).highlightedWarehouseId = almacen.idAlmacen;
+      setTimeout(() => {
+        (window as any).highlightedWarehouseId = undefined;
+      }, 3000);
+    };
+    return (
+      <Box ref={almacenSectionRef}>
+        <VStack spacing={4} align="stretch">
+          {currentMinuteData?.almacenes?.map((almacen) => {
+            const vehiculos = vehiculosPorAlmacen[almacen.idAlmacen] || {};
+            return (
+              <AlmacenCard
+                key={almacen.idAlmacen}
+                almacen={almacen}
+                onFocus={() => focusOnAlmacen(almacen)}
+                vehiculos={vehiculos}
+                highlighted={highlightedAlmacenId === almacen.idAlmacen}
+                id={`almacen-card-${almacen.idAlmacen}`}
+              />
+            );
+          })}
+        </VStack>
+      </Box>
+    );
+  };
+
+
+  const IndicadoresSection = () => {
+    const { currentMinuteData } = useCollapseSimulation();
+    const [indicadoresVisibles, setIndicadoresVisibles] = useState<IndicadoresSimulado | null>(null);
+    const lastSetTimeRef = useRef<number>(0);
   
+    const staticIndicadores: IndicadoresSimulado = {
+      fuelCounterTA: 1200,
+      fuelCounterTB: 95.45,
+      fuelCounterTC: 80.00,
+      fuelCounterTD: 60.32,
+      fuelCounterTotal: 3550,
+      glpFilledNorth: 10,
+      glpFilledEast: 210,
+      glpFilledMain: 401,
+      glpFilledTotal: 600,
+      meanDeliveryTime: 42,
+      completedOrders: 38,
+      totalOrders: 45,
+    };
+  
+    useEffect(() => {
+      const now = Date.now();
+      const indicadores = currentMinuteData?.indicadores;
+  
+      if (indicadores && (now - lastSetTimeRef.current >= 5000 || lastSetTimeRef.current === 0)) {
+        setIndicadoresVisibles(indicadores);
+        lastSetTimeRef.current = now;
+      } else if (!indicadores && !indicadoresVisibles) {
+        // Solo setea los estáticos si aún no hay nada mostrado
+        setIndicadoresVisibles(staticIndicadores);
+      }
+    }, [currentMinuteData?.indicadores]);
+  
+    return (
+      <Box>
+        <VStack spacing={4} align="stretch">
+          {indicadoresVisibles && (
+            <IndicadoresCard key={'indicadores-default'} indicadores={indicadoresVisibles} />
+          )}
+        </VStack>
+      </Box>
+    );
+  };
+  
+
   const sections = [
     { title: 'Pedidos', content: <PedidosSection/> },
     { title: 'Flota', content: <FlotaSection/> },
     { title: 'Mantenimiento', content: <MantenimientoSection/> },
+    { title: 'Almacenes', content: <AlmacenSection/>},
+    { title: 'Indicadores', content: <IndicadoresSection/>},
   ];
 
   return (
