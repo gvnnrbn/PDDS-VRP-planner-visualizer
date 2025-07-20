@@ -11,6 +11,8 @@ import SimulationCompleteModal from '../../components/common/SimulationCompletio
 import SimulationCollapsedModal from './CollapseModalFinal';
 import type { PedidoSimulado } from '../../core/types/pedido';
 import AlmacenModal from '../../components/common/modals/ModalAlmacen';
+import { useNavigate } from 'react-router-dom';
+
 
 const backend_url = import.meta.env.VITE_ENV_BACKEND_URL;
 
@@ -20,10 +22,10 @@ const iconImageCache: Record<string, HTMLImageElement> = {};
 // Helper para obtener un identificador único del ícono
 function getIconIdentifier(IconComponent: React.ElementType): string {
   // Intentar obtener displayName o name, si no existe usar el nombre de la función
-  return (IconComponent as any).displayName || 
-         (IconComponent as any).name || 
-         IconComponent.toString().split(' ')[1] || 
-         'unknown';
+  return (IconComponent as any).displayName ||
+    (IconComponent as any).name ||
+    IconComponent.toString().split(' ')[1] ||
+    'unknown';
 }
 
 // Helper para convertir un ícono de react-icons a imagen para canvas, usando cache
@@ -92,12 +94,12 @@ export const pedidoHitboxes: { x: number; y: number; size: number; pedido: any }
 
 // Funciones para actualizar pan y zoom desde fuera
 export function setPan(x: number, y: number) {
-    panX = x;
-    panY = y;
+  panX = x;
+  panY = y;
 }
 
 export function setZoom(scale: number) {
-    zoomScale = scale;
+  zoomScale = scale;
 }
 
 // Variables globales para el enfoque de pedidos
@@ -184,7 +186,7 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
     for (const wh of data.almacenes) {
       const x = margin + wh.posicion.posX * scaleX - 16;
       const y = margin + wh.posicion.posY * scaleY - 16;
-       warehouseHitboxes.push({
+      warehouseHitboxes.push({
         x,
         y,
         size: 32,
@@ -438,6 +440,9 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [collapseStart, setCollapseStart] = useState<string | null>(null);
   const [collapseEnd, setCollapseEnd] = useState<string | null>(null);
+  const [simEndDate, setSimEndDate] = useState('');
+  const [collapseReason, setCollapseReason] = useState<'error' | 'stopped' | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!connected) {
@@ -464,7 +469,7 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
     const client = new Client({
       brokerURL: undefined,
       webSocketFactory: () => new SockJS(`${backend_url}/ws`),
-      debug: () => {},
+      debug: () => { },
       reconnectDelay: 5000,
       onConnect: () => {
         setConnected(true);
@@ -519,6 +524,8 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
     }
     if (typeof response === 'object' && response !== null && 'type' in response) {
       const typedResponse = response as { type: string; data: any };
+      //console.log(`Estado Simulación: ${typedResponse.type}`);
+      //console.dir(typedResponse.data, { depth: null });
       switch (typedResponse.type) {
         case 'SIMULATION_LOADING':
           logMessage('🔄 ' + typedResponse.data);
@@ -530,10 +537,26 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
         case 'COLLAPSE_SIMULATION_ERROR':
           logMessage('❌ ' + typedResponse.data);
           setIsSimulating(false);
-          console.log(`Simulasión colapsada papu`);
-          setCollapseStart(data?.minuto); // o usar la variable de inicio si la guardas
-          setCollapseEnd(new Date().toISOString());
-          setIsCollapsed(true);
+
+          if (!collapseReason) {
+            console.log(`Simulación colapsada papu`);
+            setCollapseStart(data?.minuto);
+            setSimEndDate(data?.minuto || '');
+            setCollapseEnd(new Date().toISOString());
+            setCollapseReason('error');
+            setIsCollapsed(true);
+          }
+          return;
+
+        case 'COLLAPSE_SIMULATION_STOPPED':
+          setIsSimulating(false);
+
+          if (!collapseReason) {
+            setCollapseReason('stopped');
+            setCollapseStart(data?.minuto);
+            setCollapseEnd(new Date().toISOString());
+            setIsCollapsed(true);
+          }
           return;
         case 'STATE_UPDATED':
           logMessage('🔄 ' + typedResponse.data);
@@ -600,7 +623,6 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
     }
     stompClient.current.publish({ destination: '/app/stop-collapse', body: '{}' });
     logMessage('⏹️ Sending stop collapse simulation request...');
-    setIsSimulating(false);
   };
 
   const clearLog = () => setLog([]);
@@ -630,7 +652,7 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
         setIsSimulating(true);
       }
     }
-  }, [data?.minuto, simStartDate, isSimulating]);  
+  }, [data?.minuto, simStartDate, isSimulating]);
 
   // Función para dibujar el estado actual del canvas
   const redrawCanvas = useCallback(async () => {
@@ -641,13 +663,13 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
       const result = drawState(canvas, data);
       if (result) setScale(await result);
     }
-  }, [data]); 
+  }, [data]);
 
 
   // Se dispara cada vez que `data` (los datos de simulación) cambian
   useEffect(() => {
     redrawCanvas();
-  }, [data, scale.margin, scale.scaleX, scale.scaleY]); 
+  }, [data, scale.margin, scale.scaleX, scale.scaleY]);
 
   //ZOOM Y PAN
   useEffect(() => {
@@ -737,11 +759,39 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
   //Modal final
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
 
-  const resumenData = simulationSummary || {
-    fechaFin: new Date().toISOString().slice(0, 16),
-    duracion: "00:10:00",
-    pedidosEntregados: 124,
-    consumoPetroleo: 763.2,
+  // Función para calcular duración entre dos fechas
+  const calcularDuracion = (fechaInicio: string, fechaFin: string): string => {
+    if (!fechaInicio || !fechaFin) return '--:--:--';
+
+    try {
+      let inicio = safeParse(fechaInicio);
+      let actual = safeParse(fechaFin);
+      let diff = Math.max(0, actual.getTime() - inicio.getTime());
+      const dias = Math.floor(diff / (1000 * 60 * 60 * 24));
+      diff -= dias * (1000 * 60 * 60 * 24);
+      const horas = Math.floor(diff / (1000 * 60 * 60));
+      diff -= horas * (1000 * 60 * 60);
+      const minutos = Math.floor(diff / (1000 * 60));
+      return `${dias > 0 ? dias + 'd' : ''}${String(horas).padStart(2, '0')}h${String(minutos).padStart(2, '0')}m`;
+    } catch (error) {
+      return '--:--:--';
+    }
+  };
+
+  // Calcular duración para mostrar en tiempo real
+  let duracionStr = '--:--:--';
+  const fechaFin = simEndDate || data?.minuto;
+  if (simStartDate && fechaFin) {
+    duracionStr = calcularDuracion(simStartDate, fechaFin);
+  }
+
+  // Usar datos reales del resumen de simulación desde el estado global data
+  const resumenData = {
+    fechaInicio: simStartDate || initialTime,
+    fechaFin: simEndDate || data?.minuto || new Date().toISOString().slice(0, 16),
+    duracion: calcularDuracion(simStartDate || initialTime, simEndDate || data?.minuto || ''),
+    pedidosEntregados: Math.max(0, data?.indicadores?.completedOrders || 0),
+    consumoPetroleo: Number((data?.indicadores?.fuelCounterTotal || 0).toFixed(2)),
     tiempoPlanificacion: "00:00:15",
   };
   const handleStopAndShowSummary = () => {
@@ -755,7 +805,7 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
       setSimulatedMinutes(prev => prev + 1);
     }
   }, [data?.minuto]);
-  const diaSimulado = Math.floor(simulatedMinutes / 1440) + 1;  
+  const diaSimulado = Math.floor(simulatedMinutes / 1440) + 1;
 
 
   // Utilidad para parsear fecha de forma robusta
@@ -772,7 +822,7 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
       }
     }
     return parsed;
-  }  
+  }
 
   // Función para limpiar el estado y el canvas
   function resetSimulationState() {
@@ -790,7 +840,7 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
   // Ref para evitar recrear objetos en cada render
   const vehiculosPorAlmacenRef = useRef<Record<number, Record<string, number>>>({});
   // Ref para guardar la última posición conocida de cada vehículo
-  const ultimaPosicionVehiculoRef = useRef<Record<string, { posX: number, posY: number } | null>>({});  
+  const ultimaPosicionVehiculoRef = useRef<Record<string, { posX: number, posY: number } | null>>({});
 
   useEffect(() => {
     if (!data?.almacenes || !data?.vehiculos) return;
@@ -820,7 +870,7 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
     vehiculosPorAlmacenRef.current = nuevoMap;
     setVehiculosPorAlmacen({ ...nuevoMap });
     if (onVehiculosPorAlmacenUpdate) onVehiculosPorAlmacenUpdate({ ...nuevoMap });
-  }, [data?.minuto]);  
+  }, [data?.minuto]);
 
   // Limpia el registro de vehículos por almacén y posiciones al iniciar una nueva simulación
   useEffect(() => {
@@ -829,22 +879,7 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
       vehiculosPorAlmacenRef.current = {};
       ultimaPosicionVehiculoRef.current = {};
     }
-  }, [isSimulating, simStartDate]);  
-
-  // Calcular duración
-  let duracionStr = '--:--:--';
-  if (simStartDate && data?.minuto) {
-    // simStartDate y data.minuto pueden ser ISO o string tipo dd/MM/yyyy HH:mm
-    let inicio = safeParse(simStartDate);
-    let actual = safeParse(data.minuto);
-    let diff = Math.max(0, actual.getTime() - inicio.getTime());
-    const dias = Math.floor(diff / (1000 * 60 * 60 * 24));
-    diff -= dias * (1000 * 60 * 60 * 24);
-    const horas = Math.floor(diff / (1000 * 60 * 60));
-    diff -= horas * (1000 * 60 * 60);
-    const minutos = Math.floor(diff / (1000 * 60));
-    duracionStr = `${dias > 0 ? dias + 'd ' : ''}${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}`;
-  }
+  }, [isSimulating, simStartDate]);
 
   //CLICK VEHICULO
   const [selectedVehicle, setSelectedVehicle] = useState<any | null>(null);
@@ -1040,8 +1075,8 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
   }, [draggingWarehouse]);
 
   //Modal almacén
-  const { isOpen: isOpenAlmacenRutas, onOpen: onOpenAlmacenRutas, onClose: onCloseAlmacenRutas} = useDisclosure();
-  
+  const { isOpen: isOpenAlmacenRutas, onOpen: onOpenAlmacenRutas, onClose: onCloseAlmacenRutas } = useDisclosure();
+
 
   return (
     <Box borderWidth="1px" borderRadius="md" p={0} mb={0} height="100vh">
@@ -1229,16 +1264,27 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
             setIsCollapsed(false);
             setCollapseStart(null);
             setCollapseEnd(null);
+            setCollapseReason(null);
           }}
-          fechaInicio={collapseStart ?? ''}
-          fechaFin={collapseEnd ?? ''}
-          duracion={collapseStart && collapseEnd
-            ? `${Math.floor((new Date(collapseEnd).getTime() - new Date(collapseStart).getTime()) / 60000 / 60)
-              .toString()
-              .padStart(2, '0')}:${Math.floor(((new Date(collapseEnd).getTime() - new Date(collapseStart).getTime()) / 60000) % 60)
-              .toString()
-              .padStart(2, '0')}`
-            : '00:00'}
+          onViewDetails={() => {
+            setIsSummaryOpen(false);
+            resetSimulationState();
+            // --- Lógica híbrida para tamaño ---
+            const json = JSON.stringify(simulationSummary);
+            const sizeInMB = json.length / (1024 * 1024);
+            let dataToSend;
+            if (sizeInMB < 2) {
+              dataToSend = simulationSummary;
+            } else {
+              const { simulacionCompleta, ...resumenSinDetalle } = simulationSummary || {};
+              dataToSend = { ...resumenSinDetalle, historialReducido: true };
+            }
+            navigate('/colapso/details', {
+              state: { simulationData: dataToSend }
+            });
+          }}
+          tipo={collapseReason}
+          {...resumenData}
         />
       </VStack>
     </Box>

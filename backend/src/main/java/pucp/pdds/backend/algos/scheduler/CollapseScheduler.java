@@ -102,13 +102,15 @@ public class CollapseScheduler implements Runnable {
         var incidencias = DataChunk.convertIncidentsToDataChunk(state.getFailures(), state.getCurrTime());
         var mantenimientos = DataChunk.convertMaintenancesToDataChunk(state.getActiveMaintenances());
         var bloqueos = DataChunk.convertBlockagesToDataChunk(state.getActiveBlockages());
-        
+        var indicadores = DataChunk.convertIndicatorsToDataChunk(state.getActiveIndicators());
+
         response.put("almacenes", almacenes);
         response.put("vehiculos", vehiculos);
         response.put("pedidos", pedidos);
         response.put("incidencias", incidencias);
         response.put("mantenimientos", mantenimientos);
         response.put("bloqueos", bloqueos);
+        response.put("indicadores",indicadores);
         
         sendResponse("SIMULATION_UPDATE", response);
     }

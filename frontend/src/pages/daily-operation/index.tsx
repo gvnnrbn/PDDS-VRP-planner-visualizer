@@ -272,12 +272,25 @@ const FlotaSection = () => {
 const MantenimientoSection = () => {
   const { operationData } = useOperacion();
 
+  const noData =
+    !operationData?.mantenimientos || operationData.mantenimientos.length === 0;
+
   return (
     <Box>
       <VStack spacing={4} align="stretch">
-        {operationData?.mantenimientos?.map((m) => (
-          <MantenimientoCard key={m.idMantenimiento} mantenimiento={m} onClick={() => console.log('enfocando...')} />
-        ))}
+        {noData ? (
+          <Text color="gray.500" fontStyle="italic">
+            No hay mantenimientos registrados en este momento.
+          </Text>
+        ) : (
+          operationData.mantenimientos.map((m) => (
+            <MantenimientoCard
+              key={m.idMantenimiento}
+              mantenimiento={m}
+              onClick={() => console.log('enfocando...')}
+            />
+          ))
+        )}
       </VStack>
     </Box>
   );
