@@ -160,6 +160,7 @@ public class DailyScheduler implements Runnable {
         var incidencias = DataChunk.convertIncidentsToDataChunk(state.getFailures(), state.getCurrTime());
         var mantenimientos = DataChunk.convertMaintenancesToDataChunk(state.getActiveMaintenances());
         var bloqueos = DataChunk.convertBlockagesToDataChunk(state.getActiveBlockages());
+        var indicadores = DataChunk.convertIndicatorsToDataChunk(state.getActiveIndicators());
 
         formatAlmacenes(almacenes);
         formatVehiculos(vehiculos);
@@ -174,6 +175,7 @@ public class DailyScheduler implements Runnable {
         response.put("incidencias", incidencias);
         response.put("mantenimientos", mantenimientos);
         response.put("bloqueos", bloqueos);
+        response.put("indicadores",indicadores);
         return response;
     }
 

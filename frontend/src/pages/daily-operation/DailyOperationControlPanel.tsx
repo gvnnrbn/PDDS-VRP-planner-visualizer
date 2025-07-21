@@ -456,6 +456,7 @@ const DailyOperationControlPanel: React.FC<DailyOperationControlPanelProps> = ({
     // Only handle SIMULATION_UPDATE and direct data
     if (typeof response === 'object' && response !== null && 'type' in response) {
       const typedResponse = response as { type: string; data: any };
+      console.dir(typedResponse.data, { depth: null });
       switch (typedResponse.type) {
         case 'SIMULATION_UPDATE':
           if (canvasRef.current) {
