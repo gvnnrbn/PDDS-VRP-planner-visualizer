@@ -300,6 +300,7 @@ const IndicadoresSection = () => {
   const { operationData } = useOperacion();
   const [indicadoresVisibles, setIndicadoresVisibles] = useState<IndicadoresSimulado | null>(null);
   const lastSetTimeRef = useRef<number>(0);
+  //
 
   const staticIndicadores: IndicadoresSimulado = {
     fuelCounterTA: 1200,
