@@ -868,9 +868,6 @@ const DailyOperationControlPanel: React.FC<DailyOperationControlPanelProps> = ({
               <Text color={'purple.100'}>{estadoVehiculo}</Text>
               <Text>Combustible: {selectedVehicle.combustible} Gal.</Text>
               <Text>GLP: {selectedVehicle.currGLP>0?selectedVehicle.currGLP:0} m3</Text>
-              <Button variant={'primary'} size={'sm'}  mt={2}>
-                Botón
-              </Button>
             </Box>
           </Box>
         )}
