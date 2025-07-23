@@ -68,10 +68,11 @@ public class SimulationService {
                 int minute = timeNode.path("minute").asInt();
 
                 LocalDateTime fechaInicio = LocalDateTime.of(year, month, day, hour, minute);
+                Time startTime = new Time(year, month, day, hour, minute);
 
                 // Initialize scheduler state with fresh data from database
                 var vehicles = dataProvider.getVehicles();
-                var orders = dataProvider.getOrdersForWeek(fechaInicio);
+                var orders = dataProvider.getOrdersForWeek(startTime);
                 var blockages = dataProvider.getBlockages();
                 var warehouses = dataProvider.getWarehouses();
                 var failures = dataProvider.getFailures();

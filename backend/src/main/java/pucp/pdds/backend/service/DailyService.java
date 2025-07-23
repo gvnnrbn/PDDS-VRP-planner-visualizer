@@ -1,6 +1,7 @@
 package pucp.pdds.backend.service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +11,9 @@ import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import pucp.pdds.backend.algos.entities.PlannerBlockage;
+import pucp.pdds.backend.algos.entities.PlannerFailure;
+import pucp.pdds.backend.algos.entities.PlannerOrder;
 import pucp.pdds.backend.algos.scheduler.DailyScheduler;
 import pucp.pdds.backend.algos.scheduler.DataProvider;
 import pucp.pdds.backend.algos.scheduler.SchedulerState;
@@ -45,17 +49,25 @@ public class DailyService {
         try {
             logger.info("Initializing daily service");
 
-            LocalDateTime fechaInicio = LocalDateTime.now();
+            LocalDateTime fechaInicio = LocalDateTime.now().minusMinutes(1);
 
-            var vehicles = dataProvider.getVehicles();
-            var orders = dataProvider.getOrdersForWeek(fechaInicio);
-            var blockages = dataProvider.getBlockages();
-            var warehouses = dataProvider.getWarehouses();
-            var failures = dataProvider.getFailures();
-            var maintenances = dataProvider.getMaintenances();
+            startTime = new Time(fechaInicio.getYear(), fechaInicio.getMonthValue(), fechaInicio.getDayOfMonth(), fechaInicio.getHour(), fechaInicio.getMinute());
+
+            var vehicles = dataProvider.getVehicles(); // GETS ALL AT THE START
+            var orders = new ArrayList<PlannerOrder>(); // GETS NONE
+            // var blockages = dataProvider.getCurrentBlockages(startTime); // GETS CURRENT ACTIVE
+            var blockages = new ArrayList<PlannerBlockage>(); // GETS NONE
+            var warehouses = dataProvider.getWarehouses(); // GETS ALL AT THE START
+            var failures = new ArrayList<PlannerFailure>(); // GETS NONE
+            var maintenances = dataProvider.getMaintenances(); // GETS ALL AT THE START
 
             logger.info("Loaded {} vehicles, {} orders, {} blockages, {} warehouses, {} failures, {} maintenances", 
                 vehicles.size(), orders.size(), blockages.size(), warehouses.size(), failures.size(), maintenances.size());
+
+            System.out.println("[SHOW] Blockages loaded at the start: " + blockages.size());
+            for (PlannerBlockage blockage : blockages) {
+                System.out.println("[SHOW] Blockage: " + blockage.id);
+            }
 
             SchedulerState schedulerState = new SchedulerState(
                 vehicles.stream().map(v -> v.clone()).toList(),
@@ -70,8 +82,6 @@ public class DailyService {
                new Time(fechaInicio.getYear(), fechaInicio.getMonthValue(),
                 fechaInicio.getDayOfMonth(), fechaInicio.getHour(), fechaInicio.getMinute())
             );
-
-            startTime = new Time(fechaInicio.getYear(), fechaInicio.getMonthValue(), fechaInicio.getDayOfMonth(), fechaInicio.getHour(), fechaInicio.getMinute());
 
             currentSimulation = new DailyScheduler(messagingTemplate, dataProvider);
             currentSimulation.setState(schedulerState);

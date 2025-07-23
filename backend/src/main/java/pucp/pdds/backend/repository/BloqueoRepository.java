@@ -11,4 +11,6 @@ import pucp.pdds.backend.model.Bloqueo;
 public interface BloqueoRepository extends JpaRepository<Bloqueo, Long> {
     @Query(value = "SELECT * FROM bloqueo b WHERE b.start_time < :currDate AND b.end_time > :currDate", nativeQuery = true)
     List<Bloqueo> findCurrent(LocalDateTime currDate);
+
+    List<Bloqueo> findByStartTimeBetween(LocalDateTime startDate, LocalDateTime endDate);
 } 

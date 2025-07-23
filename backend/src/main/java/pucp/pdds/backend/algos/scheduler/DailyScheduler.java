@@ -12,6 +12,7 @@ import pucp.pdds.backend.algos.algorithm.Algorithm;
 import pucp.pdds.backend.algos.algorithm.Solution;
 import pucp.pdds.backend.algos.algorithm.Environment;
 import pucp.pdds.backend.algos.data.DataChunk;
+import pucp.pdds.backend.algos.entities.PlannerOrder;
 import pucp.pdds.backend.algos.utils.Time;
 import pucp.pdds.backend.dto.SimulationResponse;
 import java.time.format.DateTimeFormatter;
@@ -27,7 +28,7 @@ public class DailyScheduler implements Runnable {
     private static final DateTimeFormatter SIM_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private final DataProvider dataProvider;
 
-    private final int algorithmTimeout = 10 * 1000;
+    private final int algorithmTimeout = 10 * 1000; // PUT BACK TO 10 
 
     private Map<String, Object> lastResponse = null;
 
@@ -61,6 +62,10 @@ public class DailyScheduler implements Runnable {
                     state.minutesToSimulate
                 );
                 debugPrint("Planning interval " + state.getCurrTime() + " started at " + state.getCurrTime() + " with " + state.getActiveVehicles().size() + " vehicles and " + state.getActiveOrders().size() + " orders");
+                System.out.println("[SHOW] Planning for orders:");
+                for (PlannerOrder order : environment.orders) {
+                    System.out.println("[SHOW] Order: " + order.id);
+                }
                 stateLock.unlock();
                 Algorithm algorithm = new Algorithm(true, algorithmTimeout);
                 Solution sol = algorithm.run(environment, state.minutesToSimulate);
@@ -76,15 +81,12 @@ public class DailyScheduler implements Runnable {
                 onAfterExecution(sol);
                 stateLock.unlock();
 
-                stateLock.lock();
-                pushChanges();
-                stateLock.unlock();
-
                 LocalDateTime realTime = state.getCurrTime().toLocalDateTime();
                 long sleepMillis = Duration.between(LocalDateTime.now(), realTime).toMillis();
-                // sleepMillis -= 60 * 1000; // It was 1 minute ahead previously
                 sleepMillis += 60 * 1000;
                 sleepMillis -= algorithmTimeout;
+
+                // sleepMillis = algorithmTimeout; // CHANGE, DEBUG ONLY, REMOVE THIS LINE PLEASE
 
                 try {
                     if (sleepMillis > 0) {
@@ -93,15 +95,18 @@ public class DailyScheduler implements Runnable {
                 } catch (InterruptedException e) {
                     isRunning = false;
                     Thread.currentThread().interrupt();
+                    System.out.println("[SHOW] Simulation stopped by user");
                     sendResponse("SIMULATION_STOPPED", "Simulation stopped by user");
                     return;
                 }
 
                 if (!isRunning || Thread.currentThread().isInterrupted()) {
+                    System.out.println("[SHOW] Simulation stopped by user");
                     sendResponse("SIMULATION_STOPPED", "Simulation stopped by user");
                     return;
                 }
             } catch (Exception e) {
+                System.out.println("[SHOW] Error: " + e.getMessage());
                 sendError("Unexpected error during simulation: " + e.getMessage());
                 isRunning = false;
                 return;
@@ -110,6 +115,7 @@ public class DailyScheduler implements Runnable {
 
         if (!isRunning) {
             sendResponse("SIMULATION_STOPPED", "Simulation stopped by user");
+            System.out.println("[SHOW] Simulation stopped by user");
         }
     }
 
@@ -127,15 +133,6 @@ public class DailyScheduler implements Runnable {
         stateLock.lock();
         try {
             dataProvider.refetchData(state, startTime);
-        } finally {
-            stateLock.unlock();
-        }
-    }
-
-    public void pushChanges() {
-        stateLock.lock();
-        try {
-            dataProvider.pushChanges(state);
         } finally {
             stateLock.unlock();
         }

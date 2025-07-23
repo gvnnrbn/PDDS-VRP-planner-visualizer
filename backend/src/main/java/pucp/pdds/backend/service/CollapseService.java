@@ -57,9 +57,10 @@ public class CollapseService {
                 int minute = timeNode.path("minute").asInt();
 
                 LocalDateTime fechaInicio = LocalDateTime.of(year, month, day, hour, minute);
+                Time startTime = new Time(year, month, day, hour, minute);
 
                 var vehicles = dataProvider.getVehicles();
-                var orders = dataProvider.getOrdersForWeek(fechaInicio);
+                var orders = dataProvider.getOrdersForWeek(startTime);
                 var blockages = dataProvider.getBlockages();
                 var warehouses = dataProvider.getWarehouses();
                 var failures = dataProvider.getFailures();

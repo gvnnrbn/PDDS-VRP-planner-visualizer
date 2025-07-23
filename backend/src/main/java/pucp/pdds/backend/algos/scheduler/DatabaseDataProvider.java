@@ -1,6 +1,11 @@
 package pucp.pdds.backend.algos.scheduler;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,14 +59,27 @@ public class DatabaseDataProvider implements DataProvider {
     }
 
     @Override
-    public List<PlannerOrder> getOrdersForWeek(java.time.LocalDateTime startDate) {
-        java.time.LocalDateTime endDate = startDate.plusDays(7);
-        return pedidoRepository.findByFechaRegistroBetween(startDate, endDate).stream().map(PlannerOrder::fromEntity).collect(Collectors.toList());
+    public List<PlannerOrder> getCurrentOrders(Time time) {
+        LocalDateTime start = time.toLocalDateTime().minusHours(2);
+        LocalDateTime end = time.toLocalDateTime();
+        return pedidoRepository.findByFechaRegistroBetween(start, end).stream().map(PlannerOrder::fromEntity).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<PlannerOrder> getOrdersForWeek(Time startDate) {
+        LocalDateTime start = startDate.toLocalDateTime();
+        LocalDateTime end = start.plusDays(7);
+        return pedidoRepository.findByFechaRegistroBetween(start, end).stream().map(PlannerOrder::fromEntity).collect(Collectors.toList());
     }
 
     @Override
     public List<PlannerBlockage> getBlockages() {
         return bloqueoRepository.findAll().stream().map(PlannerBlockage::fromEntity).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<PlannerBlockage> getCurrentBlockages(Time time) {
+        return bloqueoRepository.findCurrent(time.toLocalDateTime()).stream().map(PlannerBlockage::fromEntity).collect(Collectors.toList());
     }
 
     @Override
@@ -86,53 +104,53 @@ public class DatabaseDataProvider implements DataProvider {
 
     @Override
     public void refetchData(SchedulerState state, Time startTime) {
-        System.out.println("Refetching data");
-        state.setOrders(pedidoRepository.findByFechaRegistroBetween(startTime.toLocalDateTime(), state.getCurrTime().toLocalDateTime()).stream().map(PlannerOrder::fromEntity).collect(Collectors.toList()));
+        System.out.println("[SHOW] Refetching data");
+        LocalDateTime fetchingInterval[] = {
+            state.getCurrTime().toLocalDateTime(),
+            state.getCurrTime().toLocalDateTime()
+        };
 
-        state.setVehicles(vehiculoRepository.findAll().stream().map(PlannerVehicle::fromEntity).collect(Collectors.toList()));
+        // WORKING FINE
+        List<PlannerOrder> newOrders = pedidoRepository.
+            findByFechaRegistroBetween(fetchingInterval[0], fetchingInterval[1])
+            .stream()
+            .map(PlannerOrder::fromEntity)
+            .filter(o-> !state.getOrders().stream().anyMatch(o2->o2.id == o.id))
+            .collect(Collectors.toList());
+        System.out.println("[SHOW] New orders: " + newOrders.size());
+        for (PlannerOrder order : newOrders) {
+            System.out.println("[SHOW] Order: " + order.id);
+        }
 
-        state.setBlockages(bloqueoRepository.findCurrent(state.getCurrTime().toLocalDateTime()).stream().map(PlannerBlockage::fromEntity).collect(Collectors.toList()));
+        List<PlannerOrder> newAllOrders = new ArrayList<>(state.getOrders());
+        newAllOrders.addAll(newOrders);
+        state.setOrders(newAllOrders);
 
-        state.setFailures(incidenciaRepository.findAll().stream().map(PlannerFailure::fromEntity).collect(Collectors.toList()));
+        // NOT WORKING
+        List<PlannerBlockage> newBlockages = bloqueoRepository.
+            findByStartTimeBetween(fetchingInterval[0], fetchingInterval[1])
+            .stream()
+            .map(PlannerBlockage::fromEntity)
+            .filter(b-> !state.getBlockages().stream().anyMatch(b2->b2.id == b.id))
+            .collect(Collectors.toList());
+        System.out.println("[SHOW] New blockages: " + newBlockages.size());
+        for (PlannerBlockage blockage : newBlockages) {
+            System.out.println("[SHOW] Blockage: " + blockage.id);
+        }
 
-        state.setMaintenances(mantenimientoRepository.findAll().stream().map(PlannerMaintenance::fromEntity).collect(Collectors.toList()));
+        List<PlannerBlockage> newAllBlockages = new ArrayList<>(state.getBlockages());
+        newAllBlockages.addAll(newBlockages);
+        state.setBlockages(newAllBlockages);
 
-        state.setWarehouses(almacenRepository.findAll().stream().map(PlannerWarehouse::fromEntity).collect(Collectors.toList()));
-    }
+        // NOT TRIED
+        List<PlannerFailure> newFailures = incidenciaRepository.
+            findAll()
+            .stream().map(PlannerFailure::fromEntity)
+            .filter(f-> !state.getFailures().stream().anyMatch(f2->f2.id == f.id))
+            .collect(Collectors.toList());
 
-    @Override
-    public void pushChanges(SchedulerState state) {
-        System.out.println("Pushing changes");
-        // Update vehicles
-        state.getVehicles().forEach(plannerVehicle -> {
-            vehiculoRepository.findById(Long.valueOf(plannerVehicle.id)).ifPresent(vehicleModel -> {
-                vehicleModel.setPosicionY((float)plannerVehicle.position.y);
-                vehicleModel.setPosicionX((float)plannerVehicle.position.x);
-                vehicleModel.setCurrCombustible((float)plannerVehicle.currentFuel);
-                vehicleModel.setCurrGlp((float)plannerVehicle.currentGLP);
-                vehiculoRepository.save(vehicleModel);
-            });
-        });
-
-        // Update orders
-        state.getOrders().forEach(plannerOrder -> {
-            pedidoRepository.findById(Long.valueOf(plannerOrder.id)).ifPresent(orderModel -> {
-                orderModel.setCantidadGLP(plannerOrder.amountGLP);
-                if (plannerOrder.deliverTime != null) {
-                    orderModel.setFechaEntrega(plannerOrder.deliverTime.toLocalDateTime());
-                }
-                pedidoRepository.save(orderModel);
-            });
-        });
-
-        // Update failures
-        state.getFailures().forEach(plannerFailure -> {
-            incidenciaRepository.findById(Long.valueOf(plannerFailure.id)).ifPresent(failureModel -> {
-                if (plannerFailure.timeOccuredOn != null) {
-                    failureModel.setOcurrido(true);
-                    incidenciaRepository.save(failureModel);
-                }
-            });
-        });
+        List<PlannerFailure> newAllFailures = new ArrayList<>(state.getFailures());
+        newAllFailures.addAll(newFailures);
+        state.setFailures(newAllFailures);
     }
 }
