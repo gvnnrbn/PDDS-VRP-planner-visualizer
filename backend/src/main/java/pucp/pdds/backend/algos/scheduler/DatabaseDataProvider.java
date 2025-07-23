@@ -117,26 +117,18 @@ public class DatabaseDataProvider implements DataProvider {
             .map(PlannerOrder::fromEntity)
             .filter(o-> !state.getOrders().stream().anyMatch(o2->o2.id == o.id))
             .collect(Collectors.toList());
-        System.out.println("[SHOW] New orders: " + newOrders.size());
-        for (PlannerOrder order : newOrders) {
-            System.out.println("[SHOW] Order: " + order.id);
-        }
 
         List<PlannerOrder> newAllOrders = new ArrayList<>(state.getOrders());
         newAllOrders.addAll(newOrders);
         state.setOrders(newAllOrders);
 
-        // NOT WORKING
+        // WORKING FINE
         List<PlannerBlockage> newBlockages = bloqueoRepository.
             findByStartTimeBetween(fetchingInterval[0], fetchingInterval[1])
             .stream()
             .map(PlannerBlockage::fromEntity)
             .filter(b-> !state.getBlockages().stream().anyMatch(b2->b2.id == b.id))
             .collect(Collectors.toList());
-        System.out.println("[SHOW] New blockages: " + newBlockages.size());
-        for (PlannerBlockage blockage : newBlockages) {
-            System.out.println("[SHOW] Blockage: " + blockage.id);
-        }
 
         List<PlannerBlockage> newAllBlockages = new ArrayList<>(state.getBlockages());
         newAllBlockages.addAll(newBlockages);
