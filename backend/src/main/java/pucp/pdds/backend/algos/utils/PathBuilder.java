@@ -99,15 +99,15 @@ public class PathBuilder {
             Position roundedFrom = from.round();
             // System.out.println("Rounded from: " + roundedFrom);
             
-            // Check if direct path to rounded position is blocked
-            boolean pathToRoundedBlocked = isPathBlocked(from, roundedFrom, blockages);
-            // System.out.println("Direct path to rounded position blocked: " + pathToRoundedBlocked);
+            // // Check if direct path to rounded position is blocked
+            // boolean pathToRoundedBlocked = isPathBlocked(from, roundedFrom, blockages);
+            // // System.out.println("Direct path to rounded position blocked: " + pathToRoundedBlocked);
             
-            if (pathToRoundedBlocked) {
-                // System.out.println("❌ PATH REJECTED: Cannot reach rounded start position");
-                // System.out.println("=== PATHFINDING END (NULL) ===");
-                return null;
-            }
+            // if (pathToRoundedBlocked) {
+            //     // System.out.println("❌ PATH REJECTED: Cannot reach rounded start position");
+            //     // System.out.println("=== PATHFINDING END (NULL) ===");
+            //     return null;
+            // }
             path.add(from);
             fromPos = roundedFrom;
             // System.out.println("✅ Added original start position to path, using rounded for main pathfinding");

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import pucp.pdds.backend.algos.entities.PlannerBlockage;
 import pucp.pdds.backend.algos.entities.PlannerFailure;
 import pucp.pdds.backend.algos.entities.PlannerOrder;
+import pucp.pdds.backend.algos.entities.PlannerVehicle.VehicleState;
 import pucp.pdds.backend.algos.scheduler.DailyScheduler;
 import pucp.pdds.backend.algos.scheduler.DataProvider;
 import pucp.pdds.backend.algos.scheduler.SchedulerState;
@@ -49,14 +50,13 @@ public class DailyService {
         try {
             logger.info("Initializing daily service");
 
-            LocalDateTime fechaInicio = LocalDateTime.now().minusMinutes(1);
+            LocalDateTime fechaInicio = LocalDateTime.now();
 
             startTime = new Time(fechaInicio.getYear(), fechaInicio.getMonthValue(), fechaInicio.getDayOfMonth(), fechaInicio.getHour(), fechaInicio.getMinute());
 
             var vehicles = dataProvider.getVehicles(); // GETS ALL AT THE START
             var orders = new ArrayList<PlannerOrder>(); // GETS NONE
-            // var blockages = dataProvider.getCurrentBlockages(startTime); // GETS CURRENT ACTIVE
-            var blockages = new ArrayList<PlannerBlockage>(); // GETS NONE
+            var blockages = dataProvider.getCurrentBlockages(startTime); // GETS CURRENT ACTIVE
             var warehouses = dataProvider.getWarehouses(); // GETS ALL AT THE START
             var failures = new ArrayList<PlannerFailure>(); // GETS NONE
             var maintenances = dataProvider.getMaintenances(); // GETS ALL AT THE START
@@ -68,6 +68,22 @@ public class DailyService {
             for (PlannerBlockage blockage : blockages) {
                 System.out.println("[SHOW] Blockage: " + blockage.id);
             }
+
+            vehicles.forEach(v -> {
+                v.currentFuel = v.maxFuel;
+                v.currentGLP = v.maxGLP;
+                v.currentPath = null;
+                v.nextNodeIndex = 0;
+                v.currentFailure = null;
+                v.minutesUntilFailure = 0;
+                v.reincorporationTime = null;
+                v.state = VehicleState.IDLE;
+                v.waitTransition = 0;
+            });
+
+            warehouses.forEach(w -> {
+                w.currentGLP = w.maxGLP;
+            });
 
             SchedulerState schedulerState = new SchedulerState(
                 vehicles.stream().map(v -> v.clone()).toList(),
