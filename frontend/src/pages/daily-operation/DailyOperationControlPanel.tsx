@@ -212,7 +212,7 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
 
       ctx.fillStyle = '#000';
       ctx.font = '12px Arial';
-      ctx.fillText('W' + (wh.idAlmacen || ''), x + 4, y + 50);
+      // ctx.fillText('W' + (wh.idAlmacen || ''), x + 4, y + 50);
 
       if (!wh.isMain && wh.maxGLP) {
         const perc = wh.currentGLP / wh.maxGLP;
