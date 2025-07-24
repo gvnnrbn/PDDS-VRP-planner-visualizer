@@ -95,7 +95,7 @@ export const PedidoForm = ({ pedido, onFinish, onCancel }: PedidoFormProps) => {
             />
           </FormControl>
           <FormControl>
-            <FormLabel>Tiempo Tolerancia (min)</FormLabel>
+            <FormLabel>Tiempo Tolerancia (horas)</FormLabel>
             <Input 
               type="number"
               value={formData.tiempoTolerancia}
