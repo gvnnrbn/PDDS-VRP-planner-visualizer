@@ -106,7 +106,7 @@ public class DatabaseDataProvider implements DataProvider {
     public void refetchData(SchedulerState state, Time startTime) {
         System.out.println("[SHOW] Refetching data");
         LocalDateTime fetchingInterval[] = {
-            state.getCurrTime().toLocalDateTime(),
+            state.getCurrTime().toLocalDateTime().minusSeconds(59),
             state.getCurrTime().toLocalDateTime()
         };
 
@@ -117,6 +117,9 @@ public class DatabaseDataProvider implements DataProvider {
             .map(PlannerOrder::fromEntity)
             .filter(o-> !state.getOrders().stream().anyMatch(o2->o2.id == o.id))
             .collect(Collectors.toList());
+        for (PlannerOrder o : newOrders) {
+            System.out.println("[SHOW] New order: " + o.id);
+        }
 
         List<PlannerOrder> newAllOrders = new ArrayList<>(state.getOrders());
         newAllOrders.addAll(newOrders);
@@ -129,6 +132,9 @@ public class DatabaseDataProvider implements DataProvider {
             .map(PlannerBlockage::fromEntity)
             .filter(b-> !state.getBlockages().stream().anyMatch(b2->b2.id == b.id))
             .collect(Collectors.toList());
+        for (PlannerBlockage b : newBlockages) {
+            System.out.println("[SHOW] New blockage: " + b.id);
+        }
 
         List<PlannerBlockage> newAllBlockages = new ArrayList<>(state.getBlockages());
         newAllBlockages.addAll(newBlockages);
