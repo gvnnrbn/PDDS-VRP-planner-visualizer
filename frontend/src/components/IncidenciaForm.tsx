@@ -100,7 +100,7 @@ export const IncidenciaForm = ({ incidencia, onFinish, onCancel }: IncidenciaFor
             <option value="">Seleccionar vehiculo</option>
             {vehiculos.map((vehiculo) => (
               <option key={vehiculo.id} value={vehiculo.id}>
-                {vehiculo.id}
+                {vehiculo.placa}
               </option>
             ))}
           </Select>

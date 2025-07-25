@@ -43,6 +43,25 @@ public class VehiculoController {
     
     @PostMapping
     public ResponseEntity<Vehiculo> createVehiculo(@RequestBody Vehiculo vehiculo) {
+        Vehiculo.TipoVehiculo tipo = vehiculo.getTipo();
+        if (tipo != null) {
+            java.util.List<Vehiculo> tipoVehiculos = vehiculoRepository.findByTipoOrderByPlacaDesc(tipo);
+            int nextNumber = 1;
+            if (!tipoVehiculos.isEmpty()) {
+                String lastPlaca = tipoVehiculos.get(0).getPlaca(); // Ejemplo: TD03, TA01, etc.
+                // Extraer el número al final de la placa
+                String numberPart = lastPlaca.replaceAll("^" + tipo.name() + "(0*)", "");
+                try {
+                    int lastNumber = Integer.parseInt(numberPart);
+                    nextNumber = lastNumber + 1;
+                } catch (NumberFormatException e) {
+                    // Si la placa no tiene número, usar 1
+                    nextNumber = 1;
+                }
+            }
+            String newPlaca = String.format("%s%02d", tipo.name(), nextNumber);
+            vehiculo.setPlaca(newPlaca);
+        }
         Vehiculo savedVehiculo = vehiculoRepository.save(vehiculo);
         return ResponseEntity.ok(savedVehiculo);
     }
