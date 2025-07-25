@@ -60,8 +60,8 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           password: ${{ secrets.VPS_PASSWORD }}
           port: 22
-          source: "backend/target/backend-0.0.1-SNAPSHOT.jar"
-          target: "/opt/pdds-app/"
+          source: "${{ github.workspace }}/backend/target/backend-0.0.1-SNAPSHOT.jar"
+          target: "/opt/pdds-app/pdds-backend.jar"
 
       - name: ♻️ Restart Backend Service
         uses: appleboy/ssh-action@master
