@@ -457,6 +457,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps & { onVehicul
   
   // Para el resumen de simulación
   const [simulationSummary, setSimulationSummary] = useState<any>(null);
+  const [simulationHistory, setSimulationHistory] = useState<any[]>([]);
   
 
   const [scale, setScale] = useState<{ margin: number; scaleX: number; scaleY: number }>({
@@ -575,6 +576,8 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps & { onVehicul
             if (result) setScale(result);
           }
           setData(typedResponse.data);
+          // Guardar el estado actual en el historial
+          setSimulationHistory(prev => [...prev, { ...typedResponse.data, timestamp: new Date().toISOString() }]);
           return;
         case 'SIMULATION_STATE':
           if (typeof typedResponse.data === 'boolean') {
@@ -587,6 +590,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps & { onVehicul
         case 'SIMULATION_SUMMARY':
           console.log('SimulationControlPanel - Summary data received:', typedResponse.data);
           setSimEndDate(data?.minuto || ''); // Guardar la fecha final antes de detener
+          setSimulationSummary(typedResponse.data); // Guardar el resumen de la simulación
           setIsSimulating(false);
           setIsSummaryOpen(true);
           return;
@@ -974,6 +978,8 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps & { onVehicul
     setSimStartDate('');
     setSimEndDate('');
     setData(undefined as any); // o el valor inicial vacío según tu tipo
+    setSimulationSummary(null);
+    setSimulationHistory([]);
     if (canvasRef.current) {
       const ctx = canvasRef.current.getContext('2d');
       if (ctx) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
@@ -1360,20 +1366,32 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps & { onVehicul
           }}
           onViewDetails={() => {
             setIsSummaryOpen(false);
-            resetSimulationState();
             // --- Lógica híbrida para tamaño ---
-            const json = JSON.stringify(simulationSummary);
+            const combinedData = {
+              ...simulationSummary,
+              simulacionCompleta: simulationHistory,
+              estadisticas: {
+                totalVehiculos: simulationSummary?.estadisticas?.totalVehiculos || 0,
+                maxVehiculosActivosEnUnMinuto: simulationSummary?.estadisticas?.maxVehiculosActivosEnUnMinuto || 0,
+                vehiculosActivosUnicos: simulationSummary?.estadisticas?.vehiculosActivosUnicos || 0,
+                minutosSimulados: simulationHistory.length,
+                consumoPetroleo: simulationSummary?.estadisticas?.consumoPetroleo || 0
+              }
+            };
+            
+            const json = JSON.stringify(combinedData);
             const sizeInMB = json.length / (1024 * 1024);
             let dataToSend;
             if (sizeInMB < 2) {
-              dataToSend = simulationSummary;
+              dataToSend = combinedData;
             } else {
-              const { simulacionCompleta, ...resumenSinDetalle } = simulationSummary || {};
+              const { simulacionCompleta, ...resumenSinDetalle } = combinedData;
               dataToSend = { ...resumenSinDetalle, historialReducido: true };
             }
             navigate('/weekly-simulation/details', {
               state: { simulationData: dataToSend }
             });
+            resetSimulationState();
           }}
           {...resumenData}
         />
