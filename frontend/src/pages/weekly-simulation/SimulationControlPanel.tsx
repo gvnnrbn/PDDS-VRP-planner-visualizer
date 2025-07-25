@@ -25,7 +25,7 @@ interface LogEntry {
   message: string;
 }
 
-const backend_url = import.meta.env.VITE_ENV_BACKEND_URL;
+const backend_url = import.meta.env.VITE_API_URL;
 
 // Cache global para imágenes de íconos
 const iconImageCache: Record<string, HTMLImageElement> = {};
