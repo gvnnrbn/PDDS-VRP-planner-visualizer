@@ -21,6 +21,7 @@ import { AlmacenCard } from '../../components/common/cards/AlmacenCard'
 import type { IndicadoresSimulado } from '../../core/types/indicadores'
 import { PanelSearchBar } from '../../components/common/PanelSearchBar'
 import { FaPlus } from 'react-icons/fa'
+import { BloqueoCard } from '../../components/common/cards/BloqueosCard'
 
 const pedidoService = new PedidoService();
 const incidenciaService = new IncidenciaService();
@@ -341,6 +342,33 @@ const IndicadoresSection = () => {
   );
 };
 
+const BloqueosSection = () => {
+  const { operationData } = useOperacion();
+
+  const noData =
+    !operationData?.bloqueos || operationData.bloqueos.length === 0;
+
+  return (
+    <Box>
+      <VStack spacing={4} align="stretch">
+        {noData ? (
+          <Text color="gray.500" fontStyle="italic">
+            No hay bloqueos registrados en este momento.
+          </Text>
+        ) : (
+          operationData.bloqueos.map((bloqueo) => (
+            <BloqueoCard
+              key={bloqueo.idBloqueo}
+              bloqueo={bloqueo}
+              onClick={() => console.log("Enfocar bloqueo", bloqueo.idBloqueo)}
+            />
+          ))
+        )}
+      </VStack>
+    </Box>
+  );
+};
+
 export default function DailyOperation() {
   const bgColor = useColorModeValue('white', '#1a1a1a')
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -461,6 +489,10 @@ export default function DailyOperation() {
     {
       title: 'Almacén',
       content: <AlmacenSection />
+    },
+    {
+      title: 'Bloqueos',
+      content: <BloqueosSection/>
     },
     {
       title: 'Indicadores',

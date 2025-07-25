@@ -1,4 +1,4 @@
-import { Box, Button, FormControl, FormLabel, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Stack, VStack, HStack, useDisclosure, useToast, Menu, MenuList, MenuItem, MenuButton, Collapse, IconButton } from '@chakra-ui/react'
+import { Box, Button, FormControl, FormLabel, Input, Modal, ModalBody, ModalContent, ModalFooter, Text, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Stack, VStack, HStack, useDisclosure, useToast, Menu, MenuList, MenuItem, MenuButton, Collapse, IconButton } from '@chakra-ui/react'
 import { Route, Routes } from 'react-router-dom'
 import { SectionBar } from '../../components/common/SectionBar'
 import { useEffect, useRef, useState } from 'react'
@@ -18,6 +18,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faFilter, faSort } from '@fortawesome/free-solid-svg-icons'
 import { AlmacenCard } from '../../components/common/cards/AlmacenCard'
 import type { IndicadoresSimulado } from '../../core/types/indicadores'
+import { BloqueoCard } from '../../components/common/cards/BloqueosCard'
 
 const ORDER_OPTIONS_PEDIDOS = [
   { label: 'Tiempo de llegada más cercano', value: 'fechaLimite-asc' },
@@ -293,6 +294,33 @@ const PedidosSection = () => {
     );
   };
 
+  const BloqueosSection = () => {
+    const { currentMinuteData, focusOnBloqueo } = useSimulation();
+  
+    const noData =
+      !currentMinuteData?.bloqueos || currentMinuteData.bloqueos.length === 0;
+  
+    return (
+      <Box>
+        <VStack spacing={4} align="stretch">
+          {noData ? (
+            <Text color="gray.500" fontStyle="italic">
+              No hay bloqueos registrados en este momento.
+            </Text>
+          ) : (
+            currentMinuteData.bloqueos.map((bloqueo) => (
+              <BloqueoCard
+                key={bloqueo.idBloqueo}
+                bloqueo={bloqueo}
+                onClick={() => focusOnBloqueo(bloqueo)}
+              />
+            ))
+          )}
+        </VStack>
+      </Box>
+    );
+  };
+
 
 
 export default function WeeklySimulation() {
@@ -443,6 +471,10 @@ const IndicadoresSection = () => {
   {
     title: 'Almacén',
     content: <AlmacenSection/>
+  },
+  {
+    title: 'Bloqueos',
+    content: <BloqueosSection/>
   },
   {
     title: 'Indicadores',

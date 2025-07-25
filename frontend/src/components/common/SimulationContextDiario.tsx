@@ -9,6 +9,7 @@ import type { PedidoSimulado } from "../../core/types/pedido";
 import type { VehiculoSimuladoV2 } from "../../core/types/vehiculo";
 import type { IndicadoresSimulado } from "../../core/types/indicadores";
 import type { AlmacenSimulado } from "../../core/types/almacen";
+import type { BloqueoSimulado } from "../../core/types/bloqueos";
 
 export interface MinutoOperacion {
   minuto: string;
@@ -17,7 +18,8 @@ export interface MinutoOperacion {
   almacenes: AlmacenSimulado[];
   incidencias: any[];
   mantenimientos: any[];
-  indicadores: IndicadoresSimulado
+  indicadores: IndicadoresSimulado;
+  bloqueos: BloqueoSimulado [];
 }
 
 interface OperacionContextType {

@@ -175,22 +175,28 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
     ctx.lineWidth = 3;
     ctx.fillStyle = '#F80707'; // Para los círculos de los bloqueos
     data.bloqueos.forEach((blockage: any) => {
-      if (blockage.segmentos?.length > 1) {
+      const isHighlighted = typeof window !== 'undefined' &&
+        (window as any).highlightedBlockId === blockage.idBloqueo;
+
+      ctx.strokeStyle = isHighlighted ? '#FFD700' : '#F80707'; // amarillo si enfocado
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      blockage.segmentos.forEach((v: any, i: number) => {
+        const x = margin + v.posX * scaleX;
+        const y = margin + v.posY * scaleY;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      // Círculos pequeños en puntos
+      ctx.fillStyle = isHighlighted ? '#FFD700' : '#F80707';
+      blockage.segmentos.forEach((v: any) => {
+        const x = margin + v.posX * scaleX;
+        const y = margin + v.posY * scaleY;
         ctx.beginPath();
-        blockage.segmentos.forEach((v: any, i: number) => {
-          const x = margin + v.posX * scaleX;
-          const y = margin + v.posY * scaleY;
-          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-        });
-        ctx.stroke();
-        blockage.segmentos.forEach((v: any) => {
-          const x = margin + v.posX * scaleX;
-          const y = margin + v.posY * scaleY;
-          ctx.beginPath();
-          ctx.arc(x, y, 4, 0, 2 * Math.PI);
-          ctx.fill();
-        });
-      }
+        ctx.arc(x, y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+      });
     });
   }
 
@@ -557,7 +563,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps & { onVehicul
     // Handle different message types
     if (typeof response === 'object' && response !== null && 'type' in response) {
       const typedResponse = response as { type: string; data: any };
-      
+      //console.dir(typedResponse.data, { depth: null });
       switch (typedResponse.type) {
         case 'SIMULATION_LOADING':
           return;
