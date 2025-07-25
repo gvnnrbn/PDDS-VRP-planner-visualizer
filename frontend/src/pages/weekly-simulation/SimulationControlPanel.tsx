@@ -1366,7 +1366,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps & { onVehicul
           }}
           onViewDetails={() => {
             setIsSummaryOpen(false);
-            // --- Lógica híbrida para tamaño ---
+            // --- Lógica para manejar datos grandes ---
             const combinedData = {
               ...simulationSummary,
               simulacionCompleta: simulationHistory,
@@ -1382,11 +1382,26 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps & { onVehicul
             const json = JSON.stringify(combinedData);
             const sizeInMB = json.length / (1024 * 1024);
             let dataToSend;
+            
             if (sizeInMB < 2) {
+              // Si es pequeño, enviar todos los datos
               dataToSend = combinedData;
             } else {
-              const { simulacionCompleta, ...resumenSinDetalle } = combinedData;
-              dataToSend = { ...resumenSinDetalle, historialReducido: true };
+              // Si es grande, enviar solo los últimos 10 elementos de simulacionCompleta
+              const simulacionCompletaReducida = simulationHistory.slice(-10);
+              dataToSend = {
+                ...simulationSummary,
+                simulacionCompleta: simulacionCompletaReducida,
+                estadisticas: {
+                  totalVehiculos: simulationSummary?.estadisticas?.totalVehiculos || 0,
+                  maxVehiculosActivosEnUnMinuto: simulationSummary?.estadisticas?.maxVehiculosActivosEnUnMinuto || 0,
+                  vehiculosActivosUnicos: simulationSummary?.estadisticas?.vehiculosActivosUnicos || 0,
+                  minutosSimulados: simulationHistory.length,
+                  consumoPetroleo: simulationSummary?.estadisticas?.consumoPetroleo || 0
+                },
+                historialReducido: true,
+                totalElementosOriginales: simulationHistory.length
+              };
             }
             navigate('/weekly-simulation/details', {
               state: { simulationData: dataToSend }

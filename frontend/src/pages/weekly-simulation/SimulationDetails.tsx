@@ -29,7 +29,11 @@ import {
   CardBody,
   CardHeader,
   Heading,
-  Divider
+  Divider,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription
 } from '@chakra-ui/react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaArrowLeft, FaDownload, FaChartBar, FaTruck, FaBox, FaExclamationTriangle, FaFilePdf } from 'react-icons/fa';
@@ -291,6 +295,19 @@ const SimulationDetails: React.FC<SimulationDetailsProps> = ({ simulationData })
         </HStack>
 
         <Divider />
+
+        {/* Alerta de datos reducidos */}
+        {data.historialReducido && (
+          <Alert status="info" borderRadius="md" maxW="900px" mx="auto" w="100%">
+            <AlertIcon />
+            <Box>
+              <AlertTitle>Datos de simulación optimizados</AlertTitle>
+              <AlertDescription>
+                Debido al tamaño de los datos ({data.totalElementosOriginales} elementos), solo se muestran los últimos 10 elementos del historial completo para optimizar el rendimiento.
+              </AlertDescription>
+            </Box>
+          </Alert>
+        )}
 
         {/* Resumen General */}
         <Card maxW="900px" mx="auto" w="100%">
