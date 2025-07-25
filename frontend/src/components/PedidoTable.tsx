@@ -152,7 +152,7 @@ export const PedidoTable = ({ onPedidoSelect, onNuevoPedido, onImportarArchivo }
           <Thead>
             <Tr>
               <Th>Código Cliente</Th>
-              <Th>Fecha Registro</Th>
+              <Th>Fecha Ingreso</Th>
               <Th>Posición</Th>
               <Th>Cantidad GLP</Th>
               <Th>Tolerancia</Th>
