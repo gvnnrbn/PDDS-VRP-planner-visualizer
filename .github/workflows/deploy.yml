@@ -25,9 +25,7 @@ jobs:
 
       - name: 🔨 Build Backend with Maven
         working-directory: ./backend
-        run: |
-          chmod +x mvnw
-          ./mvnw clean package -DskipTests
+        run: ./mvnw clean package -DskipTests
 
       #------------------------------------------------
       # Frontend Build
@@ -52,6 +50,9 @@ jobs:
       #------------------------------------------------
       # Deployment
       #------------------------------------------------
+      - name: 🔎 Verify Build Artifacts
+        run: ls -R
+      
       - name: 🚀 Deploy Backend to Server
         uses: appleboy/scp-action@master
         with:
@@ -60,7 +61,7 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           port: 22
           source: "backend/target/*.jar"
-          target: "/opt/pdds-app"
+          target: "/opt/pdds-app/pdds-backend.jar"
           rename: "pdds-backend.jar"
 
       - name: ♻️ Restart Backend Service
