@@ -67,7 +67,7 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           port: 22
           source: "backend/target/backend-*.jar"
-          target: "/opt/pdds-app/pdds-backend.jar"
+          target: "/opt/pdds-app/"
           overwrite: true
 
       - name: 🚀 Deploy Frontend to Server
