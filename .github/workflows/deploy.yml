@@ -25,7 +25,7 @@ jobs:
 
       - name: 🔨 Build Backend with Maven
         working-directory: ./backend
-        run: ./mvnw clean package -DskipTests
+        run: ./mvnw clean package -DskipTests -e -X
 
       #------------------------------------------------
       # Frontend Build
@@ -62,7 +62,6 @@ jobs:
           port: 22
           source: "backend/target/*.jar"
           target: "/opt/pdds-app/pdds-backend.jar"
-          rename: "pdds-backend.jar"
 
       - name: ♻️ Restart Backend Service
         uses: appleboy/ssh-action@master
