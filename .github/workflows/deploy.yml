@@ -51,7 +51,7 @@ jobs:
       # Deployment
       #------------------------------------------------
       - name: 🔎 Verify Build Artifacts
-        run: ls -R
+        run: ls backend/target
       
       - name: 🚀 Deploy Backend to Server
         uses: appleboy/scp-action@master
@@ -61,7 +61,7 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           port: 22
           source: "backend/target/backend-0.0.1-SNAPSHOT.jar"
-          target: "/opt/pdds-app/pdds-backend.jar"
+          target: "/opt/pdds-app/backend.jar"
 
       - name: ♻️ Restart Backend Service
         uses: appleboy/ssh-action@master
