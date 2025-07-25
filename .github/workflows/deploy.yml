@@ -57,7 +57,7 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           password: ${{ secrets.VPS_PASSWORD }}
           port: 22
-          script: sudo mkdir -p /opt/pdds-app /var/www/html/pdds-app
+          script: echo '${{ secrets.VPS_PASSWORD }}' | sudo -S mkdir -p /opt/pdds-app /var/www/html/pdds-app
 
       - name: 🚀 Deploy Backend to Server
         uses: appleboy/scp-action@v0.1.7
