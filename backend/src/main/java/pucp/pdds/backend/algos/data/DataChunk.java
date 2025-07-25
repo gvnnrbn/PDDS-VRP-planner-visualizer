@@ -91,10 +91,10 @@ public class DataChunk {
     }
 
     public static class Posicion {
-        public int posX;
-        public int posY;
+        public float posX;
+        public float posY;
 
-        public Posicion(int posX, int posY) {
+        public Posicion(float posX, float posY) {
             this.posX = posX;
             this.posY = posY;
         }
@@ -366,7 +366,7 @@ public class DataChunk {
                 );
                 if (vehicle.currentPath != null) {
                     List<Posicion> rutaActual = vehicle.currentPath.stream()
-                        .map(point -> new Posicion((int)point.x, (int)point.y))
+                        .map(point -> new Posicion((float)point.x, (float)point.y))
                         .collect(java.util.stream.Collectors.toList());
                     vehiculo.setRutaActual(rutaActual);
                 }

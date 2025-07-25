@@ -17,7 +17,7 @@ export const PedidoForm = ({ pedido, onFinish, onCancel }: PedidoFormProps) => {
   const [formData, setFormData] = useState<Pedido>({
     id: pedido?.id || 0,
     codigoCliente: pedido?.codigoCliente || '',
-    fechaRegistro: pedido?.fechaRegistro || new Date().toISOString(),
+    fechaRegistro: pedido?.fechaRegistro || new Date().toLocaleString(),
     posicionX: pedido?.posicionX || 0,
     posicionY: pedido?.posicionY || 0,
     cantidadGLP: pedido?.cantidadGLP || 0,
@@ -28,11 +28,16 @@ export const PedidoForm = ({ pedido, onFinish, onCancel }: PedidoFormProps) => {
     try {
       // Create a copy of formData and format the date
       const formattedData = { ...formData }
+      console.log("Formatted data", formattedData)
       if (formattedData.fechaRegistro) {
         const date = new Date(formattedData.fechaRegistro)
-        // Format date as ISO 8601 string (YYYY-MM-DDTHH:mm:ss)
-        formattedData.fechaRegistro = date.toISOString().replace('T', ' ').substring(0, 19)
+        // Format date as ISO 8601 string (YYYY-MM-DDTHH:mm:ss) with timezone adjustment
+        const offset = date.getTimezoneOffset() * 60000
+        const localDate = new Date(date.getTime() - offset)
+        formattedData.fechaRegistro = localDate.toISOString().replace('T', ' ').substring(0, 19)
       }
+
+      console.log("Inserting pedido", formattedData)
 
       if (pedido?.id) {
         await pedidoService.updatePedido(formData.id, formattedData)
@@ -90,7 +95,7 @@ export const PedidoForm = ({ pedido, onFinish, onCancel }: PedidoFormProps) => {
             />
           </FormControl>
           <FormControl>
-            <FormLabel>Tiempo Tolerancia (min)</FormLabel>
+            <FormLabel>Tiempo Tolerancia (horas)</FormLabel>
             <Input 
               type="number"
               value={formData.tiempoTolerancia}

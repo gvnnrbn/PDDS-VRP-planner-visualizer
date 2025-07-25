@@ -3,7 +3,7 @@ import { Client } from '@stomp/stompjs';
 import type { IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { useNavigate } from 'react-router-dom';
-import { Box, Button, Input, VStack, HStack, useToast, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, FormControl, FormLabel, useDisclosure, Flex, Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon, Text } from '@chakra-ui/react';
+import { Box, Button, Input, useToast, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, FormControl, FormLabel, useDisclosure, Flex, Accordion, AccordionItem, AccordionButton, AccordionPanel, AccordionIcon, Text, VStack } from '@chakra-ui/react';
 import { FaTruck, FaWarehouse, FaMapMarkerAlt, FaIndustry } from 'react-icons/fa';
 import { renderToStaticMarkup } from 'react-dom/server';
 import BottomLeftControls from '../../components/common/MapActions';
@@ -23,22 +23,6 @@ import { format, parseISO, differenceInSeconds, parse } from 'date-fns';
 interface LogEntry {
   timestamp: string;
   message: string;
-}
-
-function panelStyles({ left, top }: { left: number; top: number }) {
-  return {
-    position: 'absolute',
-    left,
-    top,
-    transform: 'translate(-50%, -120%)',
-    background: 'white',
-    padding: '12px',
-    border: '1px solid #ccc',
-    borderRadius: '6px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-    zIndex: 1000,
-    minWidth: '200px',
-  };
 }
 
 const backend_url = import.meta.env.VITE_ENV_BACKEND_URL;
@@ -83,7 +67,7 @@ function iconToImage(IconComponent: React.ElementType, color: string, size = 32)
 export async function preloadIcons(): Promise<void> {
   const iconSets = [
     { icon: FaWarehouse, colors: ['#444', '#000'], sizes: [32] },
-    { icon: FaIndustry, colors: ['#444', '#ff0000', '#00c800'], sizes: [32] },
+    { icon: FaIndustry, colors: ['#444', '#ff0000', '#00c800', '#ffae00'], sizes: [32] },
     { icon: FaMapMarkerAlt, colors: ['#5459EA', '#FFD700'], sizes: [24, 32] }, // Añade los tamaños usados
     { icon: FaTruck, colors: ['#ffc800', '#ff0000', '#ffa500', '#444', '#00c800', '#666565'], sizes: [32] }, // Añade todos los colores usados
   ];
@@ -232,7 +216,16 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
         mainWHx = wh.posicion.posX;
         mainWHy = wh.posicion.posY;
       } else {
-        color = (wh.currentGLP || 0) === 0 ? '#ff0000' : '#00c800';
+        const glp = wh.currentGLP || 0;
+        const perc = wh.maxGLP ? glp / wh.maxGLP : 1;
+
+        if (glp === 0) {
+          color = '#ff0000'; // rojo
+        } else if (perc <= 0.25) {
+          color = '#ffae00'; // ámbar
+        } else {
+          color = '#00c800'; // verde
+        }
       }
 
       // Obtener imagen del caché (ya precargada)
@@ -261,13 +254,19 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
 
       ctx.fillStyle = '#000';
       ctx.font = '12px Arial';
-      ctx.fillText('W' + (wh.idAlmacen || ''), x + 4, y + 50);
+      // ctx.fillText('W' + (wh.idAlmacen || ''), x + 4, y + 50);
 
       if (!wh.isMain && wh.maxGLP) {
         const perc = wh.currentGLP / wh.maxGLP;
         ctx.fillStyle = '#c8c8c8';
         ctx.fillRect(x + 2, y + 34, 28, 4);
-        ctx.fillStyle = '#00c800';
+
+        if (perc <= 0.25) {
+          ctx.fillStyle = '#ffae00'; // ámbar
+        } else {
+          ctx.fillStyle = '#00c800'; // verde
+        }
+
         ctx.fillRect(x + 2, y + 34, 28 * perc, 4);
       }
     }
@@ -358,27 +357,29 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
         // Lógica de rotación: usa v.rutaActual[0] para el punto actual
         // y v.rutaActual[1] para el siguiente punto en la ruta.
         if (v.rutaActual?.length > 1) {
-          const next = v.rutaActual[1]; // El siguiente punto en la ruta
-          const dx = next.posX - v.posicionX; // Diferencia con el punto actual del vehículo
+          const next = v.rutaActual[1];
+          const dx = next.posX - v.posicionX;
           const dy = next.posY - v.posicionY;
 
           if (Math.abs(dx) > Math.abs(dy)) {
-            // Movimiento horizontal
             if (dx < 0) {
-              ctx.scale(-1, 1); // Flip horizontal para izquierda
+              ctx.scale(-1, 1);
+              ctx.drawImage(img, -16, -16, 32, 32); // flip horizontal
+            } else {
+              ctx.drawImage(img, -16, -16, 32, 32); // right
             }
-            // Si va a la derecha, no hacemos nada (rotación base)
           } else {
-            // Movimiento vertical
             if (dy < 0) {
-              ctx.rotate(-Math.PI / 2); // Rotar 90 grados a la izquierda para arriba
+              ctx.rotate(-Math.PI / 2);
             } else if (dy > 0) {
-              ctx.rotate(Math.PI / 2); // Rotar 90 grados a la derecha para abajo
+              ctx.rotate(Math.PI / 2);
             }
+            ctx.drawImage(img, -16, -16, 32, 32); // up or down
           }
+        } else {
+          ctx.drawImage(img, -16, -16, 32, 32); // no route, default
         }
 
-        ctx.drawImage(img, -16, -16, 32, 32);
         ctx.restore();
       } else {
         console.warn(`Icono de camión no encontrado en caché para ${cacheKey}`);
@@ -1038,7 +1039,7 @@ const SimulationControlPanel: React.FC<SimulationControlPanelProps & { onVehicul
       const horas = Math.floor(diff / (1000 * 60 * 60));
       diff -= horas * (1000 * 60 * 60);
       const minutos = Math.floor(diff / (1000 * 60));
-      return `${dias > 0 ? dias + 'd ' : ''}${String(horas).padStart(2, '0')}h${String(minutos).padStart(2, '0')}m`;
+      return `${dias > 0 ? dias + 'd' : ''}${String(horas).padStart(2, '0')}h${String(minutos).padStart(2, '0')}m`;
     } catch (error) {
       return '--:--:--';
     }

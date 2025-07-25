@@ -17,6 +17,7 @@ import SimulationDetails from './pages/weekly-simulation/SimulationDetails'
 import Home from './pages/Home'
 import { SimulationProvider } from './components/common/SimulationContextSemanal';
 import { OperacionProvider } from './components/common/SimulationContextDiario'
+import CollapseSimulationDetails from './pages/collapse-simulation/SimulationDetails'
 
 // Create a client
 const queryClient = new QueryClient()
@@ -47,6 +48,7 @@ function App() {
                   <Route path="/semanal/*" element={<WeeklySimulation />} />
                   <Route path="/weekly-simulation/details" element={<SimulationDetails />} />
                   <Route path="/colapso/*" element={<CollapseSimulation />} />
+                  <Route path="/colapso/details" element={<CollapseSimulationDetails />} />
                   <Route
                     path="/dia-a-dia/*"
                     element={

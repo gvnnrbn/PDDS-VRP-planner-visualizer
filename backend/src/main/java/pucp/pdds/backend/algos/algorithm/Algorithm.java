@@ -9,23 +9,31 @@ import java.util.Random;
 import pucp.pdds.backend.algos.utils.SimulationProperties;
 
 public class Algorithm {
-    // Hyperparameters
+    // Hyperparameters optimizados para mejor rendimiento
     private static int maxTimeMs = SimulationProperties.maxTimeMs;
-    private static int maxNoImprovement = 250;
-    private static int maxNoImprovementFeasible = 250; 
-    private static int neighborsPerOperator = 50;
+    private static int maxNoImprovement = 500; // Más iteraciones sin mejora
+    private static int maxNoImprovementFeasible = 500; 
+    private static int neighborsPerOperator = 100; // Más vecinos por operador
 
     private boolean isDebug;
+    private int ceilingMaxTimeMs = 15 * 1000;
     private static final Random random = new Random();
 
     public Algorithm(boolean isDebug) {
         this.isDebug = isDebug;
     }
 
+    public Algorithm(boolean isDebug, int ceilingMaxTimeMs) {
+        this.isDebug = isDebug;
+        this.ceilingMaxTimeMs = ceilingMaxTimeMs;
+    }
+
     public Solution run(Environment environment, int minutes) {
+        int realMaxTimeMs = Math.min(maxTimeMs, ceilingMaxTimeMs);
+
         long startTime = System.currentTimeMillis();
         if (isDebug) {
-            System.out.println("Algorithm started. Max time: " + maxTimeMs + "ms");
+            System.out.println("Algorithm started. Max time: " + realMaxTimeMs + "ms");
         }
 
         // Initial solution using one run of local search from a random start
@@ -47,7 +55,7 @@ public class Algorithm {
         }
 
         int iterations = 0;
-        while (System.currentTimeMillis() - startTime < maxTimeMs) {
+        while (System.currentTimeMillis() - startTime < realMaxTimeMs) {
             iterations++;
 
             // Perturb the current best solution to escape local optima. Prefer perturbing the best feasible solution.
@@ -82,7 +90,7 @@ public class Algorithm {
             }
 
             if (iterations % 1000 == 0) {
-                System.out.println("Iteration " + iterations + ", " + (System.currentTimeMillis() - startTime) + "ms of " + maxTimeMs + "ms");
+                System.out.println("Iteration " + iterations + ", " + (System.currentTimeMillis() - startTime) + "ms of " + realMaxTimeMs + "ms");
                 Thread.yield();
             }
         }

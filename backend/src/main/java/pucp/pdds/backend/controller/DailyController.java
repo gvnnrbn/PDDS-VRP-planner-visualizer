@@ -16,4 +16,9 @@ public class DailyController {
     public void refetchData() {
         dailyService.refetchData();
     }
+
+    @MessageMapping("/daily/fetch")
+    public void fetchData() {
+        dailyService.fetchData();
+    }
 }

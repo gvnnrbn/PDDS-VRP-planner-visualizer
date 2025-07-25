@@ -113,7 +113,7 @@ public class Solution implements Cloneable {
                 if (vehicle.currentFuel < fuelCost) {
                     double fuelDeficit = fuelCost - vehicle.currentFuel;
                     totalPenalty += W_FUEL_DEFICIT * fuelDeficit;
-                    errors.add("Vehicle " + vehicle.id + " fuel deficit: " + String.format("%.2f", fuelDeficit));
+                    errors.add("Vehicle " + vehicle.plaque + " fuel deficit: " + String.format("%.2f", fuelDeficit));
                 }
                 vehicle.currentFuel -= fuelCost;
 
@@ -126,7 +126,7 @@ public class Solution implements Cloneable {
                     if (vehicle.currentGLP < GLPToDeliver) {
                         double glpDeficit = GLPToDeliver - vehicle.currentGLP;
                         totalPenalty += W_GLP_DEFICIT * glpDeficit;
-                        errors.add("Vehicle " + vehicle.id + " GLP deficit for order " + order.id + ": " + glpDeficit);
+                        errors.add("Vehicle " + vehicle.plaque + " GLP deficit for order for client " + order.clientId + ": " + glpDeficit);
                     }
 
                     vehicle.currentGLP -= GLPToDeliver;
@@ -142,7 +142,7 @@ public class Solution implements Cloneable {
                         tardinessPenalty *= scalingFactor;
                         
                         totalPenalty += tardinessPenalty;
-                        errors.add("Order " + order.id + " delivered " + minutesLate + " minutes late. (Scaling: x" + String.format("%.1f", scalingFactor) + ")");
+                        errors.add("Order for client " + order.clientId + " delivered " + minutesLate + " minutes late. (Scaling: x" + String.format("%.1f", scalingFactor) + ")");
                     } else {
                         double timeHorizon = environment.minutesToSimulate; // Normalization factor
                         long minutesEarly = order.deadline.minutesSince(currentTime);
@@ -185,7 +185,7 @@ public class Solution implements Cloneable {
                 undeliveredPenalty *= scalingFactor;
                 
                 totalPenalty += undeliveredPenalty;
-                errors.add("Order " + order.id + " has undelivered GLP: " + order.amountGLP + " (Scaling: x" + String.format("%.1f", scalingFactor) + ")");
+                errors.add("Order for client " + order.clientId + " has undelivered GLP: " + order.amountGLP + " (Scaling: x" + String.format("%.1f", scalingFactor) + ")");
             }
         }
 
@@ -195,7 +195,7 @@ public class Solution implements Cloneable {
             if (vehicle.currentFuel < requiredFinalFuel) {
                 double finalFuelDeficit = requiredFinalFuel - vehicle.currentFuel;
                 totalPenalty += W_FINAL_FUEL_LEVEL * finalFuelDeficit;
-                errors.add("Vehicle " + vehicle.id + " finished with low fuel. Deficit: " + String.format("%.2f", finalFuelDeficit));
+                errors.add("Vehicle " + vehicle.plaque + " finished with low fuel. Deficit: " + String.format("%.2f", finalFuelDeficit));
             }
         }
 
@@ -247,27 +247,6 @@ public class Solution implements Cloneable {
         // NOTE: This requires an Environment parameter, so compress should accept it
     }
 
-    public void enforceRouteInvariant(Environment environment) {
-        if (routes == null) return;
-        for (Map.Entry<Integer, List<Node>> entry : routes.entrySet()) {
-            int vehicleId = entry.getKey();
-            List<Node> route = entry.getValue();
-            if (route == null || route.isEmpty()) continue;
-            // Remove all EmptyNode and FinalNode except at ends
-            route.removeIf(n -> (n instanceof EmptyNode || n instanceof FinalNode));
-            // Add correct EmptyNode at start
-            Node emptyNode = environment.getNodes().stream()
-                .filter(n -> n instanceof EmptyNode && n.getPosition().equals(environment.vehicles.stream().filter(v -> v.id == vehicleId).findFirst().get().initialPosition))
-                .findFirst().orElse(null);
-            if (emptyNode != null) route.add(0, emptyNode);
-            // Add correct FinalNode at end
-            Node finalNode = environment.getNodes().stream()
-                .filter(n -> n instanceof FinalNode)
-                .findFirst().orElse(null);
-            if (finalNode != null) route.add(finalNode);
-        }
-    }
-
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -278,7 +257,8 @@ public class Solution implements Cloneable {
         sb.append("\n  Routes:\n");
         if (routes != null) {
             routes.forEach((vehicleId, route) -> {
-                sb.append("    Vehicle ").append(vehicleId).append(": ");
+                PlannerVehicle vehicle = environment.vehicles.stream().filter(v -> v.id == vehicleId).findFirst().orElse(null);
+                sb.append("    Vehicle ").append(vehicle.plaque).append(": ");
                 if (route.isEmpty()) {
                     sb.append("Empty route");
                 } else {
@@ -293,9 +273,6 @@ public class Solution implements Cloneable {
         }
         
         sb.append("}");
-
-        sb.append("\n  Environment:\n");
-        sb.append(environment);
 
         return sb.toString();
     }

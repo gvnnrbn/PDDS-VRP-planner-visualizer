@@ -9,6 +9,10 @@ import { format, parseISO, differenceInSeconds, parse } from 'date-fns';
 import BottomLeftControls from '../../components/common/MapActions';
 import SimulationCompleteModal from '../../components/common/SimulationCompletionModal';
 import SimulationCollapsedModal from './CollapseModalFinal';
+import type { PedidoSimulado } from '../../core/types/pedido';
+import AlmacenModal from '../../components/common/modals/ModalAlmacen';
+import { useNavigate } from 'react-router-dom';
+
 
 const backend_url = import.meta.env.VITE_ENV_BACKEND_URL;
 
@@ -18,10 +22,10 @@ const iconImageCache: Record<string, HTMLImageElement> = {};
 // Helper para obtener un identificador único del ícono
 function getIconIdentifier(IconComponent: React.ElementType): string {
   // Intentar obtener displayName o name, si no existe usar el nombre de la función
-  return (IconComponent as any).displayName || 
-         (IconComponent as any).name || 
-         IconComponent.toString().split(' ')[1] || 
-         'unknown';
+  return (IconComponent as any).displayName ||
+    (IconComponent as any).name ||
+    IconComponent.toString().split(' ')[1] ||
+    'unknown';
 }
 
 // Helper para convertir un ícono de react-icons a imagen para canvas, usando cache
@@ -52,7 +56,7 @@ function iconToImage(IconComponent: React.ElementType, color: string, size = 32)
 export async function preloadIcons(): Promise<void> {
   const iconSets = [
     { icon: FaWarehouse, colors: ['#444', '#000'], sizes: [32] },
-    { icon: FaIndustry, colors: ['#444', '#ff0000', '#00c800'], sizes: [32] },
+    { icon: FaIndustry, colors: ['#444', '#ff0000', '#00c800', '#ffae00'], sizes: [32] },
     { icon: FaMapMarkerAlt, colors: ['#5459EA', '#FFD700'], sizes: [24, 32] }, // Añade los tamaños usados
     { icon: FaTruck, colors: ['#ffc800', '#ff0000', '#ffa500', '#444', '#00c800', '#666565'], sizes: [32] }, // Añade todos los colores usados
   ];
@@ -90,12 +94,12 @@ export const pedidoHitboxes: { x: number; y: number; size: number; pedido: any }
 
 // Funciones para actualizar pan y zoom desde fuera
 export function setPan(x: number, y: number) {
-    panX = x;
-    panY = y;
+  panX = x;
+  panY = y;
 }
 
 export function setZoom(scale: number) {
-    zoomScale = scale;
+  zoomScale = scale;
 }
 
 // Variables globales para el enfoque de pedidos
@@ -182,7 +186,7 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
     for (const wh of data.almacenes) {
       const x = margin + wh.posicion.posX * scaleX - 16;
       const y = margin + wh.posicion.posY * scaleY - 16;
-       warehouseHitboxes.push({
+      warehouseHitboxes.push({
         x,
         y,
         size: 32,
@@ -196,7 +200,16 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
         mainWHx = wh.posicion.posX;
         mainWHy = wh.posicion.posY;
       } else {
-        color = (wh.currentGLP || 0) === 0 ? '#ff0000' : '#00c800';
+        const glp = wh.currentGLP || 0;
+        const perc = wh.maxGLP ? glp / wh.maxGLP : 1;
+
+        if (glp === 0) {
+          color = '#ff0000'; // rojo
+        } else if (perc <= 0.25) {
+          color = '#ffae00'; // ámbar
+        } else {
+          color = '#00c800'; // verde
+        }
       }
 
       // Obtener imagen del caché (ya precargada)
@@ -225,13 +238,19 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
 
       ctx.fillStyle = '#000';
       ctx.font = '12px Arial';
-      ctx.fillText('W' + (wh.idAlmacen || ''), x + 4, y + 50);
+      // ctx.fillText('W' + (wh.idAlmacen || ''), x + 4, y + 50);
 
       if (!wh.isMain && wh.maxGLP) {
         const perc = wh.currentGLP / wh.maxGLP;
         ctx.fillStyle = '#c8c8c8';
         ctx.fillRect(x + 2, y + 34, 28, 4);
-        ctx.fillStyle = '#00c800';
+
+        if (perc <= 0.25) {
+          ctx.fillStyle = '#ffae00'; // ámbar
+        } else {
+          ctx.fillStyle = '#00c800'; // verde
+        }
+
         ctx.fillRect(x + 2, y + 34, 28 * perc, 4);
       }
     }
@@ -253,7 +272,7 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
       const iconColor = isHighlighted ? '#FFD700' : '#5459EA';
       const iconSize = isHighlighted ? 32 : 24;
 
-      const cacheKey = `${FaMapMarkerAlt.displayName || FaMapMarkerAlt.name || ''}_${iconColor}_${iconSize}`;
+      const cacheKey = `${getIconIdentifier(FaMapMarkerAlt)}_${iconColor}_${iconSize}`;
       const img = iconImageCache[cacheKey]; // No await
 
       if (img) {
@@ -299,6 +318,20 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
         vehiculo: v,
       });
 
+      // Si este vehículo está resaltado, dibujar un círculo/borde especial
+      if (typeof window !== 'undefined' && (window as any).highlightedVehicleId === v.idVehiculo) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(vx, vy, 24, 0, 2 * Math.PI);
+        ctx.strokeStyle = '#805ad5';
+        ctx.lineWidth = 5;
+        ctx.shadowColor = '#805ad5';
+        ctx.shadowBlur = 12;
+        ctx.setLineDash([]); // Asegurar línea sólida
+        ctx.stroke();
+        ctx.restore();
+      }
+
       const cacheKey = `${getIconIdentifier(FaTruck)}_${color}_${32}`;
       const img = iconImageCache[cacheKey];
 
@@ -309,27 +342,29 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
         // Lógica de rotación: usa v.rutaActual[0] para el punto actual
         // y v.rutaActual[1] para el siguiente punto en la ruta.
         if (v.rutaActual?.length > 1) {
-          const next = v.rutaActual[1]; // El siguiente punto en la ruta
-          const dx = next.posX - v.posicionX; // Diferencia con el punto actual del vehículo
+          const next = v.rutaActual[1];
+          const dx = next.posX - v.posicionX;
           const dy = next.posY - v.posicionY;
 
           if (Math.abs(dx) > Math.abs(dy)) {
-            // Movimiento horizontal
             if (dx < 0) {
-              ctx.scale(-1, 1); // Flip horizontal para izquierda
+              ctx.scale(-1, 1);
+              ctx.drawImage(img, -16, -16, 32, 32); // flip horizontal
+            } else {
+              ctx.drawImage(img, -16, -16, 32, 32); // right
             }
-            // Si va a la derecha, no hacemos nada (rotación base)
           } else {
-            // Movimiento vertical
             if (dy < 0) {
-              ctx.rotate(-Math.PI / 2); // Rotar 90 grados a la izquierda para arriba
+              ctx.rotate(-Math.PI / 2);
             } else if (dy > 0) {
-              ctx.rotate(Math.PI / 2); // Rotar 90 grados a la derecha para abajo
+              ctx.rotate(Math.PI / 2);
             }
+            ctx.drawImage(img, -16, -16, 32, 32); // up or down
           }
+        } else {
+          ctx.drawImage(img, -16, -16, 32, 32); // no route, default
         }
 
-        ctx.drawImage(img, -16, -16, 32, 32);
         ctx.restore();
       } else {
         console.warn(`Icono de camión no encontrado en caché para ${cacheKey}`);
@@ -398,8 +433,6 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
     scaleY: 1,
   });
   const scaleRef = useRef<{ margin: number; scaleX: number; scaleY: number }>({ margin: 40, scaleX: 1, scaleY: 1 });
-  const [selectedVehicle, setSelectedVehicle] = useState<any | null>(null);
-  const [vehiclePanelPos, setVehiclePanelPos] = useState<{ left: number; top: number } | null>(null);
   const [estadoVehiculo, setEstadoVehiculo] = useState('');
 
   // Para el resumen de simulación
@@ -407,6 +440,9 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [collapseStart, setCollapseStart] = useState<string | null>(null);
   const [collapseEnd, setCollapseEnd] = useState<string | null>(null);
+  const [simEndDate, setSimEndDate] = useState('');
+  const [collapseReason, setCollapseReason] = useState<'error' | 'stopped' | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!connected) {
@@ -433,7 +469,7 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
     const client = new Client({
       brokerURL: undefined,
       webSocketFactory: () => new SockJS(`${backend_url}/ws`),
-      debug: () => {},
+      debug: () => { },
       reconnectDelay: 5000,
       onConnect: () => {
         setConnected(true);
@@ -488,6 +524,8 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
     }
     if (typeof response === 'object' && response !== null && 'type' in response) {
       const typedResponse = response as { type: string; data: any };
+      //console.log(`Estado Simulación: ${typedResponse.type}`);
+      //console.dir(typedResponse.data, { depth: null });
       switch (typedResponse.type) {
         case 'SIMULATION_LOADING':
           logMessage('🔄 ' + typedResponse.data);
@@ -499,10 +537,26 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
         case 'COLLAPSE_SIMULATION_ERROR':
           logMessage('❌ ' + typedResponse.data);
           setIsSimulating(false);
-          console.log(`Simulasión colapsada papu`);
-          setCollapseStart(data?.minuto); // o usar la variable de inicio si la guardas
-          setCollapseEnd(new Date().toISOString());
-          setIsCollapsed(true);
+
+          if (!collapseReason) {
+            console.log(`Simulación colapsada papu`);
+            setCollapseStart(data?.minuto);
+            setSimEndDate(data?.minuto || '');
+            setCollapseEnd(new Date().toISOString());
+            setCollapseReason('error');
+            setIsCollapsed(true);
+          }
+          return;
+
+        case 'COLLAPSE_SIMULATION_STOPPED':
+          setIsSimulating(false);
+
+          if (!collapseReason) {
+            setCollapseReason('stopped');
+            setCollapseStart(data?.minuto);
+            setCollapseEnd(new Date().toISOString());
+            setIsCollapsed(true);
+          }
           return;
         case 'STATE_UPDATED':
           logMessage('🔄 ' + typedResponse.data);
@@ -569,7 +623,6 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
     }
     stompClient.current.publish({ destination: '/app/stop-collapse', body: '{}' });
     logMessage('⏹️ Sending stop collapse simulation request...');
-    setIsSimulating(false);
   };
 
   const clearLog = () => setLog([]);
@@ -599,7 +652,7 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
         setIsSimulating(true);
       }
     }
-  }, [data?.minuto, simStartDate, isSimulating]);  
+  }, [data?.minuto, simStartDate, isSimulating]);
 
   // Función para dibujar el estado actual del canvas
   const redrawCanvas = useCallback(async () => {
@@ -610,13 +663,13 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
       const result = drawState(canvas, data);
       if (result) setScale(await result);
     }
-  }, [data]); 
+  }, [data]);
 
 
   // Se dispara cada vez que `data` (los datos de simulación) cambian
   useEffect(() => {
     redrawCanvas();
-  }, [data, scale.margin, scale.scaleX, scale.scaleY]); 
+  }, [data, scale.margin, scale.scaleX, scale.scaleY]);
 
   //ZOOM Y PAN
   useEffect(() => {
@@ -706,11 +759,39 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
   //Modal final
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
 
-  const resumenData = simulationSummary || {
-    fechaFin: new Date().toISOString().slice(0, 16),
-    duracion: "00:10:00",
-    pedidosEntregados: 124,
-    consumoPetroleo: 763.2,
+  // Función para calcular duración entre dos fechas
+  const calcularDuracion = (fechaInicio: string, fechaFin: string): string => {
+    if (!fechaInicio || !fechaFin) return '--:--:--';
+
+    try {
+      let inicio = safeParse(fechaInicio);
+      let actual = safeParse(fechaFin);
+      let diff = Math.max(0, actual.getTime() - inicio.getTime());
+      const dias = Math.floor(diff / (1000 * 60 * 60 * 24));
+      diff -= dias * (1000 * 60 * 60 * 24);
+      const horas = Math.floor(diff / (1000 * 60 * 60));
+      diff -= horas * (1000 * 60 * 60);
+      const minutos = Math.floor(diff / (1000 * 60));
+      return `${dias > 0 ? dias + 'd' : ''}${String(horas).padStart(2, '0')}h${String(minutos).padStart(2, '0')}m`;
+    } catch (error) {
+      return '--:--:--';
+    }
+  };
+
+  // Calcular duración para mostrar en tiempo real
+  let duracionStr = '--:--:--';
+  const fechaFin = simEndDate || data?.minuto;
+  if (simStartDate && fechaFin) {
+    duracionStr = calcularDuracion(simStartDate, fechaFin);
+  }
+
+  // Usar datos reales del resumen de simulación desde el estado global data
+  const resumenData = {
+    fechaInicio: simStartDate || initialTime,
+    fechaFin: simEndDate || data?.minuto || new Date().toISOString().slice(0, 16),
+    duracion: calcularDuracion(simStartDate || initialTime, simEndDate || data?.minuto || ''),
+    pedidosEntregados: Math.max(0, data?.indicadores?.completedOrders || 0),
+    consumoPetroleo: Number((data?.indicadores?.fuelCounterTotal || 0).toFixed(2)),
     tiempoPlanificacion: "00:00:15",
   };
   const handleStopAndShowSummary = () => {
@@ -724,7 +805,7 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
       setSimulatedMinutes(prev => prev + 1);
     }
   }, [data?.minuto]);
-  const diaSimulado = Math.floor(simulatedMinutes / 1440) + 1;  
+  const diaSimulado = Math.floor(simulatedMinutes / 1440) + 1;
 
 
   // Utilidad para parsear fecha de forma robusta
@@ -741,7 +822,7 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
       }
     }
     return parsed;
-  }  
+  }
 
   // Función para limpiar el estado y el canvas
   function resetSimulationState() {
@@ -759,7 +840,7 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
   // Ref para evitar recrear objetos en cada render
   const vehiculosPorAlmacenRef = useRef<Record<number, Record<string, number>>>({});
   // Ref para guardar la última posición conocida de cada vehículo
-  const ultimaPosicionVehiculoRef = useRef<Record<string, { posX: number, posY: number } | null>>({});  
+  const ultimaPosicionVehiculoRef = useRef<Record<string, { posX: number, posY: number } | null>>({});
 
   useEffect(() => {
     if (!data?.almacenes || !data?.vehiculos) return;
@@ -789,7 +870,7 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
     vehiculosPorAlmacenRef.current = nuevoMap;
     setVehiculosPorAlmacen({ ...nuevoMap });
     if (onVehiculosPorAlmacenUpdate) onVehiculosPorAlmacenUpdate({ ...nuevoMap });
-  }, [data?.minuto]);  
+  }, [data?.minuto]);
 
   // Limpia el registro de vehículos por almacén y posiciones al iniciar una nueva simulación
   useEffect(() => {
@@ -798,63 +879,346 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
       vehiculosPorAlmacenRef.current = {};
       ultimaPosicionVehiculoRef.current = {};
     }
-  }, [isSimulating, simStartDate]);  
+  }, [isSimulating, simStartDate]);
 
-  // Calcular duración
-  let duracionStr = '--:--:--';
-  if (simStartDate && data?.minuto) {
-    // simStartDate y data.minuto pueden ser ISO o string tipo dd/MM/yyyy HH:mm
-    let inicio = safeParse(simStartDate);
-    let actual = safeParse(data.minuto);
-    let diff = Math.max(0, actual.getTime() - inicio.getTime());
-    const dias = Math.floor(diff / (1000 * 60 * 60 * 24));
-    diff -= dias * (1000 * 60 * 60 * 24);
-    const horas = Math.floor(diff / (1000 * 60 * 60));
-    diff -= horas * (1000 * 60 * 60);
-    const minutos = Math.floor(diff / (1000 * 60));
-    duracionStr = `${dias > 0 ? dias + 'd ' : ''}${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}`;
-  }
+  //CLICK VEHICULO
+  const [selectedVehicle, setSelectedVehicle] = useState<any | null>(null);
+  const [vehiclePanelPos, setVehiclePanelPos] = useState<{ left: number; top: number } | null>(null);
+  const [selectedWarehouse, setSelectedWarehouse] = useState<any | null>(null);
+  const [warehousePanelPos, setWarehousePanelPos] = useState<{ left: number; top: number } | null>(null);
 
+  const [selectedPedido, setSelectedPedido] = useState<PedidoSimulado | null>(null);
+  const [pedidoPanelPos, setPedidoPanelPos] = useState<{ left: number; top: number } | null>(null);
+
+  const clearAllSelections = () => {
+    setSelectedVehicle(null);
+    setVehiclePanelPos(null);
+    setSelectedWarehouse(null);
+    setWarehousePanelPos(null);
+    setSelectedPedido(null);
+    setPedidoPanelPos(null);
+  };
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleClick = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      const canvasX = (clickX - panX) / zoomScale;
+      const canvasY = (clickY - panY) / zoomScale;
+
+      const screenPos = (box: { x: number; y: number; size: number }) => ({
+        left: (box.x * zoomScale) + panX + rect.left + (box.size / 2) * zoomScale,
+        top: (box.y * zoomScale) + panY + rect.top + (box.size / 2) * zoomScale,
+      });
+
+      // Vehículos
+      for (const box of vehicleHitboxes) {
+        if (
+          canvasX >= box.x && canvasX <= box.x + box.size &&
+          canvasY >= box.y && canvasY <= box.y + box.size
+        ) {
+          setSelectedVehicle(box.vehiculo);
+          setVehiclePanelPos(screenPos(box));
+          setSelectedWarehouse(null);
+          setSelectedPedido(null);
+          return;
+        }
+      }
+
+      // Almacenes
+      for (const box of warehouseHitboxes) {
+        if (
+          canvasX >= box.x && canvasX <= box.x + box.size &&
+          canvasY >= box.y && canvasY <= box.y + box.size
+        ) {
+          setSelectedWarehouse(box.almacen);
+          setWarehousePanelPos(screenPos(box));
+          setSelectedVehicle(null);
+          setSelectedPedido(null);
+          return;
+        }
+      }
+
+      // Pedidos
+      for (const box of pedidoHitboxes) {
+        if (
+          canvasX >= box.x && canvasX <= box.x + box.size &&
+          canvasY >= box.y && canvasY <= box.y + box.size
+        ) {
+          setSelectedPedido(box.pedido);
+          setPedidoPanelPos(screenPos(box));
+          setSelectedVehicle(null);
+          setSelectedWarehouse(null);
+          return;
+        }
+      }
+
+      clearAllSelections(); // Clic fuera
+    };
+
+    canvas.addEventListener('click', handleClick);
+    return () => {
+      canvas.removeEventListener('click', handleClick);
+    };
+  }, [canvasRef, data, panX, panY, zoomScale]);
+
+  // Estado para la posición de la tarjeta de pedido (draggable)
+  const [pedidoCardPos, setPedidoCardPos] = useState<{ x: number; y: number } | null>(null);
+  const [draggingPedido, setDraggingPedido] = useState(false);
+  const dragOffset = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  // Cuando se selecciona un pedido, inicializa la posición en el centro o cerca de la posición original
+  useEffect(() => {
+    if (selectedPedido && pedidoPanelPos) {
+      setPedidoCardPos({ x: pedidoPanelPos.left, y: pedidoPanelPos.top });
+    }
+  }, [selectedPedido, pedidoPanelPos]);
+
+  // Handlers para drag
+  const handlePedidoMouseDown = (e: React.MouseEvent) => {
+    if (!pedidoCardPos) return;
+    setDraggingPedido(true);
+    dragOffset.current = {
+      x: e.clientX - pedidoCardPos.x,
+      y: e.clientY - pedidoCardPos.y,
+    };
+    e.preventDefault();
+  };
+
+  useEffect(() => {
+    if (!draggingPedido) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      setPedidoCardPos(pos => pos ? ({ x: e.clientX - dragOffset.current.x, y: e.clientY - dragOffset.current.y }) : pos);
+    };
+    const handleMouseUp = () => setDraggingPedido(false);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [draggingPedido]);
+
+  // Estado para la posición de la tarjeta de vehículo (draggable)
+  const [vehicleCardPos, setVehicleCardPos] = useState<{ x: number; y: number } | null>(null);
+  const [draggingVehicle, setDraggingVehicle] = useState(false);
+  const dragOffsetVehicle = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (selectedVehicle && vehiclePanelPos) {
+      setVehicleCardPos({ x: vehiclePanelPos.left, y: vehiclePanelPos.top });
+    }
+  }, [selectedVehicle, vehiclePanelPos]);
+
+  const handleVehicleMouseDown = (e: React.MouseEvent) => {
+    if (!vehicleCardPos) return;
+    setDraggingVehicle(true);
+    dragOffsetVehicle.current = {
+      x: e.clientX - vehicleCardPos.x,
+      y: e.clientY - vehicleCardPos.y,
+    };
+    e.preventDefault();
+  };
+
+  useEffect(() => {
+    if (!draggingVehicle) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      setVehicleCardPos(pos => pos ? ({ x: e.clientX - dragOffsetVehicle.current.x, y: e.clientY - dragOffsetVehicle.current.y }) : pos);
+    };
+    const handleMouseUp = () => setDraggingVehicle(false);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [draggingVehicle]);
+
+  // Estado para la posición de la tarjeta de almacén (draggable)
+  const [warehouseCardPos, setWarehouseCardPos] = useState<{ x: number; y: number } | null>(null);
+  const [draggingWarehouse, setDraggingWarehouse] = useState(false);
+  const dragOffsetWarehouse = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (selectedWarehouse && warehousePanelPos) {
+      setWarehouseCardPos({ x: warehousePanelPos.left, y: warehousePanelPos.top });
+    }
+  }, [selectedWarehouse, warehousePanelPos]);
+
+  const handleWarehouseMouseDown = (e: React.MouseEvent) => {
+    if (!warehouseCardPos) return;
+    setDraggingWarehouse(true);
+    dragOffsetWarehouse.current = {
+      x: e.clientX - warehouseCardPos.x,
+      y: e.clientY - warehouseCardPos.y,
+    };
+    e.preventDefault();
+  };
+
+  useEffect(() => {
+    if (!draggingWarehouse) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      setWarehouseCardPos(pos => pos ? ({ x: e.clientX - dragOffsetWarehouse.current.x, y: e.clientY - dragOffsetWarehouse.current.y }) : pos);
+    };
+    const handleMouseUp = () => setDraggingWarehouse(false);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [draggingWarehouse]);
+
+  //Modal almacén
+  const { isOpen: isOpenAlmacenRutas, onOpen: onOpenAlmacenRutas, onClose: onCloseAlmacenRutas } = useDisclosure();
 
 
   return (
     <Box borderWidth="1px" borderRadius="md" p={0} mb={0} height="100vh">
       <VStack align="start" spacing={3}>
         <Box position="relative" width="100%" height="100vh">
-         <canvas ref={canvasRef} width={1720} height={1080} 
+          <canvas ref={canvasRef} width={1720} height={1080}
             style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            border: '1px solid #ccc',
-            background: '#fff',
-            zIndex: 1,}} />
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              border: '1px solid #ccc',
+              background: '#fff',
+              zIndex: 1,
+            }} />
         </Box>
-        {selectedVehicle && vehiclePanelPos && (
+        {selectedVehicle && vehiclePanelPos && vehicleCardPos && (
           <Box
-            position="absolute"
-            left={vehiclePanelPos.left}
-            top={vehiclePanelPos.top}
-            transform="translate(-50%, -120%)"
-            bg="white"
-            p={3}
-            border="1px solid #ccc"
-            borderRadius="md"
-            boxShadow="lg"
-            zIndex={1000}
-            minW="200px"
+            style={{
+              position: 'absolute',
+              left: vehicleCardPos.x,
+              top: vehicleCardPos.y,
+              zIndex: 2000,
+              minWidth: 220,
+              background: 'white',
+              border: '1px solid #ccc',
+              borderRadius: 8,
+              boxShadow: '0 2px 12px rgba(0,0,0,0.18)',
+              cursor: draggingVehicle ? 'grabbing' : 'grab',
+              userSelect: 'none',
+            }}
           >
-            <Flex justify="space-between" align="center" mb={2}>
-              <Text fontWeight="bold">Vehículo</Text>
+            <Flex justify="space-between" align="center" mb={0} onMouseDown={handleVehicleMouseDown} style={{ cursor: 'grab', padding: 4, borderBottom: '1px solid #eee', borderTopLeftRadius: 8, borderTopRightRadius: 8, background: '#f7f7fa' }}>
+              <Text fontWeight="bold">Vehículo {selectedVehicle.placa}</Text>
               <Button size="xs" onClick={() => setSelectedVehicle(null)} variant="ghost" colorScheme="red">
                 ✕
               </Button>
             </Flex>
-            <Text>ID: {selectedVehicle.idVehiculo}</Text>
-            <Text>Placa: {selectedVehicle.placa}</Text>
-            <Text>Estado: {estadoVehiculo}</Text>
+            <Box p={3} pt={0}>
+              <Text color={'purple.100'}>{estadoVehiculo}</Text>
+              <Text>Combustible: {selectedVehicle.combustible} Gal.</Text>
+              <Text>GLP: {selectedVehicle.currGLP > 0 ? selectedVehicle.currGLP : 0} m3</Text>
+            </Box>
+          </Box>
+        )}
+        {selectedWarehouse && warehousePanelPos && warehouseCardPos && (
+          <Box
+            style={{
+              position: 'absolute',
+              left: warehouseCardPos.x,
+              top: warehouseCardPos.y,
+              zIndex: 2000,
+              minWidth: 220,
+              background: 'white',
+              border: '1px solid #ccc',
+              borderRadius: 8,
+              boxShadow: '0 2px 12px rgba(0,0,0,0.18)',
+              cursor: draggingWarehouse ? 'grabbing' : 'grab',
+              userSelect: 'none',
+            }}
+          >
+            <Flex justify="space-between" align="center" mb={0} onMouseDown={handleWarehouseMouseDown} style={{ cursor: 'grab', padding: 4, borderBottom: '1px solid #eee', borderTopLeftRadius: 8, borderTopRightRadius: 8, background: '#f7f7fa' }}>
+              {selectedWarehouse.isMain ? (
+                <Text fontWeight="bold">Almacén principal</Text>
+              ) : (
+                <Text fontWeight="bold">
+                  {selectedWarehouse.posicion.posX === 42 && selectedWarehouse.posicion.posY === 42
+                    ? 'Almacén Norte'
+                    : selectedWarehouse.posicion.posX === 63 && selectedWarehouse.posicion.posY === 3
+                      ? 'Almacén Este'
+                      : 'Almacén Intermedio'}
+                </Text>
+              )}
+              <Button
+                size="xs"
+                onClick={() => setSelectedWarehouse(null)}
+                variant="ghost"
+                colorScheme="red"
+                mt={2}
+              >
+                ✕
+              </Button>
+            </Flex>
+            <Box p={3} pt={0}>
+              {selectedWarehouse.isMain ? (
+                <Text>Capacidad: Infinita</Text>
+              ) : (
+                <Text>GLP: {selectedWarehouse.currentGLP > 0 ? selectedWarehouse.currentGLP : 0}/{selectedWarehouse.maxGLP}</Text>
+              )}
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  (window as any).focusAlmacenCard(selectedWarehouse.idAlmacen);
+                  setSelectedWarehouse(null);
+                }}
+                mt={2}
+              >
+                Rutas de Almacén
+              </Button>
+            </Box>
+          </Box>
+        )}
+        <AlmacenModal
+          isOpen={isOpenAlmacenRutas}
+          onClose={onCloseAlmacenRutas}
+          almacen={selectedWarehouse}
+          onOpenRutas={() => selectedWarehouse && (window as any).focusAlmacenCard(selectedWarehouse.idAlmacen)}
+        />
+
+        {selectedPedido && pedidoPanelPos && pedidoCardPos && (
+          <Box
+            style={{
+              position: 'absolute',
+              left: pedidoCardPos.x,
+              top: pedidoCardPos.y,
+              zIndex: 2000,
+              minWidth: 220,
+              background: 'white',
+              border: '1px solid #ccc',
+              borderRadius: 8,
+              boxShadow: '0 2px 12px rgba(0,0,0,0.18)',
+              cursor: draggingPedido ? 'grabbing' : 'grab',
+              userSelect: 'none',
+            }}
+          >
+            <Flex justify="space-between" align="center" mb={0} onMouseDown={handlePedidoMouseDown} style={{ cursor: 'grab', padding: 4, borderBottom: '1px solid #eee', borderTopLeftRadius: 8, borderTopRightRadius: 8, background: '#f7f7fa' }}>
+              {selectedPedido && (
+                <Text fontWeight="bold">
+                  Pedido {`PE${selectedPedido.idPedido.toString().padStart(3, '0')}`}
+                </Text>
+              )}
+              <Button size="xs" onClick={() => setSelectedPedido(null)} variant="ghost" colorScheme="red">
+                ✕
+              </Button>
+            </Flex>
+            <Box p={3} pt={0}>
+              <Text color={'purple.100'}>{selectedPedido.estado}</Text>
+              <Text>GLP: {selectedPedido.glp}</Text>
+              <Text>Entregar antes de: {selectedPedido.fechaLimite}</Text>
+            </Box>
           </Box>
         )}
         {/* Controles inferiores (Detener + Fecha) */}
@@ -900,16 +1264,27 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
             setIsCollapsed(false);
             setCollapseStart(null);
             setCollapseEnd(null);
+            setCollapseReason(null);
           }}
-          fechaInicio={collapseStart ?? ''}
-          fechaFin={collapseEnd ?? ''}
-          duracion={collapseStart && collapseEnd
-            ? `${Math.floor((new Date(collapseEnd).getTime() - new Date(collapseStart).getTime()) / 60000 / 60)
-              .toString()
-              .padStart(2, '0')}:${Math.floor(((new Date(collapseEnd).getTime() - new Date(collapseStart).getTime()) / 60000) % 60)
-              .toString()
-              .padStart(2, '0')}`
-            : '00:00'}
+          onViewDetails={() => {
+            setIsSummaryOpen(false);
+            resetSimulationState();
+            // --- Lógica híbrida para tamaño ---
+            const json = JSON.stringify(simulationSummary);
+            const sizeInMB = json.length / (1024 * 1024);
+            let dataToSend;
+            if (sizeInMB < 2) {
+              dataToSend = simulationSummary;
+            } else {
+              const { simulacionCompleta, ...resumenSinDetalle } = simulationSummary || {};
+              dataToSend = { ...resumenSinDetalle, historialReducido: true };
+            }
+            navigate('/colapso/details', {
+              state: { simulationData: dataToSend }
+            });
+          }}
+          tipo={collapseReason}
+          {...resumenData}
         />
       </VStack>
     </Box>

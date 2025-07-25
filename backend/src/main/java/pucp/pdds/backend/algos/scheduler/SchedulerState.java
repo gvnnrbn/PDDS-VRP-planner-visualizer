@@ -387,6 +387,13 @@ public class SchedulerState {
                 if (Math.abs(plannerVehicle.position.x - nextNode.getPosition().x) > 0.2 || Math.abs(plannerVehicle.position.y - nextNode.getPosition().y) > 0.2) {
                     // Not at node yet: build path to it
                     plannerVehicle.currentPath = PathBuilder.buildPath(plannerVehicle.position, nextNode.getPosition(), getActiveBlockagesOverTimeFrame(currTime, currTime.addMinutes(minutesToSimulate)));
+                    plannerVehicle.advancePath(
+                        SimulationProperties.speed / 60.0,
+                        activeIndicators
+                    );
+                    if(plannerVehicle.state != PlannerVehicle.VehicleState.RETURNING_TO_BASE) {
+                        plannerVehicle.state = PlannerVehicle.VehicleState.ONTHEWAY;
+                    }
                     continue;
                 }
                 // Has arrived at location

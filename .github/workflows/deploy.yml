@@ -41,7 +41,7 @@ jobs:
       
       - name: 📝 Create .env.production file
         run: |
-          echo "VITE_ENV_BACKEND_URL=http://${{ secrets.VPS_HOST }}" >> frontend/.env.production
+          echo "VITE_ENV_VITE_API_URL=http://${{ secrets.VPS_HOST }}" >> frontend/.env.production
 
       - name: 🌐 Build Frontend
         run: |
