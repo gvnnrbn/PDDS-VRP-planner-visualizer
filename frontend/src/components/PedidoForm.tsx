@@ -17,7 +17,7 @@ export const PedidoForm = ({ pedido, onFinish, onCancel }: PedidoFormProps) => {
   const [formData, setFormData] = useState<Pedido>({
     id: pedido?.id || 0,
     codigoCliente: pedido?.codigoCliente || '',
-    fechaRegistro: pedido?.fechaRegistro || new Date().toLocaleString(),
+    fechaRegistro: pedido?.fechaRegistro || new Date().toISOString(),
     posicionX: pedido?.posicionX || 0,
     posicionY: pedido?.posicionY || 0,
     cantidadGLP: pedido?.cantidadGLP || 0,
@@ -30,11 +30,13 @@ export const PedidoForm = ({ pedido, onFinish, onCancel }: PedidoFormProps) => {
       const formattedData = { ...formData }
       console.log("Formatted data", formattedData)
       if (formattedData.fechaRegistro) {
-        const date = new Date(formattedData.fechaRegistro)
-        // Format date as ISO 8601 string (YYYY-MM-DDTHH:mm:ss) with timezone adjustment
-        const offset = date.getTimezoneOffset() * 60000
-        const localDate = new Date(date.getTime() - offset)
-        formattedData.fechaRegistro = localDate.toISOString().replace('T', ' ').substring(0, 19)
+        // Si viene en formato yyyy-MM-ddTHH:mm, convertir a 'YYYY-MM-DD HH:mm:ss'
+        let dateStr = formattedData.fechaRegistro;
+        if (dateStr.includes('T')) {
+          // Asegura segundos
+          if (dateStr.length === 16) dateStr += ':00';
+          formattedData.fechaRegistro = dateStr.replace('T', ' ');
+        }
       }
 
       console.log("Inserting pedido", formattedData)
@@ -63,6 +65,24 @@ export const PedidoForm = ({ pedido, onFinish, onCancel }: PedidoFormProps) => {
           <Input 
             value={formData.codigoCliente}
             onChange={(e) => setFormData({ ...formData, codigoCliente: e.target.value })}
+          />
+        </FormControl>
+
+        <FormControl>
+          <FormLabel>Fecha de Ingreso</FormLabel>
+          <Input
+            type="datetime-local"
+            value={(() => {
+              if (!formData.fechaRegistro) return '';
+              const d = new Date(formData.fechaRegistro);
+              if (isNaN(d.getTime())) return ''; // <-- Evita RangeError
+              const tzOffset = d.getTimezoneOffset() * 60000;
+              const local = new Date(d.getTime() - tzOffset);
+              return local.toISOString().slice(0, 16);
+            })()}
+            onChange={e => {
+              setFormData({ ...formData, fechaRegistro: e.target.value });
+            }}
           />
         </FormControl>
 
