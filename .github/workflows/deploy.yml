@@ -24,9 +24,9 @@ jobs:
           cache: 'maven'
 
       - name: 🔨 Build Backend with Maven
+        working-directory: ./backend
         run: |
-          chmod +x backend/mvnw
-          cd backend
+          chmod +x mvnw
           ./mvnw clean package -DskipTests
 
       #------------------------------------------------

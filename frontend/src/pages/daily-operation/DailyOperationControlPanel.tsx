@@ -365,7 +365,7 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
   return { margin, scaleX, scaleY };
 }
 // --- Main Control Panel ---
-const backend_url = import.meta.env.VITE_ENV_BACKEND_URL;
+const backend_url = import.meta.env.VITE_API_URL;
 
 interface DailyOperationControlPanelProps {
   setData: (data: any) => void;
