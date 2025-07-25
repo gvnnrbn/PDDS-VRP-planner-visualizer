@@ -27,6 +27,7 @@ interface OperacionContextType {
   setOperationData: (data: MinutoOperacion) => void;
   focusOnPedido: (pedido:PedidoSimulado) => void;
   focusOnVehiculo: (vehiculo: VehiculoSimuladoV2) => void;
+  focusOnBloqueo: (bloqueo: BloqueoSimulado) => void;
   highlightedPedidoId: number | null;
 }
 
@@ -130,6 +131,35 @@ const setOperationData = (data: MinutoOperacion) => {
     }, 3000);
   };
 
+  const focusOnBloqueo = (bloqueo: BloqueoSimulado) => {
+    const margin = 40;
+    const canvasWidth = 1720;
+    const canvasHeight = 1080;
+    const gridLength = 70;
+    const gridWidth = 50;
+    const scaleX = (canvasWidth - 2 * margin) / gridLength;
+    const scaleY = (canvasHeight - 2 * margin) / gridWidth;
+
+    const punto = bloqueo.segmentos[0]; // primer punto del bloqueo
+    const bloqueoX = margin + punto.posX * scaleX;
+    const bloqueoY = margin + punto.posY * scaleY;
+
+    const centerX = canvasWidth / 2;
+    const centerY = canvasHeight / 2;
+
+    const newPanX = centerX - bloqueoX;
+    const newPanY = centerY - bloqueoY;
+
+    (window as any).globalPanX = newPanX;
+    (window as any).globalPanY = newPanY;
+
+    // Resaltar por 3 segundos
+    (window as any).highlightedBlockId = bloqueo.idBloqueo;
+    setTimeout(() => {
+      (window as any).highlightedBlockId = null;
+    }, 3000);
+  };
+
   return (
     <OperacionContext.Provider
       value={{ 
@@ -137,6 +167,7 @@ const setOperationData = (data: MinutoOperacion) => {
         setOperationData, 
         focusOnPedido,
         focusOnVehiculo,
+        focusOnBloqueo,
         highlightedPedidoId
       }}
     >

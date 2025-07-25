@@ -343,7 +343,7 @@ const IndicadoresSection = () => {
 };
 
 const BloqueosSection = () => {
-  const { operationData } = useOperacion();
+  const { operationData, focusOnBloqueo } = useOperacion();
 
   const noData =
     !operationData?.bloqueos || operationData.bloqueos.length === 0;
@@ -360,7 +360,7 @@ const BloqueosSection = () => {
             <BloqueoCard
               key={bloqueo.idBloqueo}
               bloqueo={bloqueo}
-              onClick={() => console.log("Enfocar bloqueo", bloqueo.idBloqueo)}
+              onClick={() => focusOnBloqueo(bloqueo)}
             />
           ))
         )}
@@ -368,6 +368,7 @@ const BloqueosSection = () => {
     </Box>
   );
 };
+
 
 export default function DailyOperation() {
   const bgColor = useColorModeValue('white', '#1a1a1a')
