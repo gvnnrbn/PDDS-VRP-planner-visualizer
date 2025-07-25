@@ -6,3 +6,6 @@ node_modules/
 .vscode/settings.json
 frontend/package-lock.json
 frontend/package.json
+.env
+package.json
+package-lock.json
