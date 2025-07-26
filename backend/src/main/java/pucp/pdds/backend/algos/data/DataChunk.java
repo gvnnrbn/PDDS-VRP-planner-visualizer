@@ -252,7 +252,14 @@ public class DataChunk {
 
         @Override
         public LocalDateTime deserialize(com.google.gson.JsonElement json, java.lang.reflect.Type typeOfT, com.google.gson.JsonDeserializationContext context) throws com.google.gson.JsonParseException {
-            return LocalDateTime.parse(json.getAsString());
+            String dateString = json.getAsString();
+            if (dateString.contains("Z")) {
+                dateString = dateString.replace("Z", "");
+            }
+            if (dateString.contains(".")) {
+                dateString = dateString.substring(0, dateString.indexOf("."));
+            }
+            return LocalDateTime.parse(dateString);
         }
     }
 

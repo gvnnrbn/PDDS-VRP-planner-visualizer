@@ -7,6 +7,7 @@ import { FaTruck, FaWarehouse, FaMapMarkerAlt, FaIndustry } from 'react-icons/fa
 import { renderToStaticMarkup } from 'react-dom/server';
 import BottomLeftControls from '../../components/common/MapActions';
 import AlmacenModal from '../../components/common/modals/ModalAlmacen';
+import { ModalInsertAveria } from '../../components/common/modals/ModalInsertAveria';
 
 
 // Cache global para imágenes de íconos
@@ -240,7 +241,7 @@ export function drawState(canvas: HTMLCanvasElement, data: any): {
       const iconColor = isHighlighted ? '#FFD700' : '#5459EA';
       const iconSize = isHighlighted ? 32 : 24;
 
-      const cacheKey = `${FaMapMarkerAlt.displayName || FaMapMarkerAlt.name || ''}_${iconColor}_${iconSize}`;
+      const cacheKey = `${getIconIdentifier(FaMapMarkerAlt)}_${iconColor}_${iconSize}`;
       const img = iconImageCache[cacheKey]; // No await
 
       if (img) {
@@ -679,12 +680,28 @@ const DailyOperationControlPanel: React.FC<DailyOperationControlPanelProps> = ({
 
 
   // Modal averia (UI only, no network)
+  const { isOpen: isOpenAveria, onOpen: onOpenAveria, onClose: onCloseAveria } = useDisclosure();
   const [estadoVehiculo, setEstadoVehiculo] = useState('');
   const [averiaData, setAveriaData] = useState<any>({
     turno: 'T1',
     tipo: 'Ti1',
     placa: selectedVehicle ? selectedVehicle.placa : '',
   });
+  const registerAveria = () =>{
+    if (!connected || !stompClient.current) {
+      toast({ title: 'No conectado', status: 'error', duration: 2000 });
+      return;
+    }
+    stompClient.current.publish({ 
+      destination: '/app/update-failures', 
+      body: JSON.stringify({
+        vehiclePlaque: averiaData.placa,
+        type: averiaData.tipo,
+        shiftOccurredOn: averiaData.turno,
+      })
+    });
+    onCloseAveria();
+  }
   useEffect(() => {
     if (selectedVehicle) {
       switch (selectedVehicle.estado) {
@@ -868,6 +885,9 @@ const DailyOperationControlPanel: React.FC<DailyOperationControlPanelProps> = ({
               <Text color={'purple.100'}>{estadoVehiculo}</Text>
               <Text>Combustible: {selectedVehicle.combustible} Gal.</Text>
               <Text>GLP: {selectedVehicle.currGLP>0?selectedVehicle.currGLP:0} m3</Text>
+              <Button variant={'primary'} size={'sm'} onClick={onOpenAveria} mt={2}>
+                Registrar Avería
+              </Button>
             </Box>
           </Box>
         )}
@@ -969,6 +989,13 @@ const DailyOperationControlPanel: React.FC<DailyOperationControlPanelProps> = ({
             </Box>
           </Box>
         )}
+        <ModalInsertAveria
+          isOpen={isOpenAveria}
+          onClose={onCloseAveria}
+          onSubmit={registerAveria}
+          averiaData={averiaData}
+          setAveriaData={setAveriaData}
+        />
         <BottomLeftControls
           variant="date-pause"
           date={`Fecha: ${data?.minuto || "dd/mm/yyyy"}`}
