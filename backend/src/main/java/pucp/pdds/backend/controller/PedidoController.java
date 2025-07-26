@@ -52,6 +52,7 @@ public class PedidoController {
     @PostMapping
     public ResponseEntity<Pedido> createPedido(@RequestBody Pedido pedido) {
         // Ensure ID is null for new entities
+        System.out.println("Creating pedido: " + pedido.getFechaRegistro());
         pedido.setId(null);
         Pedido savedPedido = pedidoRepository.save(pedido);
         return ResponseEntity.ok(savedPedido);

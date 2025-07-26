@@ -243,6 +243,35 @@ public class DataChunk {
         return gson.toJson(this);
     }
 
+    // Shared utility for date parsing (used by both Jackson and Gson)
+    public static String normalizeDateString(String dateString) {
+        if (dateString == null || dateString.trim().isEmpty()) {
+            return null;
+        }
+        
+        // Handle ISO format with timezone: "2025-07-26T00:33:57.323Z"
+        if (dateString.contains("T") && dateString.contains("Z")) {
+            // Remove timezone 'Z' and milliseconds
+            dateString = dateString.replace("Z", "");
+            if (dateString.contains(".")) {
+                dateString = dateString.substring(0, dateString.indexOf("."));
+            }
+            // Replace 'T' with space to convert to 'YYYY-MM-DD HH:mm:ss' format
+            dateString = dateString.replace("T", " ");
+        }
+        // Handle ISO format without timezone: "2025-07-26T00:33:57"
+        else if (dateString.contains("T")) {
+            // Ensure seconds are present
+            if (dateString.length() == 16) {
+                dateString += ":00";
+            }
+            // Replace 'T' with space
+            dateString = dateString.replace("T", " ");
+        }
+        
+        return dateString;
+    }
+
     // LocalDateTime adapter for Gson
     public static class LocalDateTimeAdapter implements com.google.gson.JsonSerializer<LocalDateTime>, com.google.gson.JsonDeserializer<LocalDateTime> {
         @Override
@@ -253,13 +282,13 @@ public class DataChunk {
         @Override
         public LocalDateTime deserialize(com.google.gson.JsonElement json, java.lang.reflect.Type typeOfT, com.google.gson.JsonDeserializationContext context) throws com.google.gson.JsonParseException {
             String dateString = json.getAsString();
-            if (dateString.contains("Z")) {
-                dateString = dateString.replace("Z", "");
+            String normalizedDate = normalizeDateString(dateString);
+            
+            if (normalizedDate == null) {
+                return null;
             }
-            if (dateString.contains(".")) {
-                dateString = dateString.substring(0, dateString.indexOf("."));
-            }
-            return LocalDateTime.parse(dateString);
+            
+            return LocalDateTime.parse(normalizedDate);
         }
     }
 

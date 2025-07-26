@@ -30,16 +30,31 @@ export const PedidoForm = ({ pedido, onFinish, onCancel }: PedidoFormProps) => {
       const formattedData = { ...formData }
       console.log("Formatted data", formattedData)
       if (formattedData.fechaRegistro) {
-        // Si viene en formato yyyy-MM-ddTHH:mm, convertir a 'YYYY-MM-DD HH:mm:ss'
+        // Convert the date to the format expected by the backend: 'YYYY-MM-DD HH:mm:ss'
         let dateStr = formattedData.fechaRegistro;
-        if (dateStr.includes('T')) {
-          // Asegura segundos
-          if (dateStr.length === 16) dateStr += ':00';
-          formattedData.fechaRegistro = dateStr.replace('T', ' ');
+        
+        // If it's an ISO string with timezone (e.g., "2025-07-26T00:33:57.323Z")
+        if (dateStr.includes('T') && dateStr.includes('Z')) {
+          // Remove timezone and milliseconds
+          dateStr = dateStr.replace('Z', '');
+          if (dateStr.includes('.')) {
+            dateStr = dateStr.substring(0, dateStr.indexOf('.'));
+          }
+          // Replace 'T' with space
+          dateStr = dateStr.replace('T', ' ');
         }
+        // If it's an ISO string without timezone (e.g., "2025-07-26T00:33:57")
+        else if (dateStr.includes('T')) {
+          // Ensure seconds are present
+          if (dateStr.length === 16) dateStr += ':00';
+          dateStr = dateStr.replace('T', ' ');
+        }
+        // If it's already in the correct format, leave it as is
+        
+        formattedData.fechaRegistro = dateStr;
       }
 
-      console.log("Inserting pedido", formattedData)
+      console.log("Date format being sent:", formattedData.fechaRegistro)
 
       if (pedido?.id) {
         await pedidoService.updatePedido(formData.id, formattedData)
@@ -68,7 +83,7 @@ export const PedidoForm = ({ pedido, onFinish, onCancel }: PedidoFormProps) => {
           />
         </FormControl>
 
-        <FormControl>
+        {/* <FormControl>
           <FormLabel>Fecha de Ingreso</FormLabel>
           <Input
             type="datetime-local"
@@ -84,7 +99,7 @@ export const PedidoForm = ({ pedido, onFinish, onCancel }: PedidoFormProps) => {
               setFormData({ ...formData, fechaRegistro: e.target.value });
             }}
           />
-        </FormControl>
+        </FormControl> */}
 
         <HStack>
           <FormControl>
