@@ -9,6 +9,7 @@ import type { ReactNode } from "react";
 import type { PedidoSimulado } from "../../core/types/pedido";
 import type { VehiculoSimuladoV2 } from "../../core/types/vehiculo";
 import type { IndicadoresSimulado } from "../../core/types/indicadores";
+import type { BloqueoSimulado } from "../../core/types/bloqueos";
 
 
 export interface MinutoSimulacion {
@@ -18,7 +19,8 @@ export interface MinutoSimulacion {
   almacenes: any[];
   incidencias: any[];
   mantenimientos: any[];
-  indicadores: IndicadoresSimulado
+  indicadores: IndicadoresSimulado;
+  bloqueos: BloqueoSimulado [];
 }
 
 interface SimulationContextType {
@@ -26,6 +28,7 @@ interface SimulationContextType {
   setCurrentMinuteData: (data: MinutoSimulacion) => void;
   focusOnPedido: (pedido: PedidoSimulado) => void;
   focusOnVehiculo: (vehiculo: VehiculoSimuladoV2) => void;
+  focusOnBloqueo: (bloqueo: BloqueoSimulado) => void;
   highlightedPedidoId: number | null;
 }
 
@@ -101,29 +104,58 @@ export const SimulationProvider = ({
     const gridWidth = 50;
     const scaleX = (canvasWidth - 2 * margin) / gridLength;
     const scaleY = (canvasHeight - 2 * margin) / gridWidth;
-    
+
     // Calcular la posición del vehículo en el canvas
     const vehiculoX = margin + vehiculo.posicionX * scaleX;
     const vehiculoY = margin + vehiculo.posicionY * scaleY;
-    
+
     // Centrar el mapa en esa posición
     const centerX = canvasWidth / 2;
     const centerY = canvasHeight / 2;
-    
+
     // Calcular el pan necesario para centrar
     const newPanX = centerX - vehiculoX;
     const newPanY = centerY - vehiculoY;
-    
+
     // Actualizar las variables globales de pan de forma no bloqueante
     (window as any).globalPanX = newPanX;
     (window as any).globalPanY = newPanY;
-    
+
     // Resaltar el vehículo temporalmente
     (window as any).highlightedVehicleId = vehiculo.idVehiculo;
-    
+
     // Remover el resaltado después de 3 segundos
     setTimeout(() => {
       (window as any).highlightedVehicleId = null;
+    }, 3000);
+  };
+
+  const focusOnBloqueo = (bloqueo: BloqueoSimulado) => {
+    const margin = 40;
+    const canvasWidth = 1720;
+    const canvasHeight = 1080;
+    const gridLength = 70;
+    const gridWidth = 50;
+    const scaleX = (canvasWidth - 2 * margin) / gridLength;
+    const scaleY = (canvasHeight - 2 * margin) / gridWidth;
+
+    const punto = bloqueo.segmentos[0]; // primer punto del bloqueo
+    const bloqueoX = margin + punto.posX * scaleX;
+    const bloqueoY = margin + punto.posY * scaleY;
+
+    const centerX = canvasWidth / 2;
+    const centerY = canvasHeight / 2;
+
+    const newPanX = centerX - bloqueoX;
+    const newPanY = centerY - bloqueoY;
+
+    (window as any).globalPanX = newPanX;
+    (window as any).globalPanY = newPanY;
+
+    // Resaltar por 3 segundos
+    (window as any).highlightedBlockId = bloqueo.idBloqueo;
+    setTimeout(() => {
+      (window as any).highlightedBlockId = null;
     }, 3000);
   };
 
@@ -134,6 +166,7 @@ export const SimulationProvider = ({
         setCurrentMinuteData, 
         focusOnPedido,
         focusOnVehiculo,
+        focusOnBloqueo,
         highlightedPedidoId
       }}
     >
