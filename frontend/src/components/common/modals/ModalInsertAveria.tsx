@@ -1,7 +1,4 @@
-import { Box, Button, FormControl, FormLabel, HStack, Modal, ModalBody, ModalContent, ModalHeader, ModalOverlay, Select, VStack } from "@chakra-ui/react";
-import IncidenciaForm from "../../IncidenciaForm";
-import { useState } from "react";
-import { on } from "events";
+import { Box, Button, FormControl, FormLabel, HStack, Modal, ModalBody, ModalContent, ModalHeader, ModalOverlay, VStack, Input, Select } from "@chakra-ui/react";
 
 interface ModalInsertAveriaProps{
     isOpen: boolean;
@@ -22,21 +19,32 @@ export const ModalInsertAveria = ({
     <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
         <ModalOverlay />
         <ModalContent>
-            <ModalHeader>Registrar Avería para {averiaData.placa}</ModalHeader>
+            <ModalHeader>Registrar Avería {averiaData.placa ? `para ${averiaData.placa}` : ''}</ModalHeader>
             <ModalBody>
                 <Box p={4}>
                     <VStack spacing={4} align="stretch">
-                        {/* <FormControl>
-                            <FormLabel>Turno en el que puede ocurrir</FormLabel>
-                            <Select
-                                value={averiaData.turno}
-                                onChange={(e) => setAveriaData({ ...averiaData, turno: e.target.value as 'T1' | 'T2' | 'T3' })}
-                                >
-                                <option value="T1">Turno 00:00 - 07:59</option>
-                                <option value="T2">Turno 08:00 - 15:59</option>
-                                <option value="T3">Turno 16:00 - 23:59</option>
-                            </Select>
-                        </FormControl> */}
+                        <FormControl>
+                            <FormLabel>Placa del vehículo</FormLabel>
+                            <Input
+                                placeholder="Ej: TD01, TA02, etc."
+                                value={averiaData.placa}
+                                onChange={(e) => setAveriaData({ ...averiaData, placa: e.target.value })}
+                            />
+                        </FormControl>
+                        
+                        <FormControl>
+                            <FormLabel>Turno actual de la simulación</FormLabel>
+                            <Input
+                                value={averiaData.turno === 'T1' ? 'Turno 00:00 - 07:59' : 
+                                       averiaData.turno === 'T2' ? 'Turno 08:00 - 15:59' : 
+                                       averiaData.turno === 'T3' ? 'Turno 16:00 - 23:59' : 'Turno actual'}
+                                isReadOnly
+                                bg="gray.50"
+                                color="gray.700"
+                                fontWeight="medium"
+                            />
+                        </FormControl>
+                        
                         <FormControl>
                             <FormLabel>Tipo de avería</FormLabel>
                             <Select
@@ -48,6 +56,7 @@ export const ModalInsertAveria = ({
                                 <option value="Ti3">Tipo 3</option>
                             </Select>
                         </FormControl>
+                        
                         <HStack spacing={4}>
                             <Button variant={'primary'} onClick={onSubmit}>
                                 Registrar

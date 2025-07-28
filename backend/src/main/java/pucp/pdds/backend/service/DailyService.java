@@ -20,6 +20,7 @@ import pucp.pdds.backend.algos.scheduler.DataProvider;
 import pucp.pdds.backend.algos.scheduler.SchedulerState;
 import pucp.pdds.backend.algos.utils.Time;
 import pucp.pdds.backend.dto.SimulationResponse;
+import pucp.pdds.backend.dto.UpdateFailuresMessage;
 
 @Service
 public class DailyService {
@@ -81,8 +82,13 @@ public class DailyService {
                 v.waitTransition = 0;
             });
 
+            // Para operación diaria: solo el almacén principal tiene stock, los auxiliares tienen 0
             warehouses.forEach(w -> {
-                w.currentGLP = w.maxGLP;
+                if (w.isMain) {
+                    w.currentGLP = w.maxGLP; // Almacén principal con stock completo
+                } else {
+                    w.currentGLP = 0; // Almacenes auxiliares sin stock
+                }
             });
 
             SchedulerState schedulerState = new SchedulerState(
@@ -96,7 +102,8 @@ public class DailyService {
                 fechaInicio.getDayOfMonth(), fechaInicio.getHour(), fechaInicio.getMinute()),
                1,
                new Time(fechaInicio.getYear(), fechaInicio.getMonthValue(),
-                fechaInicio.getDayOfMonth(), fechaInicio.getHour(), fechaInicio.getMinute())
+                fechaInicio.getDayOfMonth(), fechaInicio.getHour(), fechaInicio.getMinute()),
+               true // isDailyOperation = true
             );
 
             currentSimulation = new DailyScheduler(messagingTemplate, dataProvider);
@@ -132,8 +139,27 @@ public class DailyService {
         }
     }
 
+    public void updateFailures(UpdateFailuresMessage message) {
+        synchronized (simulationLock) {
+            if (currentSimulation != null) {
+                try {
+                    System.out.println("[DAILY SERVICE] Processing failure update: " + message.toString());
+                    currentSimulation.updateFailures(message);
+                    sendResponse("STATE_UPDATED", "State updated successfully");
+                    System.out.println("[DAILY SERVICE] Failure update completed successfully");
+                } catch (Exception e) {
+                    System.out.println("[DAILY SERVICE] Error updating failure: " + e.getMessage());
+                    sendResponse("ERROR", "Failed to update state: " + e.getMessage());
+                }
+            } else {
+                System.out.println("[DAILY SERVICE] No active daily operation found");
+                sendResponse("ERROR", "No active daily operation");
+            }
+        }
+    }
+
     private void sendResponse(String type, Object data) {
         SimulationResponse response = new SimulationResponse(type, data);
-        messagingTemplate.convertAndSend("/topic/simulation", response);
+        messagingTemplate.convertAndSend("/topic/daily", response);
     }
 }

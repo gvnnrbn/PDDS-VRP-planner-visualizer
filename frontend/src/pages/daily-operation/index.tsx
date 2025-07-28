@@ -1,13 +1,9 @@
-import { Box, Text, Flex, useColorModeValue, HStack, Button, InputGroup, InputLeftElement, Input, Menu, MenuButton, MenuList, MenuItem, useDisclosure, Modal, ModalOverlay, ModalContent, ModalBody, ModalHeader, useToast, VStack } from '@chakra-ui/react'
+import { Box, Text, Flex, useColorModeValue, HStack, Button, Input, Menu, MenuButton, MenuList, MenuItem, useDisclosure, Modal, ModalOverlay, ModalContent, ModalBody, ModalHeader, useToast, VStack } from '@chakra-ui/react'
 import { SectionBar } from '../../components/common/SectionBar'
 import { useState, useRef, useEffect } from 'react'
 import { PedidoForm } from '../../components/PedidoForm'
 import { PedidoService } from '../../core/services/PedidoService'
-import { IncidenciaForm } from '../../components/IncidenciaForm'
-import { IncidenciaService } from '../../core/services/IncidenciaService'
-import { VehiculoForm } from '../../components/VehiculosForm'
-import { VehiculoService } from '../../core/services/VehiculoService'
-import { OperacionProvider, useOperacion } from '../../components/common/SimulationContextDiario';
+import { useOperacion } from '../../components/common/SimulationContextDiario';
 import DailyOperationControlPanel from './DailyOperationControlPanel';
 import LegendPanel from '../../components/common/Legend'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -19,13 +15,11 @@ import { MantenimientoCard } from '../../components/common/cards/MantenimientoCa
 import { IndicadoresCard } from '../../components/common/cards/IndicadoresCard'
 import { AlmacenCard } from '../../components/common/cards/AlmacenCard'
 import type { IndicadoresSimulado } from '../../core/types/indicadores'
-import { PanelSearchBar } from '../../components/common/PanelSearchBar'
 import { FaPlus } from 'react-icons/fa'
 import { BloqueoCard } from '../../components/common/cards/BloqueosCard'
+import { ModalInsertAveria } from '../../components/common/modals/ModalInsertAveria'
 
 const pedidoService = new PedidoService();
-const incidenciaService = new IncidenciaService();
-const vehiculoService = new VehiculoService();
 
 const ORDER_OPTIONS_PEDIDOS = [
   { label: 'Tiempo de llegada más cercano', value: 'fechaLimite-asc' },
@@ -380,41 +374,180 @@ export default function DailyOperation() {
 
   const AveriaSection = () => {
     const { operationData } = useOperacion();
-    const { onClose } = useDisclosure();
-    const incidenciaService = new IncidenciaService();
+    const [searchValue, setSearchValue] = useState('');
+    const [statusFilter, setStatusFilter] = useState<'todos' | 'resuelta' | 'encurso' | 'inminente'>('todos');
+    const [typeFilter, setTypeFilter] = useState<'todos' | 'tipo1' | 'tipo2' | 'tipo3'>('todos');
+    
+    // Modal para registrar avería
+    const { isOpen: isOpenAveria, onOpen: onOpenAveria, onClose: onCloseAveria } = useDisclosure();
+    const [averiaData, setAveriaData] = useState<any>({
+      turno: 'T1',
+      tipo: 'Ti1',
+      placa: '',
+    });
     const toast = useToast();
-    // const inputRef = useRef<HTMLInputElement>(null); // unused
+
+      // Función para registrar avería
+  const registerAveria = () => {
+    // Validar que se haya ingresado una placa
+    if (!averiaData.placa || averiaData.placa.trim() === '') {
+      toast({ title: 'Error', description: 'Debe ingresar la placa del vehículo', status: 'error', duration: 3000 });
+      return;
+    }
+    
+    // Obtener el cliente STOMP del DailyOperationControlPanel
+    const stompClient = (window as any).dailyOperationStompClient;
+    
+    if (!stompClient) {
+      toast({ title: 'No conectado', status: 'error', duration: 2000 });
+      return;
+    }
+    
+    const message = {
+      vehiclePlaque: averiaData.placa.trim(),
+      type: averiaData.tipo,
+      shiftOccurredOn: averiaData.turno,
+    };
+    
+    console.log(`⚠️ Registrando avería: ${averiaData.tipo} para vehículo ${averiaData.placa} en turno ${averiaData.turno}`);
+    
+    stompClient.publish({ 
+      destination: '/app/daily/update-failures', 
+      body: JSON.stringify(message)
+    });
+    
+    onCloseAveria();
+    toast({ title: 'Avería registrada', status: 'success', duration: 2000 });
+  };
+
+    // Función para determinar el turno actual basado en la simulación
+    const getTurnoActual = () => {
+      if (!operationData?.minuto) {
+        // Si no hay datos de simulación, usar la hora actual del sistema como fallback
+        const now = new Date();
+        const hora = now.getHours();
+        if (hora >= 0 && hora < 8) return 'T1';
+        if (hora >= 8 && hora < 16) return 'T2';
+        return 'T3';
+      }
+      
+      // Extraer la hora del minuto actual de la simulación
+      // Formato esperado: "dd/MM/yyyy HH:mm"
+      const [, hora] = operationData.minuto.split(" ");
+      if (!hora) return 'T1'; // Fallback
+      
+      const [horaStr] = hora.split(":");
+      const horaNum = Number(horaStr);
+      
+      if (horaNum >= 0 && horaNum < 8) return 'T1';
+      if (horaNum >= 8 && horaNum < 16) return 'T2';
+      return 'T3';
+    };
+
+    // Determinar turno automáticamente basado en la simulación actual
+    useEffect(() => {
+      const turnoActual = getTurnoActual();
+      
+      setAveriaData({
+        ...averiaData,
+        turno: turnoActual,
+      });
+    }, [operationData?.minuto]); // Se ejecuta cuando cambia el minuto de la simulación
+
+    // Filtrado por estado y tipo
+    const incidenciasFiltradas = (operationData?.incidencias || [])
+      .filter((incidencia) => {
+        // Filtro por estado
+        if (statusFilter === 'todos') return true;
+        if (statusFilter === 'resuelta') return incidencia.estado.toLowerCase() === 'resuelta';
+        if (statusFilter === 'encurso') return incidencia.estado.toLowerCase() === 'en curso';
+        if (statusFilter === 'inminente') return incidencia.estado.toLowerCase() === 'inminente';
+        return true;
+      })
+      .filter((incidencia) => {
+        // Filtro por tipo de incidente
+        if (typeFilter === 'todos') return true;
+        if (typeFilter === 'tipo1') return incidencia.tipo.toLowerCase() === 'ti1';
+        if (typeFilter === 'tipo2') return incidencia.tipo.toLowerCase() === 'ti2';
+        if (typeFilter === 'tipo3') return incidencia.tipo.toLowerCase() === 'ti3';
+        return true;
+      })
+      .filter((incidencia) => {
+        // Filtro por búsqueda (vehículo)
+        if (!searchValue) return true;
+        return incidencia.placa.toLowerCase().includes(searchValue.toLowerCase());
+      });
 
     return (
       <Box>
-        <VStack spacing={4} align="stretch">
-          {/* <PanelSearchBar onSubmit={() => console.log('searching...')} /> */}
-          {/* Modal para crear avería */}
-          {/* <ModalInsertAveria
-              isOpen={isOpen}
-              onClose={onClose}
-              handleSubmit={handleRegister}
-              plaque={''}
-            />
+        <VStack spacing={2} align="stretch" bg="#e6e6ea" p={2} borderRadius="md">
+          <Input
+            placeholder="Buscar avería por vehículo..."
+            value={searchValue}
+            onChange={e => setSearchValue(e.target.value)}
+            borderRadius="md"
+            bg="white"
+            fontSize="lg"
+            height="44px"
+            mb={1}
+            maxW="100%"
+            _focus={{ borderColor: 'purple.400', boxShadow: '0 0 0 1px #805ad5' }}
+          />
+          <HStack spacing={2} mb={2}>
             <Menu>
-              <MenuButton
-                as={Button}
-                leftIcon={<FaPlus />}
-                variant="secondary"
-              >
-                Agregar
+              <MenuButton as={Button} leftIcon={<FontAwesomeIcon icon={faFilter} />} colorScheme="purple" variant="solid" fontSize="md" height="40px" borderRadius="md">
+                Estado
               </MenuButton>
               <MenuList>
-                <MenuItem onClick={onOpen}>Crear una avería</MenuItem>
-                <MenuItem onClick={() => inputRef.current?.click()}>Importar desde archivo
-                  <Input type="file" display="none" ref={inputRef} accept=".csv,.xlsx,.xls,.txt" onChange={() => {}} />
-                </MenuItem>
+                <MenuItem onClick={() => setStatusFilter('todos')} fontWeight={statusFilter === 'todos' ? 'bold' : 'normal'} color={statusFilter === 'todos' ? 'purple.600' : undefined}>Todos</MenuItem>
+                <MenuItem onClick={() => setStatusFilter('resuelta')} fontWeight={statusFilter === 'resuelta' ? 'bold' : 'normal'} color={statusFilter === 'resuelta' ? 'purple.600' : undefined}>Resuelta</MenuItem>
+                <MenuItem onClick={() => setStatusFilter('encurso')} fontWeight={statusFilter === 'encurso' ? 'bold' : 'normal'} color={statusFilter === 'encurso' ? 'purple.600' : undefined}>En Curso</MenuItem>
+                <MenuItem onClick={() => setStatusFilter('inminente')} fontWeight={statusFilter === 'inminente' ? 'bold' : 'normal'} color={statusFilter === 'inminente' ? 'purple.600' : undefined}>Inminente</MenuItem>
               </MenuList>
-            </Menu> */}
-          {operationData?.incidencias?.map((i) => (
-            <IncidenciaCard key={i.idIncidencia} incidencia={i} onClick={() => console.log('enfocando...')} />
-          ))}
+            </Menu>
+            
+            <Menu>
+              <MenuButton as={Button} leftIcon={<FontAwesomeIcon icon={faFilter} />} colorScheme="purple" variant="solid" fontSize="md" height="40px" borderRadius="md">
+                Tipo
+              </MenuButton>
+              <MenuList>
+                <MenuItem onClick={() => setTypeFilter('todos')} fontWeight={typeFilter === 'todos' ? 'bold' : 'normal'} color={typeFilter === 'todos' ? 'purple.600' : undefined}>Todos</MenuItem>
+                <MenuItem onClick={() => setTypeFilter('tipo1')} fontWeight={typeFilter === 'tipo1' ? 'bold' : 'normal'} color={typeFilter === 'tipo1' ? 'purple.600' : undefined}>Tipo 1</MenuItem>
+                <MenuItem onClick={() => setTypeFilter('tipo2')} fontWeight={typeFilter === 'tipo2' ? 'bold' : 'normal'} color={typeFilter === 'tipo2' ? 'purple.600' : undefined}>Tipo 2</MenuItem>
+                <MenuItem onClick={() => setTypeFilter('tipo3')} fontWeight={typeFilter === 'tipo3' ? 'bold' : 'normal'} color={typeFilter === 'tipo3' ? 'purple.600' : undefined}>Tipo 3</MenuItem>
+              </MenuList>
+            </Menu>
+
+            <Button 
+              leftIcon={<FaPlus />} 
+              colorScheme="purple" 
+              variant="solid" 
+              fontSize="md" 
+              height="40px" 
+              borderRadius="md"
+              onClick={onOpenAveria}
+            >
+              Registrar
+            </Button>
+          </HStack>
+          <VStack spacing={4} align="stretch">
+            {incidenciasFiltradas.length === 0 && (
+              <Box color="gray.500" textAlign="center" py={6}>No hay averías para mostrar.</Box>
+            )}
+            {incidenciasFiltradas.map((i) => (
+              <IncidenciaCard key={i.idIncidencia} incidencia={i} onClick={() => console.log('enfocando...')} />
+            ))}
+          </VStack>
         </VStack>
+
+        {/* Modal para registrar avería */}
+        <ModalInsertAveria
+          isOpen={isOpenAveria}
+          onClose={onCloseAveria}
+          onSubmit={registerAveria}
+          averiaData={averiaData}
+          setAveriaData={setAveriaData}
+        />
       </Box>
     );
   };

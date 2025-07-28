@@ -40,4 +40,13 @@ public class UpdateFailuresMessage {
     public void setShiftOccurredOn(Shift shiftOccurredOn) {
         this.shiftOccurredOn = shiftOccurredOn;
     }
+    
+    @Override
+    public String toString() {
+        return "UpdateFailuresMessage{" +
+            "type=" + type +
+            ", vehiclePlaque='" + vehiclePlaque + '\'' +
+            ", shiftOccurredOn=" + shiftOccurredOn +
+            '}';
+    }
 }

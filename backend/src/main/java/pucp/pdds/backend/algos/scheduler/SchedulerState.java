@@ -20,6 +20,10 @@ import pucp.pdds.backend.algos.utils.SimulationProperties;
 
 public class SchedulerState {
     public SchedulerState(List<PlannerVehicle> vehicles, List<PlannerOrder> orders, List<PlannerBlockage> blockages, List<PlannerWarehouse> warehouses, List<PlannerFailure> failures, List<PlannerMaintenance> maintenances, Time currTime, int minutesToSimulate, Time initTime) {
+        this(vehicles, orders, blockages, warehouses, failures, maintenances, currTime, minutesToSimulate, initTime, false);
+    }
+    
+    public SchedulerState(List<PlannerVehicle> vehicles, List<PlannerOrder> orders, List<PlannerBlockage> blockages, List<PlannerWarehouse> warehouses, List<PlannerFailure> failures, List<PlannerMaintenance> maintenances, Time currTime, int minutesToSimulate, Time initTime, boolean isDailyOperation) {
         this.vehicles = vehicles != null ? vehicles : new ArrayList<>();
         this.orders = orders != null ? orders : new ArrayList<>();
         this.blockages = blockages != null ? blockages : new ArrayList<>();
@@ -29,6 +33,7 @@ public class SchedulerState {
         this.currTime = currTime;
         this.minutesToSimulate = minutesToSimulate;
         this.initTime = new Time(initTime);
+        this.isDailyOperation = isDailyOperation;
     }
 
     private List<PlannerVehicle> vehicles = new ArrayList<>();
@@ -41,6 +46,7 @@ public class SchedulerState {
     private Time initTime;
     private Time currTime;
     public final int minutesToSimulate;
+    private boolean isDailyOperation;
 
     public Indicator activeIndicators = new Indicator();
 
@@ -103,6 +109,10 @@ public class SchedulerState {
     public void setCurrTime(Time currTime) {
         this.currTime = currTime;
     }
+    
+    public boolean isDailyOperation() {
+        return isDailyOperation;
+    }
 
     public List<PlannerBlockage> getActiveBlockages() {
         return blockages.stream()
@@ -158,8 +168,18 @@ public class SchedulerState {
 
         if (currTime.getHour() == 0 && currTime.getMinute() == 0) {
             for(PlannerWarehouse warehouse : warehouses) {
-                debugPrint("Refill: Warehouse " + warehouse.id + " has " + warehouse.currentGLP + " GLP");
-                warehouse.currentGLP = warehouse.maxGLP;
+                if (isDailyOperation) {
+                    // Para operación diaria: solo recargar el almacén principal
+                    if (warehouse.isMain) {
+                        debugPrint("Refill: Main warehouse " + warehouse.id + " has " + warehouse.currentGLP + " GLP");
+                        warehouse.currentGLP = warehouse.maxGLP;
+                    }
+                    // Los almacenes auxiliares mantienen 0 stock en operación diaria
+                } else {
+                    // Para operación semanal: recargar todos los almacenes
+                    debugPrint("Refill: Warehouse " + warehouse.id + " has " + warehouse.currentGLP + " GLP");
+                    warehouse.currentGLP = warehouse.maxGLP;
+                }
             }
         }
 
@@ -457,7 +477,7 @@ public class SchedulerState {
         Time clonedTime = currTime.clone();
         Time clonedInitTime = initTime.clone();
 
-        return new SchedulerState(clonedVehicles, clonedOrders, clonedBlockages, clonedWarehouses, clonedFailures, clonedMaintenances, clonedTime, minutesToSimulate, clonedInitTime);
+        return new SchedulerState(clonedVehicles, clonedOrders, clonedBlockages, clonedWarehouses, clonedFailures, clonedMaintenances, clonedTime, minutesToSimulate, clonedInitTime, isDailyOperation);
     }
 
     private void debugPrint(String message) {

@@ -3,6 +3,8 @@ package pucp.pdds.backend.algos.scheduler;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -13,8 +15,10 @@ import pucp.pdds.backend.algos.algorithm.Solution;
 import pucp.pdds.backend.algos.algorithm.Environment;
 import pucp.pdds.backend.algos.data.DataChunk;
 import pucp.pdds.backend.algos.entities.PlannerOrder;
+import pucp.pdds.backend.algos.entities.PlannerFailure;
 import pucp.pdds.backend.algos.utils.Time;
 import pucp.pdds.backend.dto.SimulationResponse;
+import pucp.pdds.backend.dto.UpdateFailuresMessage;
 import java.time.format.DateTimeFormatter;
 import java.time.LocalDateTime;
 import java.time.Duration;
@@ -121,6 +125,25 @@ public class DailyScheduler implements Runnable {
 
     public void stop() {
         isRunning = false;
+    }
+
+    public void updateFailures(UpdateFailuresMessage message) {
+        stateLock.lock();
+        try {
+            int lastId = state.getFailures().size() > 0 ? state.getFailures().getLast().id : 0;
+            
+            PlannerFailure failure = new PlannerFailure(
+                lastId + 1, message.getType(), message.getShiftOccurredOn(),
+                message.getVehiclePlaque(), null);
+            List<PlannerFailure> failures = new ArrayList<>(state.getFailures());
+            failures.add(failure);
+            state.setFailures(failures);
+            
+            System.out.println("[DAILY] Added failure: " + failure.toString());
+            System.out.println("[DAILY] Total failures: " + state.getFailures().size());
+        } finally {
+            stateLock.unlock();
+        }
     }
 
     public void fetchData() {

@@ -442,6 +442,8 @@ const DailyOperationControlPanel: React.FC<DailyOperationControlPanelProps> = ({
       },
     });
     stompClient.current = client;
+    // Exponer el cliente STOMP globalmente para que otros componentes puedan usarlo
+    (window as any).dailyOperationStompClient = client;
     client.activate();
   };
   const disconnect = () => {
@@ -465,6 +467,10 @@ const DailyOperationControlPanel: React.FC<DailyOperationControlPanelProps> = ({
             if (result) setScale(result);
           }
           setData(typedResponse.data);
+          return;
+        case 'STATE_UPDATED':
+          logMessage('✅ ' + typedResponse.data);
+          toast({ title: 'Éxito', description: typedResponse.data, status: 'success', duration: 3000 });
           return;
         case 'ERROR':
           logMessage('❌ ' + typedResponse.data);
@@ -692,13 +698,18 @@ const DailyOperationControlPanel: React.FC<DailyOperationControlPanelProps> = ({
       toast({ title: 'No conectado', status: 'error', duration: 2000 });
       return;
     }
+    
+    const message = {
+      vehiclePlaque: averiaData.placa,
+      type: averiaData.tipo,
+      shiftOccurredOn: averiaData.turno,
+    };
+    
+    logMessage(`⚠️ Registrando avería: ${averiaData.tipo} para vehículo ${averiaData.placa} en turno ${averiaData.turno}`);
+    
     stompClient.current.publish({ 
-      destination: '/app/update-failures', 
-      body: JSON.stringify({
-        vehiclePlaque: averiaData.placa,
-        type: averiaData.tipo,
-        shiftOccurredOn: averiaData.turno,
-      })
+      destination: '/app/daily/update-failures', 
+      body: JSON.stringify(message)
     });
     onCloseAveria();
   }
@@ -727,9 +738,23 @@ const DailyOperationControlPanel: React.FC<DailyOperationControlPanelProps> = ({
           setEstadoVehiculo('En Ruta');
           break;
       }
+      
+      // Determinar turno automáticamente basado en la hora actual
+      const now = new Date();
+      const hora = now.getHours();
+      let turnoActual = 'T1';
+      if (hora >= 0 && hora < 8) {
+        turnoActual = 'T1';
+      } else if (hora >= 8 && hora < 16) {
+        turnoActual = 'T2';
+      } else if (hora >= 16 && hora < 24) {
+        turnoActual = 'T3';
+      }
+      
       setAveriaData({
         ...averiaData,
         placa: selectedVehicle.placa,
+        turno: turnoActual,
       });
     }
   }, [selectedVehicle]);
