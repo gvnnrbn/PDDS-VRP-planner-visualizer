@@ -12,7 +12,7 @@ import { PedidoCard } from '../../components/common/cards/PedidoCard'
 import { FlotaCard } from '../../components/common/cards/FlotaCard'
 import { IncidenciaCard } from '../../components/common/cards/IncidenciaCard'
 import { MantenimientoCard } from '../../components/common/cards/MantenimientoCard'
-import CollapseSimulationControlPanel from './CollapseSimulationControlPanel'
+import SimulationControlPanel from '../weekly-simulation/SimulationControlPanel'
 import { CollapseSimulationProvider, useCollapseSimulation } from './CollapseSimulationContext'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faFilter, faSort } from '@fortawesome/free-solid-svg-icons'
@@ -396,7 +396,7 @@ function CollapseSimulationInner() {
               isSimulationLoading 
                 ? <></> 
                 : (
-                    <CollapseSimulationControlPanel setData={setCurrentMinuteData} data={currentMinuteData}/>
+                    <SimulationControlPanel setData={setCurrentMinuteData} data={currentMinuteData}/>
                 )
             }
           />
