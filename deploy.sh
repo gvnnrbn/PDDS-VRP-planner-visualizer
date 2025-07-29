@@ -48,6 +48,6 @@ sshpass -p "$REMOTE_SSH_PASSWORD" ssh -o StrictHostKeyChecking=no "$REMOTE_SSH_U
 # --- Copy scripts ---
 echo "--- Deploying scripts to $REMOTE_SSH_HOST... ---"
 sshpass -p "$REMOTE_SSH_PASSWORD" rm -rf ~/scripts
-sshpass -p "$REMOTE_SSH_PASSWORD" scp -r -o StrictHostKeyChecking=no ./frontend/dist/* "$REMOTE_SSH_USERNAME@$REMOTE_SSH_HOST:~/"
+sshpass -p "$REMOTE_SSH_PASSWORD" scp -r -o StrictHostKeyChecking=no ./scripts/* "$REMOTE_SSH_USERNAME@$REMOTE_SSH_HOST:~/scripts"
 
 echo "--- Deployment finished successfully! ---"

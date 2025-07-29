@@ -162,7 +162,7 @@ public class WeeklyScheduler implements Runnable {
                 state.initializeVehicles();
                 stateLock.unlock();
 
-                for (int iteration = 0; iteration < state.minutesToSimulate && state.getCurrTime().isBefore(endSimulationTime) && isRunning && !Thread.currentThread().isInterrupted(); iteration++) {
+                for (int iteration = 0; iteration < state.minutesToSimulate && isRunning && !Thread.currentThread().isInterrupted(); iteration++) {
                     stateLock.lock();
                     state.advance(sol, true);
                     onAfterExecution(iteration, sol);
@@ -181,7 +181,7 @@ public class WeeklyScheduler implements Runnable {
 
                     stateLock.lock();
 
-                    boolean canCollapse = state.getCurrTime().isAfter(new Time(2025,8,4,2,3));
+                    boolean canCollapse = state.getCurrTime().isAfter(new Time(2025,7,10,2,3));
                     
                     // SISTEMA ANTI-COLAPSO MEJORADO: Extensión inteligente de deadlines
                     if (!canCollapse) {
