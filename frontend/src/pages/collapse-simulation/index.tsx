@@ -20,6 +20,7 @@ import { IncidenciaService } from '../../core/services/IncidenciaService'
 import AlmacenCard from '../../components/common/cards/AlmacenCard'
 import type { IndicadoresSimulado } from '../../core/types/indicadores'
 import { IndicadoresCard } from '../../components/common/cards/IndicadoresCard'
+import { BloqueoCard } from '../../components/common/cards/BloqueosCard'
 
 export default function CollapseSimulation() {
   return (
@@ -274,7 +275,32 @@ const MantenimientoSection = () => {
     </Box>
   );
 };
+const BloqueosSection = () => {
+  const { operationData, focusOnBloqueo } = useCollapseSimulation();
 
+  const noData =
+    !operationData?.bloqueos || operationData.bloqueos.length === 0;
+
+  return (
+    <Box>
+      <VStack spacing={4} align="stretch">
+        {noData ? (
+          <Text color="gray.500" fontStyle="italic">
+            No hay bloqueos registrados en este momento.
+          </Text>
+        ) : (
+          operationData.bloqueos.map((bloqueo) => (
+            <BloqueoCard
+              key={bloqueo.idBloqueo}
+              bloqueo={bloqueo}
+              onClick={() => focusOnBloqueo(bloqueo)}
+            />
+          ))
+        )}
+      </VStack>
+    </Box>
+  );
+};
 function CollapseSimulationInner() {
   const bgColor = useColorModeValue('white', '#1a1a1a')
   const [isCollapsed, setIsCollapsed] = useState(true)
@@ -383,6 +409,10 @@ function CollapseSimulationInner() {
     { title: 'Flota', content: <FlotaSection/> },
     { title: 'Mantenimiento', content: <MantenimientoSection/> },
     { title: 'Almacenes', content: <AlmacenSection/>},
+    {
+      title: 'Bloqueos',
+      content: <BloqueosSection/>
+    },
     { title: 'Indicadores', content: <IndicadoresSection/>},
   ];
 
