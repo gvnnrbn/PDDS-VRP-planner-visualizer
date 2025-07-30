@@ -405,6 +405,7 @@ export interface CollapseSimulacionMinuto {
   mantenimientos: any[];
   pedidos: any[];
   vehiculos: any[];
+  indicadores?: any;
 }
 
 interface CollapseSimulationControlPanelProps {
@@ -437,11 +438,13 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
 
   // Para el resumen de simulación
   const [simulationSummary, setSimulationSummary] = useState<any>(null);
+  const [collapseSimulationSummary, setCollapseSimulationSummary] = useState<any>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [collapseStart, setCollapseStart] = useState<string | null>(null);
   const [collapseEnd, setCollapseEnd] = useState<string | null>(null);
   const [simEndDate, setSimEndDate] = useState('');
-  const [collapseReason, setCollapseReason] = useState<'error' | 'stopped' | null>(null);
+  const [collapseReason, setCollapseReason] = useState<'error' | 'stopped' | 'completed' | null>(null);
+  const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -576,6 +579,14 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
           }
           setData && setData(typedResponse.data);
           logMessage('📝 ' + JSON.stringify(response));
+          return;
+        case 'COLLAPSE_SIMULATION_SUMMARY':
+          setSimEndDate(typedResponse.data.fechaFin);
+          setCollapseSimulationSummary(typedResponse.data);
+          setIsSimulating(false);
+          setIsSummaryOpen(true);
+          // Set collapse reason to prevent COLLAPSE_SIMULATION_STOPPED from interfering
+          setCollapseReason('completed');
           return;
         default:
           logMessage('📝 ' + JSON.stringify(response));
@@ -756,8 +767,7 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
     canvas.height = canvas.offsetHeight;
   }, []);
 
-  //Modal final
-  const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+
 
   // Función para calcular duración entre dos fechas
   const calcularDuracion = (fechaInicio: string, fechaFin: string): string => {
@@ -787,12 +797,12 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
 
   // Usar datos reales del resumen de simulación desde el estado global data
   const resumenData = {
-    fechaInicio: simStartDate || initialTime,
-    fechaFin: simEndDate || data?.minuto || new Date().toISOString().slice(0, 16),
-    duracion: calcularDuracion(simStartDate || initialTime, simEndDate || data?.minuto || ''),
-    pedidosEntregados: Math.max(0, data?.indicadores?.completedOrders || 0),
-    consumoPetroleo: Number((data?.indicadores?.fuelCounterTotal || 0).toFixed(2)),
-    tiempoPlanificacion: "00:00:15",
+    fechaInicio: collapseSimulationSummary?.fechaInicio || simStartDate || initialTime,
+    fechaFin: collapseSimulationSummary?.fechaFin || simEndDate || data?.minuto || new Date().toISOString().slice(0, 16),
+    duracion: collapseSimulationSummary?.duracion || calcularDuracion(simStartDate || initialTime, simEndDate || data?.minuto || ''),
+    pedidosEntregados: collapseSimulationSummary?.pedidosEntregados || Math.max(0, data?.indicadores?.completedOrders || 0),
+    consumoPetroleo: collapseSimulationSummary?.consumoPetroleo || Number((data?.indicadores?.fuelCounterTotal || 0).toFixed(2)),
+    tiempoPlanificacion: collapseSimulationSummary?.tiempoPlanificacion || "00:00:15",
   };
   const handleStopAndShowSummary = () => {
     stopSimulation(); // sigue deteniendo la simulación
@@ -1270,13 +1280,14 @@ const CollapseSimulationControlPanel: React.FC<CollapseSimulationControlPanelPro
             setIsSummaryOpen(false);
             resetSimulationState();
             // --- Lógica híbrida para tamaño ---
-            const json = JSON.stringify(simulationSummary);
+            const summaryData = collapseSimulationSummary || simulationSummary;
+            const json = JSON.stringify(summaryData);
             const sizeInMB = json.length / (1024 * 1024);
             let dataToSend;
             if (sizeInMB < 2) {
-              dataToSend = simulationSummary;
+              dataToSend = summaryData;
             } else {
-              const { simulacionCompleta, ...resumenSinDetalle } = simulationSummary || {};
+              const { simulacionCompleta, ...resumenSinDetalle } = summaryData || {};
               dataToSend = { ...resumenSinDetalle, historialReducido: true };
             }
             navigate('/colapso/details', {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box,
   VStack,
@@ -18,21 +18,22 @@ import {
   AccordionPanel,
   AccordionIcon,
   useColorModeValue,
-  Flex,
   Stat,
   StatLabel,
   StatNumber,
   StatGroup,
-  Grid,
-  GridItem,
   Card,
   CardBody,
   CardHeader,
   Heading,
-  Divider
+  Divider,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription
 } from '@chakra-ui/react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaArrowLeft, FaDownload, FaChartBar, FaTruck, FaBox, FaExclamationTriangle, FaFilePdf } from 'react-icons/fa';
+import { FaArrowLeft, FaDownload, FaTruck, FaBox, FaExclamationTriangle, FaFilePdf } from 'react-icons/fa';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -44,7 +45,6 @@ const CollapseSimulationDetails: React.FC<SimulationDetailsProps> = ({ simulatio
   const navigate = useNavigate();
   const location = useLocation();
   const bgColor = useColorModeValue('white', '#1a1a1a');
-  const [selectedMinute, setSelectedMinute] = useState<number | null>(null);
 
   // Obtener datos de la simulación desde el estado de navegación o props
   const data = simulationData || location.state?.simulationData;
@@ -291,6 +291,19 @@ const CollapseSimulationDetails: React.FC<SimulationDetailsProps> = ({ simulatio
         </HStack>
 
         <Divider />
+
+        {/* Alerta de datos reducidos */}
+        {data.historialReducido && (
+          <Alert status="info" borderRadius="md" maxW="900px" mx="auto" w="100%">
+            <AlertIcon />
+            <Box>
+              <AlertTitle>Datos de simulación optimizados</AlertTitle>
+              <AlertDescription>
+                Debido al tamaño de los datos ({data.totalElementosOriginales} elementos), solo se muestran los últimos 10 elementos del historial completo para optimizar el rendimiento.
+              </AlertDescription>
+            </Box>
+          </Alert>
+        )}
 
         {/* Resumen General */}
         <Card maxW="900px" mx="auto" w="100%">
